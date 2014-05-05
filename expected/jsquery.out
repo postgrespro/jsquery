@@ -1,0 +1,686 @@
+CREATE EXTENSION jsquery;
+set escape_string_warning=off;
+select 'asd.zzz = 13'::jsquery;
+     jsquery      
+------------------
+ "asd"."zzz" = 13
+(1 row)
+
+select 'asd.zzz < 13'::jsquery;
+     jsquery      
+------------------
+ "asd"."zzz" < 13
+(1 row)
+
+select 'asd(zzz < 13)'::jsquery;
+     jsquery      
+------------------
+ "asd"."zzz" < 13
+(1 row)
+
+select 'asd(zzz < 13 & x = true)'::jsquery;
+            jsquery             
+--------------------------------
+ "asd"("zzz" < 13 & "x" = true)
+(1 row)
+
+select 'asd(zzz < 13 & x = "true")'::jsquery;
+             jsquery              
+----------------------------------
+ "asd"("zzz" < 13 & "x" = "true")
+(1 row)
+
+select 'asd(zzz < 13 & x.zxc = "true")'::jsquery;
+                jsquery                 
+----------------------------------------
+ "asd"("zzz" < 13 & "x"."zxc" = "true")
+(1 row)
+
+select 'asd(zzz < 13 | #.zxc = "true")'::jsquery;
+               jsquery                
+--------------------------------------
+ "asd"("zzz" < 13 | #."zxc" = "true")
+(1 row)
+
+select 'asd(* < 13 & #.zxc = "true")'::jsquery;
+             jsquery              
+----------------------------------
+ "asd"(* < 13 & #."zxc" = "true")
+(1 row)
+
+select '(* < 13 & #.zxc = "true")'::jsquery;
+           jsquery           
+-----------------------------
+ (* < 13 & #."zxc" = "true")
+(1 row)
+
+select '* < 13 & #.zxc = "true"'::jsquery;
+           jsquery           
+-----------------------------
+ (* < 13 & #."zxc" = "true")
+(1 row)
+
+select 'a < 1'::jsquery;
+ jsquery 
+---------
+ "a" < 1
+(1 row)
+
+select 'a < -1'::jsquery;
+ jsquery  
+----------
+ "a" < -1
+(1 row)
+
+select 'a < +1'::jsquery;
+ jsquery 
+---------
+ "a" < 1
+(1 row)
+
+select 'a < .1'::jsquery;
+  jsquery  
+-----------
+ "a" < 0.1
+(1 row)
+
+select 'a < -.1'::jsquery;
+  jsquery   
+------------
+ "a" < -0.1
+(1 row)
+
+select 'a < +.1'::jsquery;
+  jsquery  
+-----------
+ "a" < 0.1
+(1 row)
+
+select 'a < 0.1'::jsquery;
+  jsquery  
+-----------
+ "a" < 0.1
+(1 row)
+
+select 'a < -0.1'::jsquery;
+  jsquery   
+------------
+ "a" < -0.1
+(1 row)
+
+select 'a < +0.1'::jsquery;
+  jsquery  
+-----------
+ "a" < 0.1
+(1 row)
+
+select 'a < 10.1'::jsquery;
+  jsquery   
+------------
+ "a" < 10.1
+(1 row)
+
+select 'a < -10.1'::jsquery;
+   jsquery   
+-------------
+ "a" < -10.1
+(1 row)
+
+select 'a < +10.1'::jsquery;
+  jsquery   
+------------
+ "a" < 10.1
+(1 row)
+
+select 'a < 1e1'::jsquery;
+ jsquery  
+----------
+ "a" < 10
+(1 row)
+
+select 'a < -1e1'::jsquery;
+  jsquery  
+-----------
+ "a" < -10
+(1 row)
+
+select 'a < +1e1'::jsquery;
+ jsquery  
+----------
+ "a" < 10
+(1 row)
+
+select 'a < .1e1'::jsquery;
+ jsquery 
+---------
+ "a" < 1
+(1 row)
+
+select 'a < -.1e1'::jsquery;
+ jsquery  
+----------
+ "a" < -1
+(1 row)
+
+select 'a < +.1e1'::jsquery;
+ jsquery 
+---------
+ "a" < 1
+(1 row)
+
+select 'a < 0.1e1'::jsquery;
+ jsquery 
+---------
+ "a" < 1
+(1 row)
+
+select 'a < -0.1e1'::jsquery;
+ jsquery  
+----------
+ "a" < -1
+(1 row)
+
+select 'a < +0.1e1'::jsquery;
+ jsquery 
+---------
+ "a" < 1
+(1 row)
+
+select 'a < 10.1e1'::jsquery;
+  jsquery  
+-----------
+ "a" < 101
+(1 row)
+
+select 'a < -10.1e1'::jsquery;
+  jsquery   
+------------
+ "a" < -101
+(1 row)
+
+select 'a < +10.1e1'::jsquery;
+  jsquery  
+-----------
+ "a" < 101
+(1 row)
+
+select 'a < 1e-1'::jsquery;
+  jsquery  
+-----------
+ "a" < 0.1
+(1 row)
+
+select 'a < -1e-1'::jsquery;
+  jsquery   
+------------
+ "a" < -0.1
+(1 row)
+
+select 'a < +1e-1'::jsquery;
+  jsquery  
+-----------
+ "a" < 0.1
+(1 row)
+
+select 'a < .1e-1'::jsquery;
+  jsquery   
+------------
+ "a" < 0.01
+(1 row)
+
+select 'a < -.1e-1'::jsquery;
+   jsquery   
+-------------
+ "a" < -0.01
+(1 row)
+
+select 'a < +.1e-1'::jsquery;
+  jsquery   
+------------
+ "a" < 0.01
+(1 row)
+
+select 'a < 0.1e-1'::jsquery;
+  jsquery   
+------------
+ "a" < 0.01
+(1 row)
+
+select 'a < -0.1e-1'::jsquery;
+   jsquery   
+-------------
+ "a" < -0.01
+(1 row)
+
+select 'a < +0.1e-1'::jsquery;
+  jsquery   
+------------
+ "a" < 0.01
+(1 row)
+
+select 'a < 10.1e-1'::jsquery;
+  jsquery   
+------------
+ "a" < 1.01
+(1 row)
+
+select 'a < -10.1e-1'::jsquery;
+   jsquery   
+-------------
+ "a" < -1.01
+(1 row)
+
+select 'a < +10.1e-1'::jsquery;
+  jsquery   
+------------
+ "a" < 1.01
+(1 row)
+
+select 'a < 1e+1'::jsquery;
+ jsquery  
+----------
+ "a" < 10
+(1 row)
+
+select 'a < -1e+1'::jsquery;
+  jsquery  
+-----------
+ "a" < -10
+(1 row)
+
+select 'a < +1e+1'::jsquery;
+ jsquery  
+----------
+ "a" < 10
+(1 row)
+
+select 'a < .1e+1'::jsquery;
+ jsquery 
+---------
+ "a" < 1
+(1 row)
+
+select 'a < -.1e+1'::jsquery;
+ jsquery  
+----------
+ "a" < -1
+(1 row)
+
+select 'a < +.1e+1'::jsquery;
+ jsquery 
+---------
+ "a" < 1
+(1 row)
+
+select 'a < 0.1e+1'::jsquery;
+ jsquery 
+---------
+ "a" < 1
+(1 row)
+
+select 'a < -0.1e+1'::jsquery;
+ jsquery  
+----------
+ "a" < -1
+(1 row)
+
+select 'a < +0.1e+1'::jsquery;
+ jsquery 
+---------
+ "a" < 1
+(1 row)
+
+select 'a < 10.1e+1'::jsquery;
+  jsquery  
+-----------
+ "a" < 101
+(1 row)
+
+select 'a < -10.1e+1'::jsquery;
+  jsquery   
+------------
+ "a" < -101
+(1 row)
+
+select 'a < +10.1e+1'::jsquery;
+  jsquery  
+-----------
+ "a" < 101
+(1 row)
+
+select 'a in (0,1,2)'::jsquery;
+     jsquery      
+------------------
+ "a" IN (0, 1, 2)
+(1 row)
+
+select 'a in (0,null, "null", xxx, "zzz", 2)'::jsquery;
+                  jsquery                  
+-------------------------------------------
+ "a" IN (0, null, "null", "xxx", "zzz", 2)
+(1 row)
+
+select '{"a": {"b": null}}'::jsonb @@ 'a.b = 1';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": null}}'::jsonb @@ 'a.b = null';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": null}}'::jsonb @@ 'a.b = false';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": false}}'::jsonb @@ 'a.b = false';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": false}}'::jsonb @@ 'a.b = true';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": true}}'::jsonb @@ 'a.b = true';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b = 1';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b < 1';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b <= 1';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b >= 1';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b > 1';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b = 2';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b < 2';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b <= 2';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b >= 2';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b > 2';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b = 0';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b < 0';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b <= 0';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b >= 0';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b > 0';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ '*.b > 0';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ '*.b > 0';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.* > 0';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1}}'::jsonb @@ 'a.* > 0';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b && [ 1 ]';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b @> [ 1 ]';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b <@ [ 1 ]';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b @> [ 1,2,3,4 ]';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b <@ [ 1,2,3,4 ]';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[{"a": 2}, {"a": 3}]'::jsonb @@ '*.a = 4';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '[{"a": 2}, {"a": 3}]'::jsonb @@ '*.a = 3';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#.a = 4';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '*.a = 4';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 1 | a=3)';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 | a=1)';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 & a=1)';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 & a=2)' as "false";
+ false 
+-------
+ f
+(1 row)
+
+select '[{"a": 2, "b":3}, {"a": 3, "b": 1}]'::jsonb @@ '#(b = 1 & a=3)';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#.a.a = 4';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '*.a.a = 4';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '*.#.a.a = 4';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#.*.a.a = 4';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": 1}'::jsonb @@ 'a in (0,1,2)';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": 1}'::jsonb @@ 'a in (0,2)';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.#=2';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b && [ 5 ]';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a=*';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b=*';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.c=*';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b = [1,2,3]';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.# = [1,2,3]';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b && [1,2,3]';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.# && [1,2,3]';
+ ?column? 
+----------
+ f
+(1 row)
+
