@@ -197,7 +197,7 @@ CREATE OR REPLACE FUNCTION gin_triconsistent_jsonb_bloom_value(internal, smallin
 CREATE OPERATOR CLASS jsonb_bloom_value_ops
 	FOR TYPE jsonb USING gin AS
 	OPERATOR 7  @>,
-	OPERATOR 13  @@ (jsonb, jsquery),
+	OPERATOR 14  @@ (jsonb, jsquery),
 	FUNCTION 1  gin_compare_jsonb_bloom_value(bytea, bytea),
 	FUNCTION 2  gin_extract_jsonb_bloom_value(internal, internal, internal),
 	FUNCTION 3  gin_extract_jsonb_query_bloom_value(anyarray, internal, smallint, internal, internal, internal, internal),
