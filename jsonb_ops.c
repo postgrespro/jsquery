@@ -53,6 +53,7 @@ typedef struct ExtractedNode ExtractedNode;
 struct ExtractedNode
 {
 	ExtractedNodeType	type;
+	bool				indirect;
 	union
 	{
 		struct
@@ -76,15 +77,19 @@ typedef struct
 {
 	ExtractedNode  *root;
 	uint32			hash;
+	bool			lossy;
+	bool			inequality, leftInclusive, rightInclusive;
+	GINKey		   *rightBound;
 } KeyExtra;
 
 static uint32 get_bloom_value(uint32 hash);
 static uint32 get_path_bloom(PathHashStack *stack);
 static GINKey *make_gin_key(JsonbValue *v, uint32 hash);
 static GINKey *make_gin_query_key(char *jqBase, int32 jqPos, int32 type, uint32 hash);
+static GINKey *make_gin_query_key_minus_inf(uint32 hash);
 static int32 compare_gin_key_value(GINKey *arg1, GINKey *arg2);
 static int addEntry(Entries *e, Datum key, Pointer extra, bool pmatch);
-static ExtractedNode *recursiveExtract(char *jqBase, int32 jqPos, uint32 hash, Entries *e, bool lossy);
+static ExtractedNode *recursiveExtract(char *jqBase, int32 jqPos, uint32 hash, Entries *e, bool lossy, bool indirect);
 
 PG_FUNCTION_INFO_V1(gin_compare_jsonb_bloom_value);
 PG_FUNCTION_INFO_V1(gin_compare_partial_jsonb_bloom_value);
@@ -127,13 +132,13 @@ addEntry(Entries *e, Datum key, Pointer extra, bool pmatch)
 }
 
 static ExtractedNode *
-recursiveExtract(char *jqBase, int32 jqPos, uint32 hash, Entries *e, bool lossy)
+recursiveExtract(char *jqBase, int32 jqPos, uint32 hash, Entries *e, bool lossy, bool indirect)
 {
-	int32	type;
+	int32	type, childType;
 	int32	nextPos;
 	int32	left, right, arg;
 	ExtractedNode *leftNode, *rightNode, *result;
-	int32	len;
+	int32	len, *arrayPos, nelems, i;
 	KeyExtra	*extra;
 
 	check_stack_depth();
@@ -146,8 +151,8 @@ recursiveExtract(char *jqBase, int32 jqPos, uint32 hash, Entries *e, bool lossy)
 			read_int32(left, jqBase, jqPos);
 			read_int32(right, jqBase, jqPos);
 			Assert(nextPos == 0);
-			leftNode = recursiveExtract(jqBase, left, hash, e, lossy);
-			rightNode = recursiveExtract(jqBase, right, hash, e, lossy);
+			leftNode = recursiveExtract(jqBase, left, hash, e, lossy, false);
+			rightNode = recursiveExtract(jqBase, right, hash, e, lossy, false);
 			if (leftNode)
 			{
 				if (rightNode)
@@ -157,6 +162,7 @@ recursiveExtract(char *jqBase, int32 jqPos, uint32 hash, Entries *e, bool lossy)
 						result->type = eAnd;
 					else if (type == jqiOr)
 						result->type = eOr;
+					result->indirect = indirect;
 					result->args.items = (ExtractedNode **)palloc(2 * sizeof(ExtractedNode *));
 					result->args.items[0] = leftNode;
 					result->args.items[1] = rightNode;
@@ -178,11 +184,12 @@ recursiveExtract(char *jqBase, int32 jqPos, uint32 hash, Entries *e, bool lossy)
 		case jqiNot:
 			read_int32(arg, jqBase, jqPos);
 			Assert(nextPos == 0);
-			leftNode = recursiveExtract(jqBase, arg, hash, e, lossy);
+			leftNode = recursiveExtract(jqBase, arg, hash, e, lossy, false);
 			if (leftNode)
 			{
 				result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
 				result->type = eNot;
+				result->indirect = indirect;
 				result->args.items = (ExtractedNode **)palloc(sizeof(ExtractedNode *));
 				result->args.items[0] = leftNode;
 				result->args.count = 1;
@@ -195,32 +202,88 @@ recursiveExtract(char *jqBase, int32 jqPos, uint32 hash, Entries *e, bool lossy)
 		case jqiKey:
 			read_int32(len, jqBase, jqPos);
 			return recursiveExtract(jqBase, nextPos,
-				hash | get_bloom_value(hash_any((unsigned char *)jqBase + jqPos, len)), e, lossy);
+				hash | get_bloom_value(hash_any((unsigned char *)jqBase + jqPos, len)), e, lossy, indirect);
 		case jqiAny:
 			Assert(nextPos != 0);
-			return recursiveExtract(jqBase, nextPos, hash, e, true);
+			return recursiveExtract(jqBase, nextPos, hash, e, true, true);
 		case jqiAnyArray:
 			Assert(nextPos != 0);
-			return recursiveExtract(jqBase, nextPos, hash, e, lossy);
+			return recursiveExtract(jqBase, nextPos, hash, e, lossy, true);
 		case jqiEqual:
 			read_int32(arg, jqBase, jqPos);
 			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-			extra = (KeyExtra *)palloc(sizeof(KeyExtra));
+			extra = (KeyExtra *)palloc0(sizeof(KeyExtra));
 			extra->hash = hash;
 			result->type = eScalar;
-			arg = readJsQueryHeader(jqBase, arg, &type, &nextPos);
+			arg = readJsQueryHeader(jqBase, arg, &childType, &nextPos);
 			result->entryNum = addEntry(e,
-					PointerGetDatum(make_gin_query_key(jqBase, arg, type, lossy ? 0 : hash)),
+					PointerGetDatum(make_gin_query_key(jqBase, arg, childType, lossy ? 0 : hash)),
 					(Pointer)extra, lossy);
 			return result;
 		case jqiIn:
+		case jqiOverlap:
+		case jqiContains:
+			read_int32(arg, jqBase, jqPos);
+			arg = readJsQueryHeader(jqBase, arg, &childType, &nextPos);
+
+			read_int32(nelems, jqBase, arg);
+			arrayPos = (int32*)(jqBase + arg);
+
+			extra = (KeyExtra *)palloc0(sizeof(KeyExtra));
+			extra->hash = hash;
+			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
+			if (type == jqiContains)
+				result->type = eAnd;
+			else
+				result->type = eOr;
+			result->indirect = indirect;
+			result->args.items = (ExtractedNode **)palloc(nelems * sizeof(ExtractedNode *));
+			result->args.count = 0;
+			for (i = 0; i < nelems; i++)
+			{
+				ExtractedNode *item;
+				item = (ExtractedNode *)palloc(sizeof(ExtractedNode));
+				item->indirect = false;
+				item->type = eScalar;
+				arg = readJsQueryHeader(jqBase, arrayPos[i], &childType, &nextPos);
+				item->entryNum = addEntry(e,
+						PointerGetDatum(make_gin_query_key(jqBase, arg, childType, lossy ? 0 : hash)),
+						(Pointer)extra, lossy);
+				result->args.items[result->args.count] = item;
+				result->args.count++;
+			}
+			return result;
 		case jqiLess:
 		case jqiGreater:
 		case jqiLessOrEqual:
 		case jqiGreaterOrEqual:
-		case jqiContains:
+			read_int32(arg, jqBase, jqPos);
+			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
+			extra = (KeyExtra *)palloc0(sizeof(KeyExtra));
+			extra->hash = hash;
+			extra->inequality = true;
+			extra->lossy = lossy;
+			result->type = eScalar;
+			arg = readJsQueryHeader(jqBase, arg, &childType, &nextPos);
+			if (type == jqiGreater || type == jqiGreaterOrEqual)
+			{
+				if (type == jqiGreaterOrEqual)
+					extra->leftInclusive = true;
+				result->entryNum = addEntry(e,
+						PointerGetDatum(make_gin_query_key(jqBase, arg, childType, lossy ? 0 : hash)),
+						(Pointer)extra, true);
+			}
+			else
+			{
+				if (type == jqiLessOrEqual)
+					extra->rightInclusive = true;
+				result->entryNum = addEntry(e,
+						PointerGetDatum(make_gin_query_key_minus_inf(lossy ? 0 : hash)),
+						(Pointer)extra, true);
+				extra->rightBound = make_gin_query_key(jqBase, arg, childType, lossy ? 0 : hash);
+			}
+			return result;
 		case jqiContained:
-		case jqiOverlap:
 			return NULL;
 		default:
 			elog(ERROR,"Wrong state: %d", type);
@@ -354,16 +417,27 @@ make_gin_query_key(char *jqBase, int32 jqPos, int32 type, uint32 hash)
 	return key;
 }
 
+static GINKey *
+make_gin_query_key_minus_inf(uint32 hash)
+{
+	GINKey *key;
+
+	key = (GINKey *)palloc(GINKEYLEN);
+	key->type = jbvNumeric | GINKeyTrue;
+	SET_VARSIZE(key, GINKEYLEN);
+	return key;
+}
+
 static int32
 compare_gin_key_value(GINKey *arg1, GINKey *arg2)
 {
-	if (arg1->type != arg2->type)
+	if (GINKeyType(arg1) != GINKeyType(arg2))
 	{
-		return (arg1->type > arg2->type) ? 1 : -1;
+		return (GINKeyType(arg1) > GINKeyType(arg2)) ? 1 : -1;
 	}
 	else
 	{
-		switch(arg1->type)
+		switch(GINKeyType(arg1))
 		{
 			case jbvNull:
 				return 0;
@@ -375,6 +449,18 @@ compare_gin_key_value(GINKey *arg1, GINKey *arg2)
 				else
 					return -1;
 			case jbvNumeric:
+				if (GINKeyIsTrue(arg1))
+				{
+					if (GINKeyIsTrue(arg2))
+						return 0;
+					else
+						return -1;
+				}
+				else
+				{
+					if (GINKeyIsTrue(arg2))
+						return 1;
+				}
 				return DatumGetInt32(DirectFunctionCall2(numeric_cmp,
 							 PointerGetDatum(GINKeyDataNumeric(arg1)),
 							 PointerGetDatum(GINKeyDataNumeric(arg2))));
@@ -400,6 +486,8 @@ gin_compare_jsonb_bloom_value(PG_FUNCTION_ARGS)
 	{
 		result = (arg1->hash > arg2->hash) ? 1 : -1;
 	}
+	PG_FREE_IF_COPY(arg1, 0);
+	PG_FREE_IF_COPY(arg2, 1);
 	PG_RETURN_INT32(result);
 }
 
@@ -410,27 +498,58 @@ gin_compare_partial_jsonb_bloom_value(PG_FUNCTION_ARGS)
 	GINKey	   *key = (GINKey *)PG_GETARG_VARLENA_P(1);
 	StrategyNumber strategy = PG_GETARG_UINT16(2);
 	int32		result;
-	uint32 		bloom;
 
 	if (strategy == JsQueryMatchStrategyNumber)
 	{
-		GINKey *extra_data = (GINKey *)PG_GETARG_POINTER(3);
-		bloom = extra_data->hash;
+		KeyExtra *extra_data = (KeyExtra *)PG_GETARG_POINTER(3);
+
+		if (extra_data->inequality)
+		{
+			result = 0;
+			if (!extra_data->leftInclusive && compare_gin_key_value(key, partial_key) <= 0)
+			{
+				result = -1;
+			}
+			if (result == 0 && extra_data->rightBound)
+			{
+				result = compare_gin_key_value(key, extra_data->rightBound);
+				if ((extra_data->rightInclusive && result <= 0) || result < 0)
+					result = 0;
+				else
+					result = 1;
+			}
+			if (result == 0)
+			{
+				if ((key->hash & extra_data->hash) != extra_data->hash)
+					result = -1;
+			}
+		}
+		else
+		{
+			result = compare_gin_key_value(key, partial_key);
+			if (result == 0)
+			{
+				if ((key->hash & extra_data->hash) != extra_data->hash)
+					result = -1;
+			}
+		}
 	}
 	else
 	{
 		uint32 *extra_data = (uint32 *)PG_GETARG_POINTER(3);
-		bloom = *extra_data;
+		uint32	bloom = *extra_data;
+
+		result = compare_gin_key_value(key, partial_key);
+
+		if (result == 0)
+		{
+			if ((key->hash & bloom) != bloom)
+				result = -1;
+		}
 	}
 
-	result = compare_gin_key_value(key, partial_key);
-
-	if (result == 0)
-	{
-		if ((key->hash & bloom) != bloom)
-			result = -1;
-	}
-
+	PG_FREE_IF_COPY(partial_key, 0);
+	PG_FREE_IF_COPY(key, 1);
 	PG_RETURN_INT32(result);
 }
 
@@ -563,7 +682,7 @@ gin_extract_jsonb_query_bloom_value(PG_FUNCTION_ARGS)
 
 		case JsQueryMatchStrategyNumber:
 			jq = PG_GETARG_JSQUERY(0);
-			root = recursiveExtract(VARDATA(jq), 0, 0, &e, false);
+			root = recursiveExtract(VARDATA(jq), 0, 0, &e, false, false);
 
 			*nentries = e.count;
 			entries = e.entries;
@@ -741,9 +860,13 @@ gin_triconsistent_jsonb_bloom_value(PG_FUNCTION_ARGS)
 
 		case JsQueryMatchStrategyNumber:
 			if (nkeys == 0)
-				res = GIN_TRUE;
+				res = GIN_MAYBE;
 			else
 				res = execRecursiveTristate(((KeyExtra *)extra_data[0])->root, check);
+
+			if (res == GIN_TRUE)
+				res = GIN_MAYBE;
+
 			break;
 
 		default:
