@@ -681,6 +681,46 @@ get_path_bloom(PathHashStack *stack)
 	return res;
 }
 
+static void
+log_gin_key(GINKey *key)
+{
+	if (GINKeyType(key) == jbvNull)
+	{
+		elog(NOTICE, "hash = %X, NULL", key->hash);
+	}
+	else if (GINKeyType(key) == jbvBool)
+	{
+		if (GINKeyIsTrue(key))
+			elog(NOTICE, "hash = %X, true", key->hash);
+		else
+			elog(NOTICE, "hash = %X, false", key->hash);
+	}
+	else if (GINKeyType(key) == jbvNumeric)
+	{
+		if (GINKeyIsTrue(key))
+		{
+			elog(NOTICE, "hash = %X, -inf", key->hash);
+		}
+		else
+		{
+			char *s;
+			s = DatumGetCString(DirectFunctionCall1(numeric_out, PointerGetDatum(GINKeyDataNumeric(key))));
+			elog(NOTICE, "hash = %X, \"%s\"", key->hash, s);
+		}
+	}
+	else if (GINKeyType(key) == jbvString)
+	{
+		char *s = (char *)palloc(GINKeyStringLen(key) + 1);
+		s[GINKeyStringLen(key)] = '\0';
+		memcpy(s, GINKeyDataString(key), GINKeyStringLen(key));
+		elog(NOTICE, "hash = %X, \"%s\"", key->hash, s);
+	}
+	else
+	{
+		elog(ERROR, "GINKey must be scalar");
+	}
+}
+
 static GINKey *
 make_gin_key(JsonbValue *v, uint32 hash)
 {
@@ -768,6 +808,7 @@ make_gin_query_key_minus_inf(uint32 hash)
 
 	key = (GINKey *)palloc(GINKEYLEN);
 	key->type = jbvNumeric | GINKeyTrue;
+	key->hash = hash;
 	SET_VARSIZE(key, GINKEYLEN);
 	return key;
 }
@@ -842,6 +883,9 @@ gin_compare_partial_jsonb_bloom_value(PG_FUNCTION_ARGS)
 	GINKey	   *key = (GINKey *)PG_GETARG_VARLENA_P(1);
 	StrategyNumber strategy = PG_GETARG_UINT16(2);
 	int32		result;
+
+	/*log_gin_key(partial_key);
+	log_gin_key(key);*/
 
 	if (strategy == JsQueryMatchStrategyNumber)
 	{
