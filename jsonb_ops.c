@@ -237,6 +237,7 @@ recursiveExtract(char *jqBase, int32 jqPos, uint32 hash, Entries *e,
 			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
 			extra = (KeyExtra *)palloc0(sizeof(KeyExtra));
 			extra->hash = hash;
+			extra->lossy = lossy;
 			result->type = eScalar;
 			result->path = path;
 			result->indirect = indirect;
@@ -256,6 +257,7 @@ recursiveExtract(char *jqBase, int32 jqPos, uint32 hash, Entries *e,
 
 			extra = (KeyExtra *)palloc0(sizeof(KeyExtra));
 			extra->hash = hash;
+			extra->lossy = lossy;
 			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
 			if (type == jqiContains)
 				result->type = eAnd;
