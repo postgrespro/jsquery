@@ -513,6 +513,10 @@ makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra)
 				j++;
 			}
 		}
+		if (j == 1 && (node->type == eAnd || node->type == eOr))
+		{
+			return node->args.items[0];
+		}
 		if (j > 0)
 		{
 			node->args.count = j;
