@@ -529,7 +529,7 @@ gin_extract_jsonb_bloom_value_internal(Jsonb *jb, int32 *nentries, uint32 **bloo
 	if (bloom)
 		(*bloom) = (uint32 *) palloc(sizeof(uint32) * total);
 
-	it = JsonbIteratorInit(VARDATA(jb));
+	it = JsonbIteratorInit(&jb->root);
 
 	stack = NULL;
 
@@ -936,7 +936,7 @@ gin_extract_jsonb_hash_value_internal(Jsonb *jb, int32 *nentries)
 
 	entries = (Datum *) palloc(sizeof(Datum) * total);
 
-	it = JsonbIteratorInit(VARDATA(jb));
+	it = JsonbIteratorInit(&jb->root);
 
 	tail.parent = NULL;
 	tail.hash = 0;

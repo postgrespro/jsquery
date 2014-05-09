@@ -48,11 +48,12 @@ struct JsQueryItem {
 		jqiLessOrEqual = '{',
 		jqiGreaterOrEqual = '}',
 		jqiContains = '@',
-		jqiContained = '$',
+		jqiContained = '^',
 		jqiOverlap = '%',
 		jqiAny = '*',
 		jqiAnyArray = '#',
 		jqiKey = 'K',
+		jqiCurrent = '$',
 		jqiIn = 'I'
 	} type;
 
@@ -98,6 +99,7 @@ int32 readJsQueryHeader(char *base, int32 pos, int32 *type, int32 *nextPos);
 	(p) += sizeof(int32);           \
 } while(0)                          \
 
+void alignStringInfoInt(StringInfo buf);
 #endif
 
 /* jsquery_extract.c */

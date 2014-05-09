@@ -176,37 +176,59 @@ executeArrayOp(char *jqBase, int32 jqPos, int32 type, int32 op, JsonbValue *jb)
 	read_int32(nelems, jqBase, jqPos);
 	arrayPos = (int32*)(jqBase + jqPos);
 
-	it = JsonbIteratorInit(jb->val.binary.data);
-
-	while((r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
+	if (op == jqiContains)
 	{
-		if (r == WJB_BEGIN_ARRAY)
-			nval = v.val.array.nElems;
-
-		if (r == WJB_ELEM)
+		for(i=0; i<nelems; i++)
 		{
 			bool res = false;
 
-			for(i=0; i<nelems; i++)
+			it = JsonbIteratorInit(jb->val.binary.data);
+
+			while(res == false && (r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 			{
-				if (executeExpr(jqBase, arrayPos[i], jqiEqual, &v))
-				{
-					if (op == jqiOverlap)
-						return true;
-					nres++;
+				if (r == WJB_ELEM && executeExpr(jqBase, arrayPos[i], jqiEqual, &v))
 					res = true;
-					break;
-				}
 			}
+
+			if (res == false)
+				return false;
 		}
 	}
+	else
+	{
+		it = JsonbIteratorInit(jb->val.binary.data);
 
-	if (op == jqiContains)
-		return (nres == nelems && nelems > 0);
-	if (op == jqiContained)
-		return (nres == nval && nval > 0);
+		while((r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
+		{
+			if (r == WJB_BEGIN_ARRAY)
+				nval = v.val.array.nElems;
 
-	return false;
+			if (r == WJB_ELEM)
+			{
+				bool res = false;
+
+				for(i=0; i<nelems; i++)
+				{
+					if (executeExpr(jqBase, arrayPos[i], jqiEqual, &v))
+					{
+						if (op == jqiOverlap)
+							return true;
+						nres++;
+						res = true;
+						break;
+					}
+				}
+
+				if (op == jqiContained && res == false)
+					return false;
+			}
+		}
+
+		if (op == jqiOverlap)
+			return false;
+	}
+
+	return true;
 }
 
 static bool
@@ -320,7 +342,7 @@ recursiveExecute(char *jqBase, int32 jqPos, JsonbValue *jb)
 				key.val.string.len = len;
 				jqPos += len + 1;
 
-				v = findJsonbValueFromSuperHeader(jb->val.binary.data, JB_FOBJECT, NULL, &key);
+				v = findJsonbValueFromContainer(jb->val.binary.data, JB_FOBJECT, &key);
 
 				Assert(nextPos != 0);
 				res = ((v != NULL) && recursiveExecute(jqBase, nextPos, v));
@@ -332,6 +354,9 @@ recursiveExecute(char *jqBase, int32 jqPos, JsonbValue *jb)
 				res = true;
 			else if (jb->type == jbvBinary)
 				res = recursiveAny(jqBase, nextPos, jb);
+			break;
+		case jqiCurrent:
+			res = recursiveExecute(jqBase, nextPos, jb);
 			break;
 		case jqiAnyArray:
 			Assert(nextPos != 0);
@@ -381,8 +406,8 @@ jsquery_json_exec(PG_FUNCTION_ARGS)
 	JsonbValue	jbv;
 
 	jbv.type = jbvBinary;
-	jbv.val.binary.data = VARDATA(jb);
-	jbv.val.binary.len = jbv.estSize = VARSIZE_ANY_EXHDR(jb);
+	jbv.val.binary.data = &jb->root;
+	jbv.val.binary.len = VARSIZE_ANY_EXHDR(jb);
 
 	res = recursiveExecute(VARDATA(jq), 0, &jbv);
 
@@ -402,8 +427,8 @@ json_jsquery_exec(PG_FUNCTION_ARGS)
 	JsonbValue	jbv;
 
 	jbv.type = jbvBinary;
-	jbv.val.binary.data = VARDATA(jb);
-	jbv.val.binary.len = jbv.estSize = VARSIZE_ANY_EXHDR(jb);
+	jbv.val.binary.data = &jb->root;
+	jbv.val.binary.len = VARSIZE_ANY_EXHDR(jb);
 
 	res = recursiveExecute(VARDATA(jq), 0, &jbv);
 
@@ -434,6 +459,7 @@ compareJsQuery(char *base1, int32 pos1, char *base2, int32 pos2)
 	{
 		case jqiNull:
 		case jqiAny:
+		case jqiCurrent:
 		case jqiAnyArray:
 			break;
 		case jqiKey:
@@ -730,6 +756,7 @@ hashJsQuery(char *base, int32 pos, pg_crc32 *crc)
 			}
 			break;
 		case jqiAny:
+		case jqiCurrent:
 		case jqiAnyArray:
 			break;
 		default:

@@ -134,3 +134,23 @@ select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.# = [1,2,3]';
 select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b && [1,2,3]';
 select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.# && [1,2,3]';
 
+select 'asd.# = 3'::jsquery & 'zzz = true' | 'xxx.# = zero';
+select !'asd.# = 3'::jsquery & 'zzz = true' | !'xxx.# = zero';
+
+select '{"x":[0,1,1,2]}'::jsonb @@ 'x @> [1,0]'::jsquery;
+select '{"x":[0,1,1,2]}'::jsonb @@ 'x @> [1,0,1]'::jsquery;
+select '{"x":[0,1,1,2]}'::jsonb @@ 'x @> [1,0,3]'::jsquery;
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b && [ 2 ]';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b($ && [ 2 ])';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.$.b && [ 2 ]';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.$.b ($ && [ 2 ])';
+
+select '[1,2,3]'::jsonb @@ '# && [2]';
+select '[1,2,3]'::jsonb @@ '#($ && [2])';
+select '[1,2,3]'::jsonb @@ '$ && [2]';
+select '[1,2,3]'::jsonb @@ '$ ($ && [2])';
+select '[1,2,3]'::jsonb @@ '$ = 2';
+select '[1,2,3]'::jsonb @@ '# = 2';
+select '[1,2,3]'::jsonb @@ '#.$ = 2';
+select '[1,2,3]'::jsonb @@ '#($ = 2)';

@@ -48,6 +48,40 @@ CREATE OPERATOR @@ (
 	JOIN = contjoinsel
 );
 
+CREATE FUNCTION jsquery_join_and(jsquery, jsquery)
+	RETURNS jsquery
+	AS 'MODULE_PATHNAME'
+	LANGUAGE C STRICT IMMUTABLE;
+
+CREATE OPERATOR & (
+	LEFTARG = jsquery,
+	RIGHTARG = jsquery,
+	PROCEDURE = jsquery_join_and,
+	COMMUTATOR = '&'
+);
+
+CREATE FUNCTION jsquery_join_or(jsquery, jsquery)
+	RETURNS jsquery
+	AS 'MODULE_PATHNAME'
+	LANGUAGE C STRICT IMMUTABLE;
+
+CREATE OPERATOR | (
+	LEFTARG = jsquery,
+	RIGHTARG = jsquery,
+	PROCEDURE = jsquery_join_or,
+	COMMUTATOR = '|'
+);
+
+CREATE FUNCTION jsquery_not(jsquery)
+	RETURNS jsquery
+	AS 'MODULE_PATHNAME'
+	LANGUAGE C STRICT IMMUTABLE;
+
+CREATE OPERATOR ! (
+	RIGHTARG = jsquery,
+	PROCEDURE = jsquery_not
+);
+
 CREATE FUNCTION jsquery_lt(jsquery, jsquery)
 	RETURNS bool
 	AS 'MODULE_PATHNAME'
@@ -246,4 +280,4 @@ CREATE OPERATOR CLASS jsonb_hash_value_ops
 	FUNCTION 4  gin_consistent_jsonb_hash_value(internal, smallint, anyarray, integer, internal, internal, internal, internal),
 	FUNCTION 5  gin_compare_partial_jsonb_hash_value(bytea, bytea, smallint, internal),
 	FUNCTION 6  gin_triconsistent_jsonb_hash_value(internal, smallint, anyarray, integer, internal, internal, internal),
-	STORAGE bytea;		
+	STORAGE bytea;

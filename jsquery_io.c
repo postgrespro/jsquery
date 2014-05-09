@@ -22,7 +22,7 @@
 
 PG_MODULE_MAGIC;
 
-static void
+void
 alignStringInfoInt(StringInfo buf)
 {
 	switch(INTALIGN(buf->len) - buf->len)
@@ -122,6 +122,7 @@ flattenJsQueryItem(StringInfo buf, JsQueryItem *item)
 			}
 			break;
 		case jqiNull:
+		case jqiCurrent:
 		case jqiAny:
 		case jqiAnyArray:
 			break;
@@ -341,6 +342,11 @@ printJsQueryItem(StringInfo buf, char *base, int32 pos, bool inKey, bool printBr
 			if (inKey)
 				appendStringInfoChar(buf, '.');
 			appendStringInfoChar(buf, '*');
+			break;
+		case jqiCurrent:
+			if (inKey)
+				appendStringInfoChar(buf, '.');
+			appendStringInfoChar(buf, '$');
 			break;
 		case jqiAnyArray:
 			if (inKey)

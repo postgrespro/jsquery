@@ -42,8 +42,8 @@ static int checkSpecialVal(void); /* examine scanstring for the special value */
 %x xQUOTED
 %x xNONQUOTED
 
-special		 [\.\[\]\(\)\|\&\!\=\<\>\@\#\,\*]
-any			[^\.\[\]\(\)\|\&\!\=\<\>\@\#\,\* \t\n\r\f\\\"]
+special		 [\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\*]
+any			[^\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\* \t\n\r\f\\\"]
 blank		[ \t\n\r\f]
 
 
