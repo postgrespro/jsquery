@@ -15,6 +15,7 @@
 #ifndef __JSQUERY_H__
 #define __JSQUERY_H__
 
+#include "access/gin.h"
 #include "fmgr.h"
 #include "utils/numeric.h"
 #include "utils/jsonb.h"
@@ -99,3 +100,67 @@ int32 readJsQueryHeader(char *base, int32 pos, int32 *type, int32 *nextPos);
 
 #endif
 
+/* jsquery_extract.c */
+
+typedef enum
+{
+	iAny = 1,
+	iAnyArray,
+	iKey
+} PathItemType;
+
+typedef struct PathItem PathItem;
+struct PathItem
+{
+	char		   *s;
+	PathItemType	type;
+	int				len;
+	PathItem	   *parent;
+};
+
+typedef enum
+{
+	eScalar = 1,
+	eAnd,
+	eOr,
+	eNot
+} ExtractedNodeType;
+
+typedef struct
+{
+	char   *jqBase;
+	int32	jqPos;
+	int32	type;
+} JsQueryValue;
+
+typedef struct ExtractedNode ExtractedNode;
+struct ExtractedNode
+{
+	ExtractedNodeType	type;
+	PathItem		   *path;
+	bool				indirect;
+	union
+	{
+		struct
+		{
+			ExtractedNode **items;
+			int				count;
+		} args;
+		struct
+		{
+			bool			inequality;
+			bool			leftInclusive;
+			bool			rightInclusive;
+			JsQueryValue   *exact;
+			JsQueryValue   *leftBound;
+			JsQueryValue   *rightBound;
+		} bounds;
+		int	entryNum;
+	};
+};
+
+typedef int (*MakeEntryHandler)(ExtractedNode *node, Pointer extra);
+
+ExtractedNode *extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra);
+bool execRecursive(ExtractedNode *node, bool *check);
+bool execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check);

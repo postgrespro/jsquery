@@ -1,7 +1,6 @@
 #include "postgres.h"
 
 #include "access/hash.h"
-#include "access/gin.h"
 #include "access/skey.h"
 #include "catalog/pg_collation.h"
 #include "catalog/pg_type.h"
@@ -40,41 +39,6 @@ typedef struct
 #define JsonbNestedContainsStrategyNumber	13
 #define JsQueryMatchStrategyNumber			14
 
-typedef enum
-{
-	eScalar = 1,
-	eAnd,
-	eOr,
-	eNot
-} ExtractedNodeType;
-
-typedef struct PathItem PathItem;
-
-struct PathItem
-{
-	char	   *s;
-	int			len;
-	PathItem   *parent;
-};
-
-typedef struct ExtractedNode ExtractedNode;
-
-struct ExtractedNode
-{
-	ExtractedNodeType	type;
-	PathItem		   *path;
-	bool				indirect;
-	union
-	{
-		struct
-		{
-			ExtractedNode **items;
-			int				count;
-		} args;
-		int	entryNum;
-	};
-};
-
 typedef struct
 {
 	Datum *entries;
@@ -96,14 +60,10 @@ typedef struct
 static uint32 get_bloom_value(uint32 hash);
 static uint32 get_path_bloom(PathHashStack *stack);
 static GINKey *make_gin_key(JsonbValue *v, uint32 hash);
-static GINKey *make_gin_query_key(char *jqBase, int32 jqPos, int32 type, uint32 hash);
+static GINKey *make_gin_query_key(JsQueryValue *value, uint32 hash);
 static GINKey *make_gin_query_key_minus_inf(uint32 hash);
 static int32 compare_gin_key_value(GINKey *arg1, GINKey *arg2);
-static int addEntry(Entries *e, Datum key, Pointer extra, bool pmatch);
-static ExtractedNode *recursiveExtract(char *jqBase, int32 jqPos, uint32 hash,
-		Entries *e, bool lossy, bool indirect, PathItem *path);
-static void flatternTree(ExtractedNode *node);
-static int comparePathItems(PathItem *i1, PathItem *i2);
+static int add_entry(Entries *e, Datum key, Pointer extra, bool pmatch);
 
 PG_FUNCTION_INFO_V1(gin_compare_jsonb_bloom_value);
 PG_FUNCTION_INFO_V1(gin_compare_partial_jsonb_bloom_value);
@@ -120,7 +80,7 @@ Datum gin_consistent_jsonb_bloom_value(PG_FUNCTION_ARGS);
 Datum gin_triconsistent_jsonb_bloom_value(PG_FUNCTION_ARGS);
 
 static int
-addEntry(Entries *e, Datum key, Pointer extra, bool pmatch)
+add_entry(Entries *e, Datum key, Pointer extra, bool pmatch)
 {
 	int entryNum;
 	if (!e->entries)
@@ -143,499 +103,6 @@ addEntry(Entries *e, Datum key, Pointer extra, bool pmatch)
 	e->extra_data[entryNum] = extra;
 	e->partial_match[entryNum] = pmatch;
 	return entryNum;
-}
-
-static ExtractedNode *
-recursiveExtract(char *jqBase, int32 jqPos, uint32 hash, Entries *e,
-		bool lossy, bool indirect, PathItem *path)
-{
-	int32	type, childType;
-	int32	nextPos;
-	int32	left, right, arg;
-	ExtractedNode *leftNode, *rightNode, *result;
-	int32	len, *arrayPos, nelems, i;
-	KeyExtra	*extra;
-	PathItem	*pathItem;
-
-	check_stack_depth();
-
-	jqPos = readJsQueryHeader(jqBase, jqPos, &type, &nextPos);
-
-	switch(type) {
-		case jqiAnd:
-		case jqiOr:
-			read_int32(left, jqBase, jqPos);
-			read_int32(right, jqBase, jqPos);
-			Assert(nextPos == 0);
-			leftNode = recursiveExtract(jqBase, left, hash, e, lossy, false, path);
-			rightNode = recursiveExtract(jqBase, right, hash, e, lossy, false, path);
-			if (leftNode)
-			{
-				if (rightNode)
-				{
-					result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-					if (type == jqiAnd)
-						result->type = eAnd;
-					else if (type == jqiOr)
-						result->type = eOr;
-					result->indirect = indirect;
-					result->path = path;
-					result->args.items = (ExtractedNode **)palloc(2 * sizeof(ExtractedNode *));
-					result->args.items[0] = leftNode;
-					result->args.items[1] = rightNode;
-					result->args.count = 2;
-					return result;
-				}
-				else
-				{
-					return leftNode;
-				}
-			}
-			else
-			{
-				if (rightNode)
-					return rightNode;
-				else
-					return NULL;
-			}
-		case jqiNot:
-			read_int32(arg, jqBase, jqPos);
-			Assert(nextPos == 0);
-			leftNode = recursiveExtract(jqBase, arg, hash, e, lossy, false, path);
-			if (leftNode)
-			{
-				result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-				result->type = eNot;
-				result->path = path;
-				result->indirect = indirect;
-				result->args.items = (ExtractedNode **)palloc(sizeof(ExtractedNode *));
-				result->args.items[0] = leftNode;
-				result->args.count = 1;
-				return result;
-			}
-			else
-			{
-				return NULL;
-			}
-		case jqiKey:
-			read_int32(len, jqBase, jqPos);
-			pathItem = (PathItem *)palloc(sizeof(PathItem));
-			pathItem->s = jqBase + jqPos;
-			pathItem->len = len;
-			pathItem->parent = path;
-			return recursiveExtract(jqBase, nextPos,
-				hash | get_bloom_value(hash_any((unsigned char *)jqBase + jqPos, len)),
-				e, lossy, indirect, pathItem);
-		case jqiAny:
-			Assert(nextPos != 0);
-			return recursiveExtract(jqBase, nextPos, hash, e, true, true, path);
-		case jqiAnyArray:
-			Assert(nextPos != 0);
-			return recursiveExtract(jqBase, nextPos, hash, e, lossy, true, path);
-		case jqiEqual:
-			read_int32(arg, jqBase, jqPos);
-			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-			extra = (KeyExtra *)palloc0(sizeof(KeyExtra));
-			extra->hash = hash;
-			extra->lossy = lossy;
-			result->type = eScalar;
-			result->path = path;
-			result->indirect = indirect;
-			arg = readJsQueryHeader(jqBase, arg, &childType, &nextPos);
-			result->entryNum = addEntry(e,
-					PointerGetDatum(make_gin_query_key(jqBase, arg, childType, lossy ? 0 : hash)),
-					(Pointer)extra, lossy);
-			return result;
-		case jqiIn:
-		case jqiOverlap:
-		case jqiContains:
-			read_int32(arg, jqBase, jqPos);
-			arg = readJsQueryHeader(jqBase, arg, &childType, &nextPos);
-
-			read_int32(nelems, jqBase, arg);
-			arrayPos = (int32*)(jqBase + arg);
-
-			extra = (KeyExtra *)palloc0(sizeof(KeyExtra));
-			extra->hash = hash;
-			extra->lossy = lossy;
-			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-			if (type == jqiContains)
-				result->type = eAnd;
-			else
-				result->type = eOr;
-			result->indirect = indirect;
-			result->args.items = (ExtractedNode **)palloc(nelems * sizeof(ExtractedNode *));
-			result->args.count = 0;
-			result->path = path;
-			for (i = 0; i < nelems; i++)
-			{
-				ExtractedNode *item;
-				item = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-				item->indirect = false;
-				item->type = eScalar;
-				item->path = path;
-				arg = readJsQueryHeader(jqBase, arrayPos[i], &childType, &nextPos);
-				item->entryNum = addEntry(e,
-						PointerGetDatum(make_gin_query_key(jqBase, arg, childType, lossy ? 0 : hash)),
-						(Pointer)extra, lossy);
-				result->args.items[result->args.count] = item;
-				result->args.count++;
-			}
-			return result;
-		case jqiLess:
-		case jqiGreater:
-		case jqiLessOrEqual:
-		case jqiGreaterOrEqual:
-			read_int32(arg, jqBase, jqPos);
-			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-			extra = (KeyExtra *)palloc0(sizeof(KeyExtra));
-			extra->hash = hash;
-			extra->inequality = true;
-			extra->lossy = lossy;
-			result->type = eScalar;
-			result->indirect = indirect;
-			result->path = path;
-			arg = readJsQueryHeader(jqBase, arg, &childType, &nextPos);
-			if (type == jqiGreater || type == jqiGreaterOrEqual)
-			{
-				if (type == jqiGreaterOrEqual)
-					extra->leftInclusive = true;
-				result->entryNum = addEntry(e,
-						PointerGetDatum(make_gin_query_key(jqBase, arg, childType, lossy ? 0 : hash)),
-						(Pointer)extra, true);
-			}
-			else
-			{
-				if (type == jqiLessOrEqual)
-					extra->rightInclusive = true;
-				result->entryNum = addEntry(e,
-						PointerGetDatum(make_gin_query_key_minus_inf(lossy ? 0 : hash)),
-						(Pointer)extra, true);
-				extra->rightBound = make_gin_query_key(jqBase, arg, childType, lossy ? 0 : hash);
-			}
-			return result;
-		case jqiContained:
-			return NULL;
-		default:
-			elog(ERROR,"Wrong state: %d", type);
-	}
-
-	return NULL;
-}
-
-static int
-coundChildren(ExtractedNode *node, ExtractedNodeType type, bool first, bool *found)
-{
-	if ((node->indirect || node->type != type) && !first)
-	{
-		return 1;
-	}
-	else
-	{
-		int i, total = 0;
-		*found = true;
-		for (i = 0; i < node->args.count; i++)
-			total += coundChildren(node->args.items[i], type, false, found);
-		return total;
-	}
-}
-
-static void
-fillChildren(ExtractedNode *node, ExtractedNodeType type, bool first,
-												ExtractedNode **items, int *i)
-{
-	if ((node->indirect || node->type != type) && !first)
-	{
-		items[*i] = node;
-		(*i)++;
-	}
-	else
-	{
-		int j;
-		for (j = 0; j < node->args.count; j++)
-			fillChildren(node->args.items[j], type, false, items, i);
-	}
-}
-
-static void
-flatternTree(ExtractedNode *node)
-{
-	if (node->type == eAnd || node->type == eOr)
-	{
-		int count;
-		bool found;
-
-		count = coundChildren(node, node->type, true, &found);
-
-		if (found)
-		{
-			int i = 0;
-			ExtractedNode **items = (ExtractedNode **)palloc(count * sizeof(ExtractedNode *));
-			fillChildren(node, node->type, true, items, &i);
-			node->args.items = items;
-			node->args.count = count;
-		}
-	}
-	if (node->type == eAnd || node->type == eOr || node->type == eNot)
-	{
-		int i;
-		for (i = 0; i < node->args.count; i++)
-			flatternTree(node->args.items[i]);
-	}
-}
-
-static int
-comparePathItems(PathItem *i1, PathItem *i2)
-{
-	int cmp;
-
-	if (i1 == i2)
-		return 0;
-
-	if (!i1)
-		return -1;
-	if (!i2)
-		return 1;
-
-	cmp = memcmp(i1->s, i2->s, Min(i1->len, i2->len));
-	if (cmp == 0)
-	{
-		if (i1->len != i2->len)
-			return (i1->len < i2->len) ? -1 : 1;
-		return comparePathItems(i1->parent, i2->parent);
-	}
-	else
-	{
-		return cmp;
-	}
-}
-
-static int
-compareNodes(const void *a1, const void *a2)
-{
-	ExtractedNode *n1 = *((ExtractedNode **)a1);
-	ExtractedNode *n2 = *((ExtractedNode **)a2);
-
-	if (n1->indirect != n2->indirect)
-	{
-		if (n1->indirect)
-			return 1;
-		if (n2->indirect)
-			return -1;
-	}
-
-	if (n1->type != n2->type)
-	{
-		return (n1->type < n2->type) ? -1 : 1;
-	}
-
-	if (n1->type == eScalar)
-	{
-		int cmp;
-		cmp = comparePathItems(n1->path, n2->path);
-		if (cmp) return cmp;
-		if (n1->entryNum < n2->entryNum)
-			return -1;
-		else if (n1->entryNum == n2->entryNum)
-			return 0;
-		else
-			return 1;
-	}
-	else
-	{
-		return 0;
-	}
-}
-
-static void
-processGroup(ExtractedNode *node, Entries *e, int start, int end)
-{
-	int i, exact = -1;
-	GINKey *leftBound = NULL, *rightBound = NULL;
-	bool leftInclusive, rightInclusive;
-	ExtractedNode *child;
-
-	if (end - start < 2)
-		return;
-
-	for (i = start; i < end; i++)
-	{
-		GINKey *key;
-		KeyExtra *extra;
-		int cmp;
-
-		child = node->args.items[i];
-		extra = (KeyExtra *)e->extra_data[child->entryNum];
-
-		if (!extra->inequality)
-		{
-			exact = i;
-			break;
-		}
-
-		key = (GINKey *)DatumGetPointer(e->entries[child->entryNum]);
-		if (!leftBound)
-		{
-			leftBound = key;
-			leftInclusive = extra->leftInclusive;
-		}
-		cmp = compare_gin_key_value(key, leftBound);
-		if (cmp > 0)
-		{
-			leftBound = key;
-			leftInclusive = extra->leftInclusive;
-		}
-		if (cmp == 0 && leftInclusive)
-		{
-			leftInclusive = extra->leftInclusive;
-		}
-
-		if (extra->rightBound)
-		{
-			key = extra->rightBound;
-			if (!rightBound)
-			{
-				rightBound = key;
-				rightInclusive = extra->rightInclusive;
-			}
-			cmp = compare_gin_key_value(key, rightBound);
-			if (cmp < 0)
-			{
-				rightBound = key;
-				rightInclusive = extra->rightInclusive;
-			}
-			if (cmp == 0 && rightInclusive)
-			{
-				rightInclusive = extra->rightInclusive;
-			}
-		}
-	}
-
-	if (exact < 0)
-	{
-		KeyExtra *extra;
-		int entryNum;
-
-		child = node->args.items[start];
-		entryNum = child->entryNum;
-		extra = (KeyExtra *)e->extra_data[entryNum];
-
-		e->entries[entryNum] = PointerGetDatum(leftBound);
-		extra->leftInclusive = leftInclusive;
-		extra->rightInclusive = rightInclusive;
-		extra->rightBound = rightBound;
-
-		exact = start;
-	}
-
-	for (i = start; i < end; i++)
-	{
-		child = node->args.items[i];
-		if (i != exact)
-		{
-			e->entries[child->entryNum] = (Datum)0;
-			e->extra_data[child->entryNum] = NULL;
-		}
-	}
-}
-
-static void
-simplifyRecursive(ExtractedNode *node, Entries *e)
-{
-	if (node->type == eAnd)
-	{
-		int i, groupStart = -1;
-		ExtractedNode *child, *prevChild = NULL;
-		qsort(node->args.items, node->args.count,
-				sizeof(ExtractedNode *), compareNodes);
-		for (i = 0; i < node->args.count; i++)
-		{
-			child = node->args.items[i];
-			if (child->indirect || child->type != eScalar)
-				break;
-			if (!prevChild || comparePathItems(child->path, prevChild->path) != 0)
-			{
-				if (groupStart > 0)
-					processGroup(node, e, groupStart, i);
-				groupStart = i;
-			}
-			prevChild = child;
-		}
-		if (groupStart >= 0)
-			processGroup(node, e, groupStart, i);
-	}
-
-	if (node->type == eAnd || node->type == eOr || node->type == eNot)
-	{
-		int i;
-		for (i = 0; i < node->args.count; i++)
-			simplifyRecursive(node->args.items[i], e);
-	}
-}
-
-static void
-createMap(Entries *e)
-{
-	int i, j;
-
-	e->map = (int *)palloc(e->count * sizeof(int));
-	j = 0;
-	for (i = 0; i < e->count; i++)
-	{
-		if (e->entries[i])
-		{
-			e->map[i] = j;
-			e->entries[j] = e->entries[i];
-			e->extra_data[j] = e->extra_data[i];
-			e->partial_match[j] = e->partial_match[i];
-			j++;
-		}
-		else
-		{
-			e->map[i] = -1;
-		}
-	}
-	e->count = j;
-}
-
-static ExtractedNode *
-applyMap(ExtractedNode *node, Entries *e)
-{
-	if (node->type == eAnd || node->type == eOr || node->type == eNot)
-	{
-		int i, j = 0;
-		ExtractedNode *child;
-		for (i = 0; i < node->args.count; i++)
-		{
-			child = applyMap(node->args.items[i], e);
-			if (child)
-			{
-				node->args.items[j] = child;
-				j++;
-			}
-		}
-		if (j > 0)
-		{
-			node->args.count = j;
-			return node;
-		}
-		else
-		{
-			return NULL;
-		}
-	}
-	else
-	{
-		if (e->map[node->entryNum] < 0)
-		{
-			return NULL;
-		}
-		else
-		{
-			node->entryNum = e->map[node->entryNum];
-			return node;
-		}
-	}
 }
 
 static uint32
@@ -679,6 +146,32 @@ get_path_bloom(PathHashStack *stack)
 		res |= val;
 		i++;
 		stack = stack->parent;
+	}
+	return res;
+}
+
+static uint32
+get_query_path_bloom(PathItem *pathItem, bool *lossy)
+{
+	uint32 res = 0, val;
+
+	*lossy = false;
+	while (pathItem)
+	{
+		uint32 hash;
+
+		if (pathItem->type == iKey)
+		{
+			hash = hash_any((unsigned char *)pathItem->s, pathItem->len);
+			val = get_bloom_value(hash);
+			res |= val;
+		}
+		else if (pathItem->type == iAny)
+		{
+			*lossy = true;
+		}
+
+		pathItem = pathItem->parent;
 	}
 	return res;
 }
@@ -763,13 +256,14 @@ make_gin_key(JsonbValue *v, uint32 hash)
 }
 
 static GINKey *
-make_gin_query_key(char *jqBase, int32 jqPos, int32 type, uint32 hash)
+make_gin_query_key(JsQueryValue *value, uint32 hash)
 {
 	GINKey *key;
-	int		len;
+	char   *jqBase = value->jqBase;
+	int		len, jqPos = value->jqPos;
 	Numeric	numeric;
 
-	switch(type)
+	switch(value->type)
 	{
 		case jqiNull:
 			key = (GINKey *)palloc(GINKEYLEN);
@@ -813,6 +307,55 @@ make_gin_query_key_minus_inf(uint32 hash)
 	key->hash = hash;
 	SET_VARSIZE(key, GINKEYLEN);
 	return key;
+}
+
+static int
+make_entry_handler(ExtractedNode *node, Pointer extra)
+{
+	Entries	   *e = (Entries *)extra;
+	uint32		hash;
+	bool		lossy;
+	GINKey	   *key;
+	KeyExtra   *keyExtra;
+	int			result;
+
+	Assert(node->type == eScalar);
+
+	hash = get_query_path_bloom(node->path, &lossy);
+	keyExtra = (KeyExtra *)palloc(sizeof(KeyExtra));
+	keyExtra->hash = hash;
+	keyExtra->lossy = lossy;
+	keyExtra->inequality = node->bounds.inequality;
+
+	if (!node->bounds.inequality)
+	{
+		key = make_gin_query_key(node->bounds.exact, lossy ? 0 : hash);
+	}
+	else
+	{
+		if (node->bounds.leftBound)
+		{
+			key = make_gin_query_key(node->bounds.leftBound, lossy ? 0 : hash);
+			keyExtra->leftInclusive = node->bounds.leftInclusive;
+		}
+		else
+		{
+			key = make_gin_query_key_minus_inf(lossy ? 0 : hash);
+			keyExtra->leftInclusive = false;
+		}
+		if (node->bounds.rightBound)
+		{
+			keyExtra->rightBound = make_gin_query_key(node->bounds.rightBound, lossy ? 0 : hash);
+			keyExtra->rightInclusive = node->bounds.rightInclusive;
+		}
+		else
+		{
+			keyExtra->rightBound = NULL;
+		}
+	}
+	result = add_entry(e, PointerGetDatum(key), (Pointer)keyExtra,
+											lossy | node->bounds.inequality);
+	return result;
 }
 
 static int32
@@ -1080,11 +623,7 @@ gin_extract_jsonb_query_bloom_value(PG_FUNCTION_ARGS)
 
 		case JsQueryMatchStrategyNumber:
 			jq = PG_GETARG_JSQUERY(0);
-			root = recursiveExtract(VARDATA(jq), 0, 0, &e, false, false, NULL);
-			flatternTree(root);
-			simplifyRecursive(root, &e);
-			createMap(&e);
-			root = applyMap(root, &e);
+			root = extractJsQuery(jq, make_entry_handler, (Pointer)&e);
 
 			*nentries = e.count;
 			entries = e.entries;
@@ -1104,72 +643,6 @@ gin_extract_jsonb_query_bloom_value(PG_FUNCTION_ARGS)
 		*searchMode = GIN_SEARCH_MODE_ALL;
 
 	PG_RETURN_POINTER(entries);
-}
-
-static bool
-execRecursive(ExtractedNode *node, bool *check)
-{
-	int i;
-	switch(node->type)
-	{
-		case eAnd:
-			for (i = 0; i < node->args.count; i++)
-				if (!execRecursive(node->args.items[i], check))
-					return false;
-			return true;
-		case eOr:
-			for (i = 0; i < node->args.count; i++)
-				if (execRecursive(node->args.items[i], check))
-					return true;
-			return false;
-		case eNot:
-			return !execRecursive(node->args.items[0], check);
-		case eScalar:
-			return check[node->entryNum];
-	}
-}
-
-static bool
-execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check)
-{
-	GinTernaryValue	res, v;
-	int i;
-
-	switch(node->type)
-	{
-		case eAnd:
-			res = GIN_TRUE;
-			for (i = 0; i < node->args.count; i++)
-			{
-				v = execRecursive(node->args.items[i], check);
-				if (v == GIN_FALSE)
-					return GIN_FALSE;
-				else if (v == GIN_MAYBE)
-					res = GIN_MAYBE;
-			}
-			return res;
-		case eOr:
-			res = GIN_FALSE;
-			for (i = 0; i < node->args.count; i++)
-			{
-				v = execRecursive(node->args.items[i], check);
-				if (v == GIN_TRUE)
-					return GIN_TRUE;
-				else if (v == GIN_MAYBE)
-					res = GIN_MAYBE;
-			}
-			return res;
-		case eNot:
-			v = execRecursive(node->args.items[0], check);
-			if (v == GIN_TRUE)
-				return GIN_FALSE;
-			else if (v == GIN_FALSE)
-				return GIN_TRUE;
-			else
-				return GIN_MAYBE;
-		case eScalar:
-			return check[node->entryNum];
-	}
 }
 
 Datum
