@@ -280,7 +280,11 @@ comparePathItems(PathItem *i1, PathItem *i2)
 		return (i1->type < i2->type) ? -1 : 1;
 	}
 
-	cmp = memcmp(i1->s, i2->s, Min(i1->len, i2->len));
+	if (i1->type == iKey)
+		cmp = memcmp(i1->s, i2->s, Min(i1->len, i2->len));
+	else
+		cmp = 0;
+
 	if (cmp == 0)
 	{
 		if (i1->len != i2->len)

@@ -79,6 +79,20 @@ Datum gin_extract_jsonb_query_bloom_value(PG_FUNCTION_ARGS);
 Datum gin_consistent_jsonb_bloom_value(PG_FUNCTION_ARGS);
 Datum gin_triconsistent_jsonb_bloom_value(PG_FUNCTION_ARGS);
 
+PG_FUNCTION_INFO_V1(gin_compare_jsonb_hash_value);
+PG_FUNCTION_INFO_V1(gin_compare_partial_jsonb_hash_value);
+PG_FUNCTION_INFO_V1(gin_extract_jsonb_hash_value);
+PG_FUNCTION_INFO_V1(gin_extract_jsonb_query_hash_value);
+PG_FUNCTION_INFO_V1(gin_consistent_jsonb_hash_value);
+PG_FUNCTION_INFO_V1(gin_triconsistent_jsonb_hash_value);
+
+Datum gin_compare_jsonb_hash_value(PG_FUNCTION_ARGS);
+Datum gin_compare_partial_jsonb_hash_value(PG_FUNCTION_ARGS);
+Datum gin_extract_jsonb_hash_value(PG_FUNCTION_ARGS);
+Datum gin_extract_jsonb_query_hash_value(PG_FUNCTION_ARGS);
+Datum gin_consistent_jsonb_hash_value(PG_FUNCTION_ARGS);
+Datum gin_triconsistent_jsonb_hash_value(PG_FUNCTION_ARGS);
+
 static int
 add_entry(Entries *e, Datum key, Pointer extra, bool pmatch)
 {
@@ -176,6 +190,7 @@ get_query_path_bloom(PathItem *pathItem, bool *lossy)
 	return res;
 }
 
+#ifdef NOT_USED
 static void
 log_gin_key(GINKey *key)
 {
@@ -215,6 +230,7 @@ log_gin_key(GINKey *key)
 		elog(ERROR, "GINKey must be scalar");
 	}
 }
+#endif
 
 static GINKey *
 make_gin_key(JsonbValue *v, uint32 hash)
@@ -310,7 +326,7 @@ make_gin_query_key_minus_inf(uint32 hash)
 }
 
 static int
-make_entry_handler(ExtractedNode *node, Pointer extra)
+make_bloom_entry_handler(ExtractedNode *node, Pointer extra)
 {
 	Entries	   *e = (Entries *)extra;
 	uint32		hash;
@@ -428,9 +444,6 @@ gin_compare_partial_jsonb_bloom_value(PG_FUNCTION_ARGS)
 	GINKey	   *key = (GINKey *)PG_GETARG_VARLENA_P(1);
 	StrategyNumber strategy = PG_GETARG_UINT16(2);
 	int32		result;
-
-	/*log_gin_key(partial_key);
-	log_gin_key(key);*/
 
 	if (strategy == JsQueryMatchStrategyNumber)
 	{
@@ -623,7 +636,7 @@ gin_extract_jsonb_query_bloom_value(PG_FUNCTION_ARGS)
 
 		case JsQueryMatchStrategyNumber:
 			jq = PG_GETARG_JSQUERY(0);
-			root = extractJsQuery(jq, make_entry_handler, (Pointer)&e);
+			root = extractJsQuery(jq, make_bloom_entry_handler, (Pointer)&e);
 
 			*nentries = e.count;
 			entries = e.entries;
@@ -751,3 +764,393 @@ gin_triconsistent_jsonb_bloom_value(PG_FUNCTION_ARGS)
 
 	PG_RETURN_GIN_TERNARY_VALUE(res);
 }
+
+static bool
+get_query_path_hash(PathItem *pathItem, uint32 *hash)
+{
+	check_stack_depth();
+
+	if (!pathItem)
+		return true;
+
+	if (!get_query_path_hash(pathItem->parent, hash))
+	{
+		return false;
+	}
+	else
+	{
+		if (pathItem->type == iAny)
+		{
+			return false;
+		}
+		else
+		{
+			if (pathItem->type == iKey)
+			{
+				*hash = (*hash << 1) | (*hash >> 31);
+				*hash ^= hash_any((unsigned char *)pathItem->s, pathItem->len);
+			}
+			else if (pathItem->type == iAnyArray)
+			{
+				*hash = (*hash << 1) | (*hash >> 31);
+				*hash ^= JB_FARRAY;
+			}
+			return true;
+		}
+	}
+}
+
+static int
+make_hash_entry_handler(ExtractedNode *node, Pointer extra)
+{
+	Entries	   *e = (Entries *)extra;
+	uint32		hash;
+	GINKey	   *key;
+	KeyExtra   *keyExtra;
+	int			result;
+
+	Assert(node->type == eScalar);
+
+	hash = 0;
+	if (!get_query_path_hash(node->path, &hash))
+		return -1;
+
+	keyExtra = (KeyExtra *)palloc(sizeof(KeyExtra));
+	keyExtra->hash = hash;
+	keyExtra->lossy = false;
+	keyExtra->inequality = node->bounds.inequality;
+
+	if (!node->bounds.inequality)
+	{
+		key = make_gin_query_key(node->bounds.exact, hash);
+	}
+	else
+	{
+		if (node->bounds.leftBound)
+		{
+			key = make_gin_query_key(node->bounds.leftBound, hash);
+			keyExtra->leftInclusive = node->bounds.leftInclusive;
+		}
+		else
+		{
+			key = make_gin_query_key_minus_inf(hash);
+			keyExtra->leftInclusive = false;
+		}
+		if (node->bounds.rightBound)
+		{
+			keyExtra->rightBound = make_gin_query_key(node->bounds.rightBound, hash);
+			keyExtra->rightInclusive = node->bounds.rightInclusive;
+		}
+		else
+		{
+			keyExtra->rightBound = NULL;
+		}
+	}
+	result = add_entry(e, PointerGetDatum(key), (Pointer)keyExtra,
+											node->bounds.inequality);
+	return result;
+}
+
+Datum
+gin_compare_jsonb_hash_value(PG_FUNCTION_ARGS)
+{
+	GINKey	   *arg1 = (GINKey *)PG_GETARG_VARLENA_P(0);
+	GINKey	   *arg2 = (GINKey *)PG_GETARG_VARLENA_P(1);
+	int32		result = 0;
+
+	if (arg1->hash != arg2->hash)
+	{
+		result = (arg1->hash > arg2->hash) ? 1 : -1;
+	}
+	else
+	{
+		result = compare_gin_key_value(arg1, arg2);
+	}
+	PG_RETURN_INT32(result);
+}
+
+Datum
+gin_compare_partial_jsonb_hash_value(PG_FUNCTION_ARGS)
+{
+	GINKey	   *partial_key = (GINKey *)PG_GETARG_VARLENA_P(0);
+	GINKey	   *key = (GINKey *)PG_GETARG_VARLENA_P(1);
+	StrategyNumber strategy = PG_GETARG_UINT16(2);
+	int32		result;
+
+	if (key->hash != partial_key->hash)
+	{
+		result = (key->hash > partial_key->hash) ? 1 : -1;
+	}
+	else if (strategy == JsQueryMatchStrategyNumber)
+	{
+		KeyExtra *extra_data = (KeyExtra *)PG_GETARG_POINTER(3);
+
+		if (extra_data->inequality)
+		{
+			result = 0;
+			if (!extra_data->leftInclusive && compare_gin_key_value(key, partial_key) <= 0)
+			{
+				result = -1;
+			}
+			if (result == 0 && extra_data->rightBound)
+			{
+				result = compare_gin_key_value(key, extra_data->rightBound);
+				if ((extra_data->rightInclusive && result <= 0) || result < 0)
+					result = 0;
+				else
+					result = 1;
+			}
+		}
+		else
+		{
+			result = compare_gin_key_value(key, partial_key);
+		}
+	}
+	else
+	{
+		result = compare_gin_key_value(key, partial_key);
+	}
+
+	PG_FREE_IF_COPY(partial_key, 0);
+	PG_FREE_IF_COPY(key, 1);
+	PG_RETURN_INT32(result);
+}
+
+static Datum *
+gin_extract_jsonb_hash_value_internal(Jsonb *jb, int32 *nentries)
+{
+	int			total = 2 * JB_ROOT_COUNT(jb);
+	JsonbIterator *it;
+	JsonbValue	v;
+	PathHashStack tail;
+	PathHashStack *stack;
+	int			i = 0,
+				r;
+	Datum	   *entries = NULL;
+
+	if (total == 0)
+	{
+		*nentries = 0;
+		return NULL;
+	}
+
+	entries = (Datum *) palloc(sizeof(Datum) * total);
+
+	it = JsonbIteratorInit(VARDATA(jb));
+
+	tail.parent = NULL;
+	tail.hash = 0;
+	stack = &tail;
+
+	while ((r = JsonbIteratorNext(&it, &v, false)) != WJB_DONE)
+	{
+		PathHashStack  *tmp;
+
+		if (i >= total)
+		{
+			total *= 2;
+			entries = (Datum *) repalloc(entries, sizeof(Datum) * total);
+		}
+
+		switch (r)
+		{
+			case WJB_BEGIN_ARRAY:
+			case WJB_BEGIN_OBJECT:
+				tmp = stack;
+				stack = (PathHashStack *) palloc(sizeof(PathHashStack));
+				stack->parent = tmp;
+				stack->hash = stack->parent->hash;
+				if (r == WJB_BEGIN_ARRAY)
+				{
+					stack->hash = (stack->hash << 1) | (stack->hash >> 31);
+					stack->hash ^= JB_FARRAY;
+				}
+				break;
+			case WJB_KEY:
+				/* Initialize hash from parent */
+				stack->hash = stack->parent->hash;
+				JsonbHashScalarValue(&v, &stack->hash);
+				break;
+			case WJB_ELEM:
+			case WJB_VALUE:
+				/* Element/value case */
+				entries[i++] = PointerGetDatum(make_gin_key(&v, stack->hash));
+				break;
+			case WJB_END_ARRAY:
+			case WJB_END_OBJECT:
+				/* Pop the stack */
+				tmp = stack->parent;
+				pfree(stack);
+				stack = tmp;
+				break;
+			default:
+				elog(ERROR, "invalid JsonbIteratorNext rc: %d", r);
+		}
+	}
+
+	*nentries = i;
+
+	return entries;
+}
+
+Datum
+gin_extract_jsonb_hash_value(PG_FUNCTION_ARGS)
+{
+	Jsonb	   *jb = PG_GETARG_JSONB(0);
+	int32	   *nentries = (int32 *) PG_GETARG_POINTER(1);
+
+	PG_RETURN_POINTER(gin_extract_jsonb_hash_value_internal(jb, nentries));
+}
+
+Datum
+gin_extract_jsonb_query_hash_value(PG_FUNCTION_ARGS)
+{
+	Jsonb	   *jb;
+	int32	   *nentries = (int32 *) PG_GETARG_POINTER(1);
+	StrategyNumber strategy = PG_GETARG_UINT16(2);
+	bool	  **pmatch = (bool **) PG_GETARG_POINTER(3);
+	Pointer	  **extra_data = (Pointer **) PG_GETARG_POINTER(4);
+	int32	   *searchMode = (int32 *) PG_GETARG_POINTER(6);
+	Datum	   *entries = NULL;
+	int			i;
+	Entries		e = {0};
+	JsQuery	   *jq;
+	ExtractedNode *root;
+
+	switch(strategy)
+	{
+		case JsonbContainsStrategyNumber:
+			jb = PG_GETARG_JSONB(0);
+			entries = gin_extract_jsonb_hash_value_internal(jb, nentries);
+			break;
+
+		case JsQueryMatchStrategyNumber:
+			jq = PG_GETARG_JSQUERY(0);
+			root = extractJsQuery(jq, make_hash_entry_handler, (Pointer)&e);
+
+			*nentries = e.count;
+			entries = e.entries;
+			*pmatch = e.partial_match;
+			*extra_data = e.extra_data;
+			for (i = 0; i < e.count; i++)
+				((KeyExtra *)e.extra_data[i])->root = root;
+			break;
+
+		default:
+			elog(ERROR, "unrecognized strategy number: %d", strategy);
+			break;
+	}
+
+	/* ...although "contains {}" requires a full index scan */
+	if (entries == NULL)
+		*searchMode = GIN_SEARCH_MODE_ALL;
+
+	PG_RETURN_POINTER(entries);
+}
+
+Datum
+gin_consistent_jsonb_hash_value(PG_FUNCTION_ARGS)
+{
+	bool	   *check = (bool *) PG_GETARG_POINTER(0);
+	StrategyNumber strategy = PG_GETARG_UINT16(1);
+	/* Jsonb	   *query = PG_GETARG_JSONB(2); */
+	int32		nkeys = PG_GETARG_INT32(3);
+	Pointer	   *extra_data = (Pointer *) PG_GETARG_POINTER(4);
+	bool	   *recheck = (bool *) PG_GETARG_POINTER(5);
+	bool		res = true;
+	int32		i;
+
+	*recheck = true;
+	switch (strategy)
+	{
+		case JsonbContainsStrategyNumber:
+			for (i = 0; i < nkeys; i++)
+			{
+				if (!check[i])
+				{
+					res = false;
+					break;
+				}
+			}
+			break;
+
+		case JsQueryMatchStrategyNumber:
+			if (nkeys == 0)
+				res = true;
+			else
+				res = execRecursive(((KeyExtra *)extra_data[0])->root, check);
+			break;
+
+		default:
+			elog(ERROR, "unrecognized strategy number: %d", strategy);
+			break;
+	}
+
+	PG_RETURN_BOOL(res);
+}
+
+Datum
+gin_triconsistent_jsonb_hash_value(PG_FUNCTION_ARGS)
+{
+	GinTernaryValue *check = (GinTernaryValue *) PG_GETARG_POINTER(0);
+	StrategyNumber strategy = PG_GETARG_UINT16(1);
+	/* Jsonb	   *query = PG_GETARG_JSONB(2); */
+	int32		nkeys = PG_GETARG_INT32(3);
+	Pointer	   *extra_data = (Pointer *) PG_GETARG_POINTER(4);
+	GinTernaryValue res = GIN_TRUE;
+	int32			i;
+	bool			has_maybe = false;
+
+
+	switch (strategy)
+	{
+		case JsonbContainsStrategyNumber:
+			/*
+			 * All extracted keys must be present.  A combination of GIN_MAYBE and
+			 * GIN_TRUE induces a GIN_MAYBE result, because then all keys may be
+			 * present.
+			 */
+			for (i = 0; i < nkeys; i++)
+			{
+				if (check[i] == GIN_FALSE)
+				{
+					res = GIN_FALSE;
+					break;
+				}
+				if (check[i] == GIN_MAYBE)
+				{
+					res = GIN_MAYBE;
+					has_maybe = true;
+				}
+			}
+
+			/*
+			 * jsonb_hash_ops index doesn't have information about correspondence of
+			 * Jsonb keys and values (as distinct from GIN keys, which for this opclass
+			 * are a hash of a pair, or a hash of just an element), so invariably we
+			 * recheck.  This is also reflected in how GIN_MAYBE is given in response
+			 * to there being no GIN_MAYBE input.
+			 */
+			if (!has_maybe && res == GIN_TRUE)
+				res = GIN_MAYBE;
+			break;
+
+		case JsQueryMatchStrategyNumber:
+			if (nkeys == 0)
+				res = GIN_MAYBE;
+			else
+				res = execRecursiveTristate(((KeyExtra *)extra_data[0])->root, check);
+
+			if (res == GIN_TRUE)
+				res = GIN_MAYBE;
+
+			break;
+
+		default:
+			elog(ERROR, "unrecognized strategy number: %d", strategy);
+			break;
+	}
+
+	PG_RETURN_GIN_TERNARY_VALUE(res);
+}
+

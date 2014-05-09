@@ -1,7 +1,7 @@
 # contrib/jsquery/Makefile
 
 MODULE_big = jsquery
-OBJS = jsquery_io.o jsquery_gram.o jsquery_op.o jsonb_ops.o jsquery_extract.o
+OBJS = jsquery_io.o jsquery_gram.o jsquery_op.o jsonb_gin_ops.o jsquery_extract.o
 
 EXTENSION = jsquery
 DATA = jsquery--1.0.sql
