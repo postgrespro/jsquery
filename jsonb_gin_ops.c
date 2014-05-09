@@ -26,10 +26,9 @@ typedef struct
 
 #define GINKEYLEN offsetof(GINKey, data)
 
-#define GINKeyLenString(len) (offsetof(GINKey, data) + len)
+#define GINKeyLenString (INTALIGN(offsetof(GINKey, data)) + sizeof(uint32))
 #define GINKeyLenNumeric(len) (INTALIGN(offsetof(GINKey, data)) + len)
-#define GINKeyStringLen(key) (VARSIZE(key) - offsetof(GINKey, data))
-#define GINKeyDataString(key) ((key)->data)
+#define GINKeyDataString(key) (*(uint32 *)((Pointer)key + INTALIGN(offsetof(GINKey, data))))
 #define GINKeyDataNumeric(key) ((Pointer)key + INTALIGN(offsetof(GINKey, data)))
 #define GINKeyType(key) ((key)->type & 0x7F)
 #define GINKeyIsTrue(key) ((key)->type & 0x80)
@@ -220,10 +219,7 @@ log_gin_key(GINKey *key)
 	}
 	else if (GINKeyType(key) == jbvString)
 	{
-		char *s = (char *)palloc(GINKeyStringLen(key) + 1);
-		s[GINKeyStringLen(key)] = '\0';
-		memcpy(s, GINKeyDataString(key), GINKeyStringLen(key));
-		elog(NOTICE, "hash = %X, \"%s\"", key->hash, s);
+		elog(NOTICE, "hash = %X, %X", key->hash, GINKeyDataString(key));
 	}
 	else
 	{
@@ -258,10 +254,11 @@ make_gin_key(JsonbValue *v, uint32 hash)
 	}
 	else if (v->type == jbvString)
 	{
-		key = (GINKey *)palloc(GINKeyLenString(v->val.string.len));
+		key = (GINKey *)palloc(GINKeyLenString);
 		key->type = v->type;
-		memcpy(GINKeyDataString(key), v->val.string.val, v->val.string.len);
-		SET_VARSIZE(key, GINKeyLenString(v->val.string.len));
+		GINKeyDataString(key) = hash_any((unsigned char *)v->val.string.val,
+														  v->val.string.len);
+		SET_VARSIZE(key, GINKeyLenString);
 	}
 	else
 	{
@@ -288,10 +285,11 @@ make_gin_query_key(JsQueryValue *value, uint32 hash)
 			break;
 		case jqiString:
 			read_int32(len, jqBase, jqPos);
-			key = (GINKey *)palloc(GINKeyLenString(len));
+			key = (GINKey *)palloc(GINKeyLenString);
 			key->type = jbvString;
-			memcpy(GINKeyDataString(key), jqBase + jqPos, len);
-			SET_VARSIZE(key, GINKeyLenString(len));
+			GINKeyDataString(key) = hash_any((unsigned char *)jqBase + jqPos,
+															  len);
+			SET_VARSIZE(key, GINKeyLenString);
 			break;
 		case jqiBool:
 			read_byte(len, jqBase, jqPos);
@@ -411,8 +409,12 @@ compare_gin_key_value(GINKey *arg1, GINKey *arg2)
 							 PointerGetDatum(GINKeyDataNumeric(arg1)),
 							 PointerGetDatum(GINKeyDataNumeric(arg2))));
 			case jbvString:
-				return varstr_cmp(GINKeyDataString(arg1), GINKeyStringLen(arg1),
-						GINKeyDataString(arg2), GINKeyStringLen(arg2), C_COLLATION_OID);
+				if (GINKeyDataString(arg1) < GINKeyDataString(arg2))
+					return -1;
+				else if (GINKeyDataString(arg1) == GINKeyDataString(arg2))
+					return 0;
+				else
+					return 1;
 			default:
 				elog(ERROR, "GINKey must be scalar");
 				return 0;
