@@ -868,6 +868,8 @@ gin_compare_jsonb_hash_value(PG_FUNCTION_ARGS)
 	{
 		result = compare_gin_key_value(arg1, arg2);
 	}
+	PG_FREE_IF_COPY(arg1, 0);
+	PG_FREE_IF_COPY(arg2, 1);
 	PG_RETURN_INT32(result);
 }
 
