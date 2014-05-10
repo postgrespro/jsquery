@@ -140,13 +140,23 @@ recursiveExtract(char *jqBase, int32 jqPos,	bool indirect, PathItem *path)
 			result->args.items = (ExtractedNode **)palloc(nelems * sizeof(ExtractedNode *));
 			result->args.count = 0;
 			result->path = path;
+			if (type == jqiContains || type == jqiOverlap)
+			{
+				pathItem = (PathItem *)palloc(sizeof(PathItem));
+				pathItem->type = iAnyArray;
+				pathItem->parent = path;
+			}
+			else
+			{
+				pathItem = path;
+			}
 			for (i = 0; i < nelems; i++)
 			{
 				ExtractedNode *item;
 				item = (ExtractedNode *)palloc(sizeof(ExtractedNode));
 				item->indirect = false;
 				item->type = eScalar;
-				item->path = path;
+				item->path = pathItem;
 				arg = readJsQueryHeader(jqBase, arrayPos[i], &childType, &nextPos);
 				item->bounds.inequality = false;
 				item->bounds.exact = (JsQueryValue *)palloc(sizeof(JsQueryValue));
