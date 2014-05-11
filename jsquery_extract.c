@@ -109,6 +109,8 @@ recursiveExtract(char *jqBase, int32 jqPos,	bool indirect, PathItem *path)
 			pathItem->type = iAnyArray;
 			pathItem->parent = path;
 			return recursiveExtract(jqBase, nextPos, true, pathItem);
+		case jqiCurrent:
+			return recursiveExtract(jqBase, nextPos, indirect, path);
 		case jqiEqual:
 			read_int32(arg, jqBase, jqPos);
 			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
@@ -407,8 +409,15 @@ processGroup(ExtractedNode *node, int start, int end)
 
 		if (!child->bounds.inequality)
 		{
-			exact = child->bounds.exact;
-			break;
+			if (child->bounds.exact->type == jqiAny)
+			{
+				continue;
+			}
+			else
+			{
+				exact = child->bounds.exact;
+				break;
+			}
 		}
 
 		if (child->bounds.leftBound)

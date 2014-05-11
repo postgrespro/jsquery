@@ -343,6 +343,8 @@ make_bloom_entry_handler(ExtractedNode *node, Pointer extra)
 
 	if (!node->bounds.inequality)
 	{
+		if (node->bounds.exact->type == jqiAny)
+			return -1;
 		key = make_gin_query_key(node->bounds.exact, lossy ? 0 : hash);
 	}
 	else
@@ -824,6 +826,8 @@ make_hash_entry_handler(ExtractedNode *node, Pointer extra)
 
 	if (!node->bounds.inequality)
 	{
+		if (node->bounds.exact->type == jqiAny)
+			return -1;
 		key = make_gin_query_key(node->bounds.exact, hash);
 	}
 	else
