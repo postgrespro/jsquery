@@ -812,6 +812,7 @@ make_hash_entry_handler(ExtractedNode *node, Pointer extra)
 	GINKey	   *key;
 	KeyExtra   *keyExtra;
 	int			result;
+	bool		partialMatch = false;
 
 	Assert(node->type == eScalar);
 
@@ -827,11 +828,23 @@ make_hash_entry_handler(ExtractedNode *node, Pointer extra)
 	if (!node->bounds.inequality)
 	{
 		if (node->bounds.exact->type == jqiAny)
-			return -1;
-		key = make_gin_query_key(node->bounds.exact, hash);
+		{
+			JsQueryValue value;
+			value.jqBase = NULL;
+			value.jqPos = 0;
+			value.type = jqiNull;
+			key = make_gin_query_key(&value, hash);
+			partialMatch = true;
+			keyExtra->lossy = true;
+		}
+		else
+		{
+			key = make_gin_query_key(node->bounds.exact, hash);
+		}
 	}
 	else
 	{
+		partialMatch = true;
 		if (node->bounds.leftBound)
 		{
 			key = make_gin_query_key(node->bounds.leftBound, hash);
@@ -852,8 +865,7 @@ make_hash_entry_handler(ExtractedNode *node, Pointer extra)
 			keyExtra->rightBound = NULL;
 		}
 	}
-	result = add_entry(e, PointerGetDatum(key), (Pointer)keyExtra,
-											node->bounds.inequality);
+	result = add_entry(e, PointerGetDatum(key), (Pointer)keyExtra, partialMatch);
 	return result;
 }
 
@@ -893,7 +905,11 @@ gin_compare_partial_jsonb_hash_value(PG_FUNCTION_ARGS)
 	{
 		KeyExtra *extra_data = (KeyExtra *)PG_GETARG_POINTER(3);
 
-		if (extra_data->inequality)
+		if (extra_data->lossy)
+		{
+			result = 0;
+		}
+		else if (extra_data->inequality)
 		{
 			result = 0;
 			if (!extra_data->leftInclusive && compare_gin_key_value(key, partial_key) <= 0)
