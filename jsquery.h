@@ -165,6 +165,8 @@ struct ExtractedNode
 
 typedef int (*MakeEntryHandler)(ExtractedNode *node, Pointer extra);
 
+#define JsQueryMatchStrategyNumber			14
+
 ExtractedNode *extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra);
 bool execRecursive(ExtractedNode *node, bool *check);
 bool execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check);

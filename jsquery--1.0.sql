@@ -281,3 +281,40 @@ CREATE OPERATOR CLASS jsonb_hash_value_ops
 	FUNCTION 5  gin_compare_partial_jsonb_hash_value(bytea, bytea, smallint, internal),
 	FUNCTION 6  gin_triconsistent_jsonb_hash_value(internal, smallint, anyarray, integer, internal, internal, internal),
 	STORAGE bytea;
+
+CREATE OR REPLACE FUNCTION vodkajsonbconfig(internal, internal)
+	RETURNS void
+	AS 'MODULE_PATHNAME'
+	LANGUAGE C STRICT IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION vodkajsonbextract(anyarray, internal, internal)
+	RETURNS internal
+	AS 'MODULE_PATHNAME'
+	LANGUAGE C STRICT IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION vodkaqueryjsonbextract(anyarray, internal, smallint, internal)
+	RETURNS internal
+	AS 'MODULE_PATHNAME'
+	LANGUAGE C STRICT IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION vodkajsonbconsistent(internal, smallint, anyarray, integer, internal, internal, internal)
+	RETURNS boolean
+	AS 'MODULE_PATHNAME'
+	LANGUAGE C STRICT IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION vodkajsonbtriconsistent(internal, smallint, anyarray, integer, internal, internal)
+	RETURNS boolean
+	AS 'MODULE_PATHNAME'
+	LANGUAGE C STRICT IMMUTABLE;
+
+CREATE OPERATOR CLASS jsonb_ops DEFAULT	FOR TYPE jsonb USING vodka AS
+	OPERATOR 7  @>,
+	OPERATOR 14  @@ (jsonb, jsquery),
+	FUNCTION 1  vodkajsonbconfig(internal, internal),
+	FUNCTION 2  byteacmp(bytea, bytea),
+	FUNCTION 3  vodkajsonbextract(anyarray, internal, internal),
+	FUNCTION 4  vodkaqueryjsonbextract(anyarray, internal, smallint, internal),
+	FUNCTION 5  vodkajsonbconsistent(internal, smallint, anyarray, integer, internal, internal, internal),
+	FUNCTION 6  vodkajsonbtriconsistent(internal, smallint, anyarray, integer, internal, internal),
+	STORAGE bytea;
+	

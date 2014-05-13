@@ -2,7 +2,8 @@
 
 MODULE_big = jsquery
 OBJS = jsquery_io.o jsquery_gram.o jsquery_op.o \
-	   jsquery_constr.o jsquery_extract.o jsonb_gin_ops.o
+	   jsquery_constr.o jsquery_extract.o jsonb_gin_ops.o \
+	   jsonb_vodka_ops.o
 
 EXTENSION = jsquery
 DATA = jsquery--1.0.sql

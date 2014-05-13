@@ -36,7 +36,6 @@ typedef struct
 
 #define BLOOM_BITS 2
 #define JsonbNestedContainsStrategyNumber	13
-#define JsQueryMatchStrategyNumber			14
 
 typedef struct
 {
