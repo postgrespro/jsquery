@@ -1,4 +1,4 @@
---  complain if script is sourced in psql, rather than via CREATE EXTENSION
+-- complain if script is sourced in psql, rather than via CREATE EXTENSION
 \echo Use "CREATE EXTENSION jsquery" to load this file. \quit
 
 CREATE TYPE jsquery;
