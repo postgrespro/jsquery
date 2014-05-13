@@ -179,7 +179,7 @@ get_query_path_bloom(PathItem *pathItem, bool *lossy)
 			val = get_bloom_value(hash);
 			res |= val;
 		}
-		else if (pathItem->type == iAny)
+		else if (pathItem->type == iAny || pathItem->type == iAnyKey)
 		{
 			*lossy = true;
 		}
@@ -783,7 +783,7 @@ get_query_path_hash(PathItem *pathItem, uint32 *hash)
 	}
 	else
 	{
-		if (pathItem->type == iAny)
+		if (pathItem->type == iAny || pathItem->type == iAnyKey)
 		{
 			return false;
 		}

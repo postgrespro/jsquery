@@ -63,7 +63,7 @@ select 'a < -10.1e+1'::jsquery;
 select 'a < +10.1e+1'::jsquery;
 
 select 'a in (0,1,2)'::jsquery;
-select 'a in (0,null, "null", xxx, "zzz", 2)'::jsquery;
+select 'a IN (0,null, "null", xxx, "zzz", 2)'::jsquery;
 
 select '{"a": {"b": null}}'::jsonb @@ 'a.b = 1';
 select '{"a": {"b": null}}'::jsonb @@ 'a.b = null';
@@ -154,3 +154,9 @@ select '[1,2,3]'::jsonb @@ '$ = 2';
 select '[1,2,3]'::jsonb @@ '# = 2';
 select '[1,2,3]'::jsonb @@ '#.$ = 2';
 select '[1,2,3]'::jsonb @@ '#($ = 2)';
+
+select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%.b=3';
+select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ 'a.%=3';
+select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%.%="hey"';
+select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%="hey"';
+select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%=[5,6]';

@@ -49,9 +49,10 @@ struct JsQueryItem {
 		jqiGreaterOrEqual = '}',
 		jqiContains = '@',
 		jqiContained = '^',
-		jqiOverlap = '%',
+		jqiOverlap = 'O',
 		jqiAny = '*',
 		jqiAnyArray = '#',
+		jqiAnyKey = '%',
 		jqiKey = 'K',
 		jqiCurrent = '$',
 		jqiIn = 'I'
@@ -108,7 +109,8 @@ typedef enum
 {
 	iAny = 1,
 	iAnyArray,
-	iKey
+	iKey,
+	iAnyKey
 } PathItemType;
 
 typedef struct PathItem PathItem;

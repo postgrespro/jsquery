@@ -118,6 +118,7 @@ copyJsQuery(StringInfo buf, char *jqBase, int32 jqPos)
 		case jqiAny:
 		case jqiCurrent:
 		case jqiAnyArray:
+		case jqiAnyKey:
 			break;
 		default:
 			elog(ERROR, "Unknown JsQueryItem type: %d", type);

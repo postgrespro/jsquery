@@ -109,6 +109,12 @@ recursiveExtract(char *jqBase, int32 jqPos,	bool indirect, PathItem *path)
 			pathItem->type = iAnyArray;
 			pathItem->parent = path;
 			return recursiveExtract(jqBase, nextPos, true, pathItem);
+		case jqiAnyKey:
+			Assert(nextPos != 0);
+			pathItem = (PathItem *)palloc(sizeof(PathItem));
+			pathItem->type = iAnyKey;
+			pathItem->parent = path;
+			return recursiveExtract(jqBase, nextPos, true, pathItem);
 		case jqiCurrent:
 			return recursiveExtract(jqBase, nextPos, indirect, path);
 		case jqiEqual:

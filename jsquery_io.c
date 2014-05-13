@@ -125,6 +125,7 @@ flattenJsQueryItem(StringInfo buf, JsQueryItem *item)
 		case jqiCurrent:
 		case jqiAny:
 		case jqiAnyArray:
+		case jqiAnyKey:
 			break;
 		default:
 			elog(ERROR, "Unknown JsQueryItem type: %d", item->type);
@@ -352,6 +353,11 @@ printJsQueryItem(StringInfo buf, char *base, int32 pos, bool inKey, bool printBr
 			if (inKey)
 				appendStringInfoChar(buf, '.');
 			appendStringInfoChar(buf, '#');
+			break;
+		case jqiAnyKey:
+			if (inKey)
+				appendStringInfoChar(buf, '.');
+			appendStringInfoChar(buf, '%');
 			break;
 		default:
 			elog(ERROR, "Unknown JsQueryItem type: %d", type);

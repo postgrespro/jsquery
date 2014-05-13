@@ -406,7 +406,7 @@ static yyconst flex_int32_t yy_ec[256] =
         1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
         1,    2,    2,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    2,    4,    5,    4,    4,    1,    4,    1,    4,
+        1,    2,    4,    5,    4,    4,    4,    4,    1,    4,
         4,    4,    6,    4,    6,    7,    1,    8,    8,    8,
         8,    8,    8,    8,    8,    8,    8,    1,    1,    4,
         4,    4,    1,    4,    1,    1,    1,    1,    9,    1,
@@ -1928,7 +1928,7 @@ checkSpecialVal()
 
 	if (scanstring.len == 2)
 	{
-		if (strncmp("in", scanstring.val, scanstring.len) == 0)
+		if (pg_strncasecmp("in", scanstring.val, scanstring.len) == 0)
 			return IN_P;
 	}
 	else if (scanstring.len == 4)

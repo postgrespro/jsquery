@@ -267,6 +267,7 @@ key:
 path_elem:
 	'*'								{ $$ = makeJsQueryItemType(jqiAny); }
 	| '#'							{ $$ = makeJsQueryItemType(jqiAnyArray); }
+	| '%'							{ $$ = makeJsQueryItemType(jqiAnyKey); }
 	| '$'							{ $$ = makeJsQueryItemType(jqiCurrent); }
 	| key							{ $$ = makeJsQueryItemString(&$1); $$->type = jqiKey; }
 	;

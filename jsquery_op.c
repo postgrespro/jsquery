@@ -369,10 +369,29 @@ recursiveExecute(char *jqBase, int32 jqPos, JsonbValue *jb)
 
 				while(res == false && (r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 				{
-					if (r == WJB_KEY)
+					if (r == WJB_BEGIN_OBJECT || r == WJB_KEY)
 						break;
 
 					if (r == WJB_ELEM)
+						res = recursiveExecute(jqBase, nextPos, &v);
+				}
+			}
+			break;
+		case jqiAnyKey:
+			Assert(nextPos != 0);
+			if (jb->type == jbvBinary) {
+				JsonbIterator	*it;
+				int32			r;
+				JsonbValue		v;
+
+				it = JsonbIteratorInit(jb->val.binary.data);
+
+				while(res == false && (r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
+				{
+					if (r == WJB_BEGIN_ARRAY || r == WJB_ELEM)
+						break;
+
+					if (r == WJB_VALUE)
 						res = recursiveExecute(jqBase, nextPos, &v);
 				}
 			}
@@ -461,6 +480,7 @@ compareJsQuery(char *base1, int32 pos1, char *base2, int32 pos2)
 		case jqiAny:
 		case jqiCurrent:
 		case jqiAnyArray:
+		case jqiAnyKey:
 			break;
 		case jqiKey:
 		case jqiString:
@@ -758,6 +778,7 @@ hashJsQuery(char *base, int32 pos, pg_crc32 *crc)
 		case jqiAny:
 		case jqiCurrent:
 		case jqiAnyArray:
+		case jqiAnyKey:
 			break;
 		default:
 			elog(ERROR, "Unknown JsQueryItem type: %d", type);

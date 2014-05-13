@@ -42,8 +42,8 @@ static int checkSpecialVal(void); /* examine scanstring for the special value */
 %x xQUOTED
 %x xNONQUOTED
 
-special		 [\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\*]
-any			[^\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\* \t\n\r\f\\\"]
+special		 [\%\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\*]
+any			[^\%\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\* \t\n\r\f\\\"]
 blank		[ \t\n\r\f]
 
 
@@ -162,7 +162,7 @@ checkSpecialVal()
 
 	if (scanstring.len == 2)
 	{
-		if (strncmp("in", scanstring.val, scanstring.len) == 0)
+		if (pg_strncasecmp("in", scanstring.val, scanstring.len) == 0)
 			return IN_P;
 	}
 	else if (scanstring.len == 4)
