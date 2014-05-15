@@ -37,6 +37,7 @@ typedef struct
 #define JSONB_VODKA_FLAG_STRING		0x02
 #define JSONB_VODKA_FLAG_NUMERIC	0x04
 #define JSONB_VODKA_FLAG_BOOL		0x06
+#define JSONB_VODKA_FLAG_TYPE		0x06
 #define JSONB_VODKA_FLAG_TRUE		0x08
 #define JSONB_VODKA_FLAG_NAN		0x08
 #define JSONB_VODKA_FLAG_NEGATIVE	0x10
@@ -184,10 +185,7 @@ get_vodka_key(PathStack *stack, const JsonbValue *val)
 			vallen = 5;
 			break;
 		case jbvNumeric:
-			if (NUMERIC_IS_NAN(val->val.numeric))
-				vallen = 1;
-			else
-				vallen = get_ndigits(val->val.numeric) + 6;
+			vallen = 1 + VARSIZE_ANY(val->val.numeric);
 			break;
 		default:
 			elog(ERROR, "invalid jsonb scalar type");
@@ -234,8 +232,8 @@ get_vodka_key(PathStack *stack, const JsonbValue *val)
 			memcpy(ptr + 1, &hash, sizeof(hash));
 			break;
 		case jbvNumeric:
-			*ptr = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_STRING;
-			write_numeric_key(ptr, val->val.numeric);
+			*ptr = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_NUMERIC;
+			memcpy(ptr + 1, val->val.numeric, VARSIZE_ANY(val->val.numeric));
 			break;
 		default:
 			elog(ERROR, "invalid jsonb scalar type");
@@ -244,116 +242,103 @@ get_vodka_key(PathStack *stack, const JsonbValue *val)
 	return result;
 }
 
-static int
-make_entry_handler(ExtractedNode *node, Pointer extra)
+typedef struct
 {
-	Entries	   *e = (Entries *)extra;
-	PathItem   *item;
-	int totallen = VARHDRSZ, vallen, jqPos, len;
-	Pointer		ptr;
-	JsQueryValue *value;
-	Numeric		numeric = NULL;
-	char   *jqBase;
-	uint32		hash;
-	bytea *result;
+	uint8	type;
+	uint32	hash;
+	Numeric	n;
+} JsonbVodkaValue;
 
-	Assert(node->type == eScalar);
+typedef struct
+{
+	int	pathLength;
+	PathItem *path;
+	JsonbVodkaValue *exact, *leftBound, *rightBound;
+	bool inequality, leftInclusive, rightInclusive;
+} JsonbVodkaKey;
 
-	if (node->bounds.inequality || node->bounds.exact->type == jqiAny)
-		return -1;
+static JsonbVodkaValue *
+make_vodka_value(JsQueryValue *value)
+{
+	JsonbVodkaValue *result;
+	int32		len, jqPos;
+	char	   *jqBase;
 
-	item = node->path;
-	while (item)
-	{
-		if (item->type == iKey)
-			totallen += item->len + 2;
-		else if (item->type == iAnyArray)
-			totallen += 1;
-		else
-			return -1;
-		item = item->parent;
-	}
+	if (!value)
+		return NULL;
 
-	value = node->bounds.exact;
-	switch(value->type)
-	{
-		case jqiNull:
-		case jqiBool:
-			vallen = 1;
-			break;
-		case jqiString:
-			vallen = 5;
-			break;
-		case jqiNumeric:
-			numeric = (Numeric)(value->jqBase + value->jqPos);
-			if (NUMERIC_IS_NAN(numeric))
-				vallen = 1;
-			else
-				vallen = get_ndigits(numeric) + 6;
-			break;
-		default:
-			elog(ERROR,"Wrong state");
-	}
+	result = (JsonbVodkaValue *)palloc(sizeof(JsonbVodkaValue));
 
-	totallen += vallen;
-	result = (bytea *)palloc(totallen);
-	SET_VARSIZE(result, totallen);
-	ptr = (Pointer)result + totallen - vallen;
-
-	item = node->path;
-	while (item)
-	{
-		if (item->type == iKey)
-		{
-			ptr -= item->len + 2;
-			ptr[0] = 0;
-			memcpy(ptr + 1, item->s, item->len);
-			ptr[item->len + 1] = 0;
-		}
-		else if (item->type == iAnyArray)
-		{
-			ptr--;
-			*ptr = JSONB_VODKA_FLAG_ARRAY;
-		}
-		else
-		{
-			return -1;
-		}
-		item = item->parent;
-	}
-
-	ptr = (Pointer)result + totallen - vallen;
 	jqBase = value->jqBase;
 	jqPos = value->jqPos;
 
 	switch (value->type)
 	{
 		case jbvNull:
-			*ptr = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_NULL;
+			result->type = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_NULL;
 			break;
 		case jbvBool:
-			*ptr = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_BOOL;
+			result->type = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_BOOL;
 			read_byte(len, jqBase, jqPos);
 			if (len)
-				*ptr |= JSONB_VODKA_FLAG_TRUE;
+				result->type |= JSONB_VODKA_FLAG_TRUE;
 			break;
 		case jbvString:
-			*ptr = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_STRING;
+			result->type = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_STRING;
 			read_int32(len, jqBase, jqPos);
-			hash = hash_any((unsigned char *)jqBase + jqPos, len);
-			memcpy(ptr + 1, &hash, sizeof(hash));
+			result->hash = hash_any((unsigned char *)jqBase + jqPos, len);
 			break;
 		case jbvNumeric:
-			*ptr = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_STRING;
-			write_numeric_key(ptr, numeric);
+			result->type = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_NUMERIC;
+			result->n = (Numeric)(jqBase + jqPos);
 			break;
 		default:
 			elog(ERROR, "invalid jsonb scalar type");
 	}
-
-	return add_entry(e, PointerGetDatum(result), NULL, ByteaEqualOperator, false);
+	return result;
 }
 
+static int
+make_entry_handler(ExtractedNode *node, Pointer extra)
+{
+	Entries	   *e = (Entries *)extra;
+	PathItem   *item;
+	JsonbVodkaKey   *key = (JsonbVodkaKey *)palloc(sizeof(JsonbVodkaKey));
+	int			length = 0, i;
+
+	item = node->path;
+	while (item)
+	{
+		length++;
+		item = item->parent;
+	}
+	key->pathLength = length;
+	key->path = (PathItem *)palloc(sizeof(PathItem) * length);
+
+	i = length - 1;
+	item = node->path;
+	while (item)
+	{
+		key->path[i] = *item;
+		i--;
+		item = item->parent;
+	}
+
+	key->inequality = node->bounds.inequality;
+	key->leftInclusive = node->bounds.leftInclusive;
+	key->rightInclusive = node->bounds.rightInclusive;
+	if (key->inequality)
+	{
+		key->leftBound = make_vodka_value(node->bounds.leftBound);
+		key->rightBound = make_vodka_value(node->bounds.rightBound);
+	}
+	else
+	{
+		key->exact = make_vodka_value(node->bounds.exact);
+	}
+
+	return add_entry(e, PointerGetDatum(key), NULL, VodkaMatchOperator, false);
+}
 
 /*
  * extractValue support function
@@ -474,14 +459,10 @@ vodkaqueryjsonbextract(PG_FUNCTION_ARGS)
 				keys[i].extra = (Pointer)root;
 			break;
 
-
-			break;
-
 		default:
 			elog(ERROR, "unrecognized strategy number: %d", strategy);
 			break;
 	}
-
 
 	/* ...although "contains {}" requires a full index scan */
 	if (*nentries == 0)
