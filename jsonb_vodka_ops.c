@@ -264,7 +264,7 @@ make_vodka_value(JsQueryValue *value)
 	int32		len, jqPos;
 	char	   *jqBase;
 
-	if (!value)
+	if (!value || value->type == jqiAny)
 		return NULL;
 
 	result = (JsonbVodkaValue *)palloc(sizeof(JsonbVodkaValue));
@@ -274,21 +274,21 @@ make_vodka_value(JsQueryValue *value)
 
 	switch (value->type)
 	{
-		case jbvNull:
+		case jqiNull:
 			result->type = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_NULL;
 			break;
-		case jbvBool:
+		case jqiBool:
 			result->type = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_BOOL;
 			read_byte(len, jqBase, jqPos);
 			if (len)
 				result->type |= JSONB_VODKA_FLAG_TRUE;
 			break;
-		case jbvString:
+		case jqiString:
 			result->type = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_STRING;
 			read_int32(len, jqBase, jqPos);
 			result->hash = hash_any((unsigned char *)jqBase + jqPos, len);
 			break;
-		case jbvNumeric:
+		case jqiNumeric:
 			result->type = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_NUMERIC;
 			result->n = (Numeric)(jqBase + jqPos);
 			break;
