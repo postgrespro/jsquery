@@ -36,6 +36,29 @@ compareNumeric(Numeric a, Numeric b)
 
 }
 
+#define jbvScalar jbvBinary
+static int
+JsonbType(JsonbValue *jb)
+{
+	int type = jb->type;
+
+	if (jb->type == jbvBinary)
+	{
+		JsonbContainer	*jbc = jb->val.binary.data;
+
+		if (jbc->header & JB_FSCALAR)
+			type = jbvScalar;
+		else if (jbc->header & JB_FOBJECT)
+			type = jbvObject;
+		else if (jbc->header & JB_FARRAY)
+			type = jbvArray;
+		else
+			elog(ERROR, "Unknown container type: 0x%08x", jbc->header);
+	}
+
+	return type;
+}
+
 static bool
 recursiveAny(char *jqBase, int32 jqPos, JsonbValue *jb)
 {
@@ -45,7 +68,6 @@ recursiveAny(char *jqBase, int32 jqPos, JsonbValue *jb)
 	JsonbValue		v;
 
 	check_stack_depth();
-
 
 	it = JsonbIteratorInit(jb->val.binary.data);
 
@@ -108,7 +130,7 @@ checkArrayEquality(char *jqBase, int32 jqPos, int32 type, JsonbValue *jb)
 	JsonbIterator	*it;
 	JsonbValue		v;
 
-	if (!(type == jqiArray && jb->type == jbvBinary))
+	if (!(type == jqiArray && JsonbType(jb) == jbvArray))
 		return false;
 
 	read_int32(nelems, jqBase, jqPos);
@@ -117,9 +139,7 @@ checkArrayEquality(char *jqBase, int32 jqPos, int32 type, JsonbValue *jb)
 	it = JsonbIteratorInit(jb->val.binary.data);
 
 	r = JsonbIteratorNext(&it, &v, true);
-
-	if (r != WJB_BEGIN_ARRAY)
-		return false;
+	Assert(r == WJB_BEGIN_ARRAY);
 
 	if (v.val.array.nElems != nelems)
 		return false;
@@ -168,7 +188,7 @@ executeArrayOp(char *jqBase, int32 jqPos, int32 type, int32 op, JsonbValue *jb)
 	JsonbValue		v;
 	int32			nres = 0, nval = 0;
 
-	if (jb->type != jbvBinary)
+	if (JsonbType(jb) != jbvArray)
 		return false;
 	if (type != jqiArray)
 		return false;
@@ -280,7 +300,7 @@ executeExpr(char *jqBase, int32 jqPos, int32 op, JsonbValue *jb)
 	switch(op)
 	{
 		case jqiEqual:
-			if (jb->type == jbvBinary && type == jqiArray)
+			if (JsonbType(jb) == jbvArray && type == jqiArray)
 				return checkArrayEquality(jqBase, jqPos, type, jb);
 			return checkEquality(jqBase, jqPos, type, jb);
 		case jqiIn:
@@ -332,7 +352,7 @@ recursiveExecute(char *jqBase, int32 jqPos, JsonbValue *jb)
 			res = ! recursiveExecute(jqBase, arg, jb);
 			break;
 		case jqiKey:
-			if (jb->type == jbvBinary) {
+			if (JsonbType(jb) == jbvObject) {
 				int32 		len;
 				JsonbValue	*v, key;
 
@@ -356,11 +376,33 @@ recursiveExecute(char *jqBase, int32 jqPos, JsonbValue *jb)
 				res = recursiveAny(jqBase, nextPos, jb);
 			break;
 		case jqiCurrent:
-			res = recursiveExecute(jqBase, nextPos, jb);
+			if (JsonbType(jb) == jbvScalar)
+			{
+				JsonbIterator	*it;
+				int32			r;
+				JsonbValue		v;
+
+				it = JsonbIteratorInit(jb->val.binary.data);
+
+				r = JsonbIteratorNext(&it, &v, true);
+				Assert(r == WJB_BEGIN_ARRAY);
+				Assert(v.val.array.rawScalar == 1);
+				Assert(v.val.array.nElems == 1);
+
+				r = JsonbIteratorNext(&it, &v, true);
+				Assert(r == WJB_ELEM);
+
+				res = recursiveExecute(jqBase, nextPos, &v);
+			}
+			else
+			{
+				res = recursiveExecute(jqBase, nextPos, jb);
+			}
 			break;
 		case jqiAnyArray:
 			Assert(nextPos != 0);
-			if (jb->type == jbvBinary) {
+			if (JsonbType(jb) == jbvArray)
+			{
 				JsonbIterator	*it;
 				int32			r;
 				JsonbValue		v;
@@ -369,9 +411,6 @@ recursiveExecute(char *jqBase, int32 jqPos, JsonbValue *jb)
 
 				while(res == false && (r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 				{
-					if (r == WJB_BEGIN_OBJECT || r == WJB_KEY)
-						break;
-
 					if (r == WJB_ELEM)
 						res = recursiveExecute(jqBase, nextPos, &v);
 				}
@@ -379,7 +418,8 @@ recursiveExecute(char *jqBase, int32 jqPos, JsonbValue *jb)
 			break;
 		case jqiAnyKey:
 			Assert(nextPos != 0);
-			if (jb->type == jbvBinary) {
+			if (JsonbType(jb) == jbvObject)
+			{
 				JsonbIterator	*it;
 				int32			r;
 				JsonbValue		v;
@@ -388,9 +428,6 @@ recursiveExecute(char *jqBase, int32 jqPos, JsonbValue *jb)
 
 				while(res == false && (r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 				{
-					if (r == WJB_BEGIN_ARRAY || r == WJB_ELEM)
-						break;
-
 					if (r == WJB_VALUE)
 						res = recursiveExecute(jqBase, nextPos, &v);
 				}

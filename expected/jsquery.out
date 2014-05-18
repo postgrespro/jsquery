@@ -816,3 +816,15 @@ select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%=[5,6]';
  t
 (1 row)
 
+select '"XXX"'::jsonb @@ '$="XXX"';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '"XXX"'::jsonb @@ '#.$="XXX"';
+ ?column? 
+----------
+ f
+(1 row)
+
