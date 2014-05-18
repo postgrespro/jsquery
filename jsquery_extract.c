@@ -574,9 +574,12 @@ extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra)
 	ExtractedNode *root;
 
 	root = recursiveExtract(VARDATA(jq), 0, false, NULL);
-	flatternTree(root);
-	simplifyRecursive(root);
-	root = makeEntries(root, handler, extra);
+	if (root)
+	{
+		flatternTree(root);
+		simplifyRecursive(root);
+		root = makeEntries(root, handler, extra);
+	}
 	return root;
 }
 
