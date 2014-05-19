@@ -244,6 +244,18 @@ make_gin_key(JsonbValue *v, uint32 hash)
 		key->type = v->type | (v->val.boolean ? GINKeyTrue : 0);
 		SET_VARSIZE(key, GINKEYLEN);
 	}
+	else if (v->type == jbvArray)
+	{
+		key = (GINKey *)palloc(GINKEYLEN);
+		key->type = v->type;
+		SET_VARSIZE(key, GINKEYLEN);
+	}
+	else if (v->type == jbvObject)
+	{
+		key = (GINKey *)palloc(GINKEYLEN);
+		key->type = v->type;
+		SET_VARSIZE(key, GINKEYLEN);
+	}
 	else if (v->type == jbvNumeric)
 	{
 		key = (GINKey *)palloc(GINKeyLenNumeric(VARSIZE_ANY(v->val.numeric)));
@@ -385,6 +397,10 @@ compare_gin_key_value(GINKey *arg1, GINKey *arg2)
 		switch(GINKeyType(arg1))
 		{
 			case jbvNull:
+				return 0;
+			case jbvArray:
+				return 0;
+			case jbvObject:
 				return 0;
 			case jbvBool:
 				if (GINKeyIsTrue(arg1) == GINKeyIsTrue(arg2))
@@ -978,16 +994,20 @@ gin_extract_jsonb_hash_value_internal(Jsonb *jb, int32 *nentries)
 		switch (r)
 		{
 			case WJB_BEGIN_ARRAY:
-			case WJB_BEGIN_OBJECT:
+				entries[i++] = PointerGetDatum(make_gin_key(&v, stack->hash));
 				tmp = stack;
 				stack = (PathHashStack *) palloc(sizeof(PathHashStack));
 				stack->parent = tmp;
 				stack->hash = stack->parent->hash;
-				if (r == WJB_BEGIN_ARRAY)
-				{
-					stack->hash = (stack->hash << 1) | (stack->hash >> 31);
-					stack->hash ^= JB_FARRAY;
-				}
+				stack->hash = (stack->hash << 1) | (stack->hash >> 31);
+				stack->hash ^= JB_FARRAY;
+				break;
+			case WJB_BEGIN_OBJECT:
+				entries[i++] = PointerGetDatum(make_gin_key(&v, stack->hash));
+				tmp = stack;
+				stack = (PathHashStack *) palloc(sizeof(PathHashStack));
+				stack->parent = tmp;
+				stack->hash = stack->parent->hash;
 				break;
 			case WJB_KEY:
 				/* Initialize hash from parent */
