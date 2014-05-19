@@ -33,14 +33,15 @@ typedef struct
 
 #define JSONB_VODKA_FLAG_VALUE		0x01
 
-#define JSONB_VODKA_FLAG_NULL		0x00
-#define JSONB_VODKA_FLAG_STRING		0x02
-#define JSONB_VODKA_FLAG_NUMERIC	0x04
-#define JSONB_VODKA_FLAG_BOOL		0x06
-#define JSONB_VODKA_FLAG_TYPE		0x06
-#define JSONB_VODKA_FLAG_TRUE		0x08
-#define JSONB_VODKA_FLAG_NAN		0x08
-#define JSONB_VODKA_FLAG_NEGATIVE	0x10
+#define JSONB_VODKA_FLAG_NULL			0x00
+#define JSONB_VODKA_FLAG_STRING			0x02
+#define JSONB_VODKA_FLAG_NUMERIC		0x04
+#define JSONB_VODKA_FLAG_BOOL			0x06
+#define JSONB_VODKA_FLAG_EMPTY_ARRAY	0x08
+#define JSONB_VODKA_FLAG_EMPTY_OBJECT	0x0A
+#define JSONB_VODKA_FLAG_TYPE			0x0E
+#define JSONB_VODKA_FLAG_TRUE			0x10
+#define JSONB_VODKA_FLAG_NAN			0x10
 
 #define JSONB_VODKA_FLAG_ARRAY		0x02
 
@@ -100,58 +101,6 @@ typedef struct PathStack
 	struct PathStack   *parent;
 }	PathStack;
 
-static int
-get_ndigits(Numeric val)
-{
-	const NumericDigit *digits;
-	int					ndigits;
-
-	ndigits = NUMERIC_NDIGITS(val);
-	digits = NUMERIC_DIGITS(val);
-
-	while (ndigits > 0 && *digits == 0)
-	{
-		ndigits--;
-		digits++;
-	}
-	return ndigits;
-}
-
-static void
-write_numeric_key(Pointer ptr, Numeric val)
-{
-	*ptr = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_NUMERIC;
-	if (NUMERIC_IS_NAN(val))
-	{
-		*ptr |= JSONB_VODKA_FLAG_NAN;
-	}
-	else
-	{
-		const NumericDigit *digits = NUMERIC_DIGITS(val);
-		int ndigits = NUMERIC_NDIGITS(val);
-		int weight = NUMERIC_WEIGHT(val);
-		int sign = NUMERIC_SIGN(val);
-
-		if (sign == NUMERIC_NEG)
-			*ptr |= JSONB_VODKA_FLAG_NEGATIVE;
-		ptr++;
-
-		while (ndigits > 0 && *digits == 0)
-		{
-			ndigits--;
-			digits++;
-		}
-
-		memcpy(ptr, &weight, sizeof(weight));
-		ptr += sizeof(weight);
-
-		memcpy(ptr, digits, sizeof(NumericDigit) * ndigits);
-		ptr += sizeof(NumericDigit) * ndigits;
-
-		*ptr = 0;
-	}
-}
-
 static bytea *
 get_vodka_key(PathStack *stack, const JsonbValue *val)
 {
@@ -179,6 +128,8 @@ get_vodka_key(PathStack *stack, const JsonbValue *val)
 	{
 		case jbvNull:
 		case jbvBool:
+		case jbvObject:
+		case jbvArray:
 			vallen = 1;
 			break;
 		case jbvString:
@@ -225,6 +176,12 @@ get_vodka_key(PathStack *stack, const JsonbValue *val)
 			*ptr = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_BOOL;
 			if (val->val.boolean)
 				*ptr |= JSONB_VODKA_FLAG_TRUE;
+			break;
+		case jbvArray:
+			*ptr = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_EMPTY_ARRAY;
+			break;
+		case jbvObject:
+			*ptr = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_EMPTY_OBJECT;
 			break;
 		case jbvString:
 			*ptr = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_STRING;
@@ -302,11 +259,19 @@ static int
 make_entry_handler(ExtractedNode *node, Pointer extra)
 {
 	Entries	   *e = (Entries *)extra;
-	PathItem   *item;
+	PathItem   *item, *leaf = node->path;
 	JsonbVodkaKey   *key = (JsonbVodkaKey *)palloc(sizeof(JsonbVodkaKey));
 	int			length = 0, i;
 
-	item = node->path;
+	if (!node->bounds.inequality && node->bounds.exact && node->bounds.exact->type == jqiAny)
+	{
+		item = (PathItem *)palloc(sizeof(PathItem));
+		item->type = iAny;
+		item->parent = leaf;
+		leaf = item;
+	}
+
+	item = leaf;
 	while (item)
 	{
 		length++;
@@ -316,7 +281,7 @@ make_entry_handler(ExtractedNode *node, Pointer extra)
 	key->path = (PathItem *)palloc(sizeof(PathItem) * length);
 
 	i = length - 1;
-	item = node->path;
+	item = leaf;
 	while (item)
 	{
 		key->path[i] = *item;
@@ -380,7 +345,17 @@ vodkajsonbextract(PG_FUNCTION_ARGS)
 		switch (r)
 		{
 			case WJB_BEGIN_ARRAY:
+				if (v.val.array.nElems == 0)
+					entries[i++] = PointerGetDatum(get_vodka_key(stack, &v));
+				tmp = stack;
+				stack = (PathStack *) palloc(sizeof(PathStack));
+				stack->s = NULL;
+				stack->len = 0;
+				stack->parent = tmp;
+				break;
 			case WJB_BEGIN_OBJECT:
+				if (v.val.object.nPairs == 0)
+					entries[i++] = PointerGetDatum(get_vodka_key(stack, &v));
 				tmp = stack;
 				stack = (PathStack *) palloc(sizeof(PathStack));
 				stack->s = NULL;
