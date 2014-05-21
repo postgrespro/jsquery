@@ -466,19 +466,18 @@ vodkajsonbconsistent(PG_FUNCTION_ARGS)
 	int32		nkeys = PG_GETARG_INT32(3);
 	bool	   *recheck = (bool *) PG_GETARG_POINTER(4);
 	VodkaKey   *queryKeys = (VodkaKey *) PG_GETARG_POINTER(5);
+	ExtractedNode *root;
 	bool		res;
 	int32		i;
 
 	switch (strategy)
 	{
 		case JsonbContainsStrategyNumber:
-			/* result is not lossy */
-			*recheck = false;
-			/* must have all elements in check[] true, and no nulls */
+			*recheck = true;
 			res = true;
 			for (i = 0; i < nkeys; i++)
 			{
-				if (!check[i] || queryKeys[i].isnull)
+				if (!check[i])
 				{
 					res = false;
 					break;
@@ -487,10 +486,12 @@ vodkajsonbconsistent(PG_FUNCTION_ARGS)
 			break;
 
 		case JsQueryMatchStrategyNumber:
+			root = (ExtractedNode *)queryKeys[0].extra;
+			*recheck = root->indirect;
 			if (nkeys == 0)
 				res = true;
 			else
-				res = execRecursive((ExtractedNode *)queryKeys[0].extra, check);
+				res = execRecursive(root, check);
 			break;
 
 		default:
@@ -516,6 +517,7 @@ vodkajsonbtriconsistent(PG_FUNCTION_ARGS)
 
 	/* Pointer	   *extra_data = (Pointer *) PG_GETARG_POINTER(4); */
 	VodkaKey   *queryKeys = (VodkaKey *) PG_GETARG_POINTER(4);
+	ExtractedNode *root;
 	VodkaTernaryValue res;
 	int32		i;
 
@@ -539,12 +541,13 @@ vodkajsonbtriconsistent(PG_FUNCTION_ARGS)
 			break;
 
 		case JsQueryMatchStrategyNumber:
+			root = (ExtractedNode *)queryKeys[0].extra;
 			if (nkeys == 0)
 				res = GIN_MAYBE;
 			else
-				res = execRecursiveTristate((ExtractedNode *)queryKeys[0].extra, check);
+				res = execRecursiveTristate(root, check);
 
-			if (res == GIN_TRUE)
+			if (root->indirect && res == GIN_TRUE)
 				res = GIN_MAYBE;
 
 			break;
