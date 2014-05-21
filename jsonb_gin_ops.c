@@ -657,13 +657,20 @@ gin_extract_jsonb_query_bloom_value(PG_FUNCTION_ARGS)
 		case JsQueryMatchStrategyNumber:
 			jq = PG_GETARG_JSQUERY(0);
 			root = extractJsQuery(jq, make_bloom_entry_handler, (Pointer)&e);
-
-			*nentries = e.count;
-			entries = e.entries;
-			*pmatch = e.partial_match;
-			*extra_data = e.extra_data;
-			for (i = 0; i < e.count; i++)
-				((KeyExtra *)e.extra_data[i])->root = root;
+			if (root)
+			{
+				*nentries = e.count;
+				entries = e.entries;
+				*pmatch = e.partial_match;
+				*extra_data = e.extra_data;
+				for (i = 0; i < e.count; i++)
+					((KeyExtra *)e.extra_data[i])->root = root;
+			}
+			else
+			{
+				entries = NULL;
+				*nentries = 0;
+			}
 			break;
 
 		default:
@@ -1071,13 +1078,20 @@ gin_extract_jsonb_query_hash_value(PG_FUNCTION_ARGS)
 		case JsQueryMatchStrategyNumber:
 			jq = PG_GETARG_JSQUERY(0);
 			root = extractJsQuery(jq, make_hash_entry_handler, (Pointer)&e);
-
-			*nentries = e.count;
-			entries = e.entries;
-			*pmatch = e.partial_match;
-			*extra_data = e.extra_data;
-			for (i = 0; i < e.count; i++)
-				((KeyExtra *)e.extra_data[i])->root = root;
+			if (root)
+			{
+				*nentries = e.count;
+				entries = e.entries;
+				*pmatch = e.partial_match;
+				*extra_data = e.extra_data;
+				for (i = 0; i < e.count; i++)
+					((KeyExtra *)e.extra_data[i])->root = root;
+			}
+			else
+			{
+				entries = NULL;
+				*nentries = 0;
+			}
 			break;
 
 		default:

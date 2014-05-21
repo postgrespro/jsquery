@@ -568,6 +568,42 @@ makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra)
 	}
 }
 
+static bool
+queryHasPositive(ExtractedNode *node)
+{
+	int i;
+	bool result;
+	switch(node->type)
+	{
+		case eAnd:
+			result = false;
+			for (i = 0; i < node->args.count; i++)
+			{
+				if (queryHasPositive(node->args.items[i]))
+				{
+					result = true;
+					break;
+				}
+			}
+			return result;
+		case eOr:
+			result = true;
+			for (i = 0; i < node->args.count; i++)
+			{
+				if (!queryHasPositive(node->args.items[i]))
+				{
+					result = false;
+					break;
+				}
+			}
+			return result;
+		case eNot:
+			return !queryHasPositive(node->args.items[0]);
+		case eScalar:
+			return true;
+	}
+}
+
 ExtractedNode *
 extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra)
 {
@@ -580,6 +616,8 @@ extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra)
 		simplifyRecursive(root);
 		root = makeEntries(root, handler, extra);
 	}
+	if (root && !queryHasPositive(root))
+		root = NULL;
 	return root;
 }
 
