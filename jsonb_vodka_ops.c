@@ -427,11 +427,18 @@ vodkaqueryjsonbextract(PG_FUNCTION_ARGS)
 		case JsQueryMatchStrategyNumber:
 			jq = PG_GETARG_JSQUERY(0);
 			root = extractJsQuery(jq, make_entry_handler, (Pointer)&e);
-
-			*nentries = e.count;
-			keys = e.entries;
-			for (i = 0; i < e.count; i++)
-				keys[i].extra = (Pointer)root;
+			if (root)
+			{
+				*nentries = e.count;
+				keys = e.entries;
+				for (i = 0; i < e.count; i++)
+					keys[i].extra = (Pointer)root;
+			}
+			else
+			{
+				*nentries = 0;
+				keys = NULL;
+			}
 			break;
 
 		default:
