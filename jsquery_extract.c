@@ -604,6 +604,31 @@ queryHasPositive(ExtractedNode *node)
 	}
 }
 
+static bool
+needRecheckRecursive(ExtractedNode *node, bool not)
+{
+	int i;
+	switch(node->type)
+	{
+		case eAnd:
+		case eOr:
+			if (node->type == eAnd && !not && node->indirect)
+				return true;
+			if (node->type == eOr && not && node->indirect)
+				return true;
+			for (i = 0; i < node->args.count; i++)
+			{
+				if (needRecheckRecursive(node->args.items[i], not))
+					return true;
+			}
+			return false;
+		case eNot:
+			return !needRecheckRecursive(node->args.items[0], !not);
+		case eScalar:
+			return false;
+	}
+}
+
 ExtractedNode *
 extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra)
 {
@@ -618,6 +643,8 @@ extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra)
 	}
 	if (root && !queryHasPositive(root))
 		root = NULL;
+	if (root)
+		root->indirect = needRecheckRecursive(root, false);
 	return root;
 }
 
