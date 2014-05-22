@@ -499,7 +499,7 @@ simplifyRecursive(ExtractedNode *node)
 				break;
 			if (!prevChild || comparePathItems(child->path, prevChild->path) != 0)
 			{
-				if (groupStart > 0)
+				if (groupStart >= 0)
 					processGroup(node, groupStart, i);
 				groupStart = i;
 			}
