@@ -213,92 +213,60 @@ printOperation(StringInfo buf, JsQueryItemType type)
 }
 
 static void
-printJsQueryItem(StringInfo buf, char *base, int32 pos, bool inKey, bool printBracketes)
+printJsQueryItem(StringInfo buf, JsQueryItemR *v, bool inKey, bool printBracketes)
 {
-	JsQueryItemType		type;
-	int32			nextPos;
+	JsQueryItemR	elem;
+	bool			first = true;
 
 	check_stack_depth();
 
-	pos = readJsQueryHeader(base, pos, &type, &nextPos);
-
-	switch(type)
+	switch(v->type)
 	{
 		case jqiNull:
 			appendStringInfoString(buf, "null");
 			break;
 		case jqiKey:
+			if (inKey)
+				appendStringInfoChar(buf, '.');
 		case jqiString:
-			{
-				int32 len;
-
-				read_int32(len, base, pos);
-				if (inKey && type == jqiKey)
-					appendStringInfoChar(buf, '.');
-				escape_json(buf, base + pos);
-				pos += len + 1;
-			}
+			escape_json(buf, jsqGetString(v, NULL));
 			break;
 		case jqiNumeric:
-			{
-				Numeric	n = (Numeric)(base + pos);
-
-				pos += VARSIZE(n);
-
-				appendStringInfoString(buf,
-										DatumGetCString(DirectFunctionCall1(numeric_out,
-											PointerGetDatum(n))));
-			}
-			break;
+			appendStringInfoString(buf,
+									DatumGetCString(DirectFunctionCall1(numeric_out,
+										PointerGetDatum(jsqGetNumeric(v)))));
+		break;
 		case jqiBool:
-			{
-				bool	v;
-
-				read_byte(v, base, pos);
-
-				if (v)
-					appendBinaryStringInfo(buf, "true", 4);
-				else
-					appendBinaryStringInfo(buf, "false", 5);
-			}
+			if (jsqGetBool(v))
+				appendBinaryStringInfo(buf, "true", 4);
+			else
+				appendBinaryStringInfo(buf, "false", 5);
 			break;
 		case jqiArray:
+			if (printBracketes)
+				appendStringInfoChar(buf, '['); 
+
+			while(jsqIterateArray(v, &elem))
 			{
-				int32	i, nelems, *arrayPos;
-
-				read_int32(nelems, base, pos);
-				arrayPos = (int32*)(base + pos);
-				pos += nelems * sizeof(*arrayPos);
-
-				if (printBracketes)
-					appendStringInfoChar(buf, '['); 
-
-				for(i=0; i<nelems; i++)
-				{
-					if (i != 0)
-						appendBinaryStringInfo(buf, ", ", 2);
-
-					printJsQueryItem(buf, base, arrayPos[i], false, true);
-				}
-
-				if (printBracketes)
-					appendStringInfoChar(buf, ']');
+				if (first == false)
+					appendBinaryStringInfo(buf, ", ", 2);
+				else
+					first = false;
+				printJsQueryItem(buf, &elem, false, true);
 			}
+
+			if (printBracketes)
+				appendStringInfoChar(buf, ']');
 			break;
 		case jqiAnd:
 		case jqiOr:
-			{
-				int32	left, right;
-
-				read_int32(left, base, pos);
-				read_int32(right, base, pos);
-
-				appendStringInfoChar(buf, '(');
-				printJsQueryItem(buf, base, left, false, true);
-				printOperation(buf, type);
-				printJsQueryItem(buf, base, right, false, true);
-				appendStringInfoChar(buf, ')');
-			}
+			appendStringInfoChar(buf, '(');
+			jsqGetLeftArg(v, &elem);
+			printJsQueryItem(buf, &elem, false, true);
+			printOperation(buf, v->type);
+			jsqGetRightArg(v, &elem);
+			printJsQueryItem(buf, &elem, false, true);
+			appendStringInfoChar(buf, ')');
 			break;
 		case jqiEqual:
 		case jqiLess:
@@ -308,36 +276,21 @@ printJsQueryItem(StringInfo buf, char *base, int32 pos, bool inKey, bool printBr
 		case jqiContains:
 		case jqiContained:
 		case jqiOverlap:
-			{
-				int32 arg;
-
-				read_int32(arg, base, pos);
-
-				printOperation(buf, type);
-				printJsQueryItem(buf, base, arg, false, true);
-			}
+			printOperation(buf, v->type);
+			jsqGetArg(v, &elem);
+			printJsQueryItem(buf, &elem, false, true);
 			break;
 		case jqiIn:
-			{
-				int32 arg;
-
-				read_int32(arg, base, pos);
-
-				appendBinaryStringInfo(buf, " IN (", 5);
-				printJsQueryItem(buf, base, arg, false, false);
-				appendStringInfoChar(buf, ')');
-			}
+			appendBinaryStringInfo(buf, " IN (", 5);
+			jsqGetArg(v, &elem);
+			printJsQueryItem(buf, &elem, false, false);
+			appendStringInfoChar(buf, ')');
 			break;
 		case jqiNot:
-			{
-				int32 arg;
-
-				read_int32(arg, base, pos);
-
-				appendBinaryStringInfo(buf, "!(", 2);
-				printJsQueryItem(buf, base, arg, false, true);
-				appendStringInfoChar(buf, ')');
-			}
+			appendBinaryStringInfo(buf, "!(", 2);
+			jsqGetArg(v, &elem);
+			printJsQueryItem(buf, &elem, false, true);
+			appendStringInfoChar(buf, ')');
 			break;
 		case jqiAny:
 			if (inKey)
@@ -360,11 +313,11 @@ printJsQueryItem(StringInfo buf, char *base, int32 pos, bool inKey, bool printBr
 			appendStringInfoChar(buf, '%');
 			break;
 		default:
-			elog(ERROR, "Unknown JsQueryItem type: %d", type);
+			elog(ERROR, "Unknown JsQueryItem type: %d", v->type);
 	}
 
-	if (nextPos > 0)
-		printJsQueryItem(buf, base, nextPos, true, true);
+	if (jsqGetNext(v, &elem))
+		printJsQueryItem(buf, &elem, true, true);
 }
 
 PG_FUNCTION_INFO_V1(jsquery_out);
@@ -373,11 +326,13 @@ jsquery_out(PG_FUNCTION_ARGS)
 {
 	JsQuery			*in = PG_GETARG_JSQUERY(0);
 	StringInfoData	buf;
+	JsQueryItemR	v;
 
 	initStringInfo(&buf);
 	enlargeStringInfo(&buf, VARSIZE(in) /* estimation */); 
 
-	printJsQueryItem(&buf, VARDATA(in), 0, false, true);
+	jsqInit(&v, VARDATA(in), 0);
+	printJsQueryItem(&buf, &v, false, true);
 
 	PG_RETURN_CSTRING(buf.data);
 }

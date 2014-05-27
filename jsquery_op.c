@@ -20,8 +20,7 @@
 
 #include "jsquery.h"
 
-static bool recursiveExecute(char *jqBase, int32 jqPos, JsonbValue *jb);
-static bool executeExpr(char *jqBase, int32 jqPos, int32 op, JsonbValue *jb);
+static bool recursiveExecute(JsQueryItemR *jsq, JsonbValue *jb);
 
 static int
 compareNumeric(Numeric a, Numeric b)
@@ -33,7 +32,6 @@ compareNumeric(Numeric a, Numeric b)
 					PointerGetDatum(b)
 				)
 			);
-
 }
 
 #define jbvScalar jbvBinary
@@ -60,7 +58,7 @@ JsonbType(JsonbValue *jb)
 }
 
 static bool
-recursiveAny(char *jqBase, int32 jqPos, JsonbValue *jb)
+recursiveAny(JsQueryItemR *jsq, JsonbValue *jb)
 {
 	bool			res = false;
 	JsonbIterator	*it;
@@ -81,10 +79,10 @@ recursiveAny(char *jqBase, int32 jqPos, JsonbValue *jb)
 
 		if (r == WJB_VALUE || r == WJB_ELEM)
 		{
-			res = recursiveExecute(jqBase, jqPos, &v);
+			res = recursiveExecute(jsq, &v);
 
 			if (res == false && v.type == jbvBinary)
-				res = recursiveAny(jqBase, jqPos, &v);
+				res = recursiveAny(jsq, &v);
 		}
 	}
 
@@ -92,113 +90,105 @@ recursiveAny(char *jqBase, int32 jqPos, JsonbValue *jb)
 }
 
 static bool
-checkEquality(char *jqBase, int32 jqPos, JsQueryItemType type, JsonbValue *jb)
+checkEquality(JsQueryItemR *jsq,  JsonbValue *jb)
 {
 	int		len;
+	char	*s;
 
-	if (type == jqiAny)
+	if (jsq->type == jqiAny)
 		return true;
 
 	if (jb->type == jbvBinary)
 		return false;
 
-	if (jb->type != type /* see enums */)
+	if (jb->type != jsq->type /* see enums */)
 		return false;
 
-	switch(type)
+	switch(jsq->type)
 	{
 		case jqiNull:
 			return true;
 		case jqiString:
-			read_int32(len, jqBase, jqPos);
-			return (len == jb->val.string.len && memcmp(jb->val.string.val, jqBase + jqPos, len) == 0);
+			s = jsqGetString(jsq, &len);
+			return (len == jb->val.string.len && memcmp(jb->val.string.val, s, len) == 0);
 		case jqiBool:
-			read_byte(len, jqBase, jqPos);
-			return (jb->val.boolean == (bool)len);
+			return (jb->val.boolean == jsqGetBool(jsq));
 		case jqiNumeric:
-			return (compareNumeric((Numeric)(jqBase + jqPos), jb->val.numeric) == 0);
+			return (compareNumeric(jsqGetNumeric(jsq), jb->val.numeric) == 0);
 		default:
 			elog(ERROR,"Wrong state");
 	}
+
+	return false;
 }
 
 static bool
-checkArrayEquality(char *jqBase, int32 jqPos, JsQueryItemType type, JsonbValue *jb)
+checkArrayEquality(JsQueryItemR *jsq, JsonbValue *jb)
 {
-	int32   		i, nelems, *arrayPos;
 	int32			r;
 	JsonbIterator	*it;
 	JsonbValue		v;
+	JsQueryItemR	elem;
 
-	if (!(type == jqiArray && JsonbType(jb) == jbvArray))
+	if (!(jsq->type == jqiArray && JsonbType(jb) == jbvArray))
 		return false;
 
-	read_int32(nelems, jqBase, jqPos);
-	arrayPos = (int32*)(jqBase + jqPos);
 
 	it = JsonbIteratorInit(jb->val.binary.data);
-
 	r = JsonbIteratorNext(&it, &v, true);
 	Assert(r == WJB_BEGIN_ARRAY);
 
-	if (v.val.array.nElems != nelems)
+	if (v.val.array.nElems != jsq->array.nelems)
 		return false;
 
-	i = 0;
 	while((r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 	{
-		if (r == WJB_ELEM && i<nelems)
-		{
-			if (executeExpr(jqBase, arrayPos[i], jqiEqual, &v) == false)
-				return false;
-			i++;
-		}
+		if (r != WJB_ELEM)
+			continue;
+
+		jsqIterateArray(jsq, &elem);
+
+		if (checkEquality(&elem, &v) == false)
+			return false;
 	}
 	
 	return true;
 }
 
 static bool
-checkIn(char *jqBase, int32 jqPos, JsQueryItemType type, JsonbValue *jb)
+checkIn(JsQueryItemR *jsq, JsonbValue *jb)
 {
-	int32   i, nelems, *arrayPos;
+	JsQueryItemR	elem;
 
 	if (jb->type == jbvBinary)
 		return false;
 
-	if (type != jqiArray)
+	if (jsq->type != jqiArray)
 		return false;
 
-	read_int32(nelems, jqBase, jqPos);
-	arrayPos = (int32*)(jqBase + jqPos);
-
-	for(i=0; i<nelems; i++)
-		if (executeExpr(jqBase, arrayPos[i], jqiEqual, jb))
+	while(jsqIterateArray(jsq, &elem))
+		if (checkEquality(&elem, jb))
 			return true;
 
 	return false;
 }
 
 static bool
-executeArrayOp(char *jqBase, int32 jqPos, JsQueryItemType type, int32 op, JsonbValue *jb)
+executeArrayOp(JsQueryItemR *jsq, int32 op, JsonbValue *jb)
 {
-	int32   		i, nelems, *arrayPos;
 	int32			r;
 	JsonbIterator	*it;
 	JsonbValue		v;
-	int32			nres = 0, nval = 0;
+	JsQueryItemR	elem;
 
 	if (JsonbType(jb) != jbvArray)
 		return false;
-	if (type != jqiArray)
+	if (jsq->type != jqiArray)
 		return false;
-
-	read_int32(nelems, jqBase, jqPos);
-	arrayPos = (int32*)(jqBase + jqPos);
 
 	if (op == jqiContains)
 	{
-		for(i=0; i<nelems; i++)
+		while(jsqIterateArray(jsq, &elem))
 		{
 			bool res = false;
 
@@ -206,7 +196,7 @@ executeArrayOp(char *jqBase, int32 jqPos, JsQueryItemType type, int32 op, JsonbV
 
 			while(res == false && (r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 			{
-				if (r == WJB_ELEM && executeExpr(jqBase, arrayPos[i], jqiEqual, &v))
+				if (r == WJB_ELEM && checkEquality(&elem, &v))
 					res = true;
 			}
 
@@ -220,20 +210,17 @@ executeArrayOp(char *jqBase, int32 jqPos, JsQueryItemType type, int32 op, JsonbV
 
 		while((r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 		{
-			if (r == WJB_BEGIN_ARRAY)
-				nval = v.val.array.nElems;
-
 			if (r == WJB_ELEM)
 			{
 				bool res = false;
 
-				for(i=0; i<nelems; i++)
+				jsqIterateInit(jsq);
+				while(jsqIterateArray(jsq, &elem))
 				{
-					if (executeExpr(jqBase, arrayPos[i], jqiEqual, &v))
+					if (checkEquality(&elem, &v))
 					{
 						if (op == jqiOverlap)
 							return true;
-						nres++;
 						res = true;
 						break;
 					}
@@ -252,16 +239,16 @@ executeArrayOp(char *jqBase, int32 jqPos, JsQueryItemType type, int32 op, JsonbV
 }
 
 static bool
-makeCompare(char *jqBase, int32 jqPos, JsQueryItemType type, int32 op, JsonbValue *jb)
+makeCompare(JsQueryItemR *jsq, int32 op, JsonbValue *jb)
 {
 	int	res;
 
 	if (jb->type != jbvNumeric)
 		return false;
-	if (jb->type != type /* see enums */)
+	if (jsq->type != jqiNumeric)
 		return false;
 
-	res = compareNumeric(jb->val.numeric, (Numeric)(jqBase + jqPos));
+	res = compareNumeric(jb->val.numeric, jsqGetNumeric(jsq));
 
 	switch(op)
 	{
@@ -281,39 +268,32 @@ makeCompare(char *jqBase, int32 jqPos, JsQueryItemType type, int32 op, JsonbValu
 }
 
 static bool
-executeExpr(char *jqBase, int32 jqPos, int32 op, JsonbValue *jb)
+executeExpr(JsQueryItemR *jsq, int32 op, JsonbValue *jb)
 {
-	JsQueryItemType	type;
-	int32			nextPos;
-
-	check_stack_depth();
-
 	/*
 	 * read arg type 
 	 */
-	jqPos = readJsQueryHeader(jqBase, jqPos, &type, &nextPos);
-
-	Assert(nextPos == 0);
-	Assert(type == jqiAny || type == jqiString || type == jqiNumeric || 
-		   type == jqiNull || type == jqiBool || type == jqiArray);
+	Assert(jsq->nextPos == 0);
+	Assert(jsq->type == jqiAny || jsq->type == jqiString || jsq->type == jqiNumeric || 
+		   jsq->type == jqiNull || jsq->type == jqiBool || jsq->type == jqiArray);
 
 	switch(op)
 	{
 		case jqiEqual:
-			if (JsonbType(jb) == jbvArray && type == jqiArray)
-				return checkArrayEquality(jqBase, jqPos, type, jb);
-			return checkEquality(jqBase, jqPos, type, jb);
+			if (JsonbType(jb) == jbvArray && jsq->type == jqiArray)
+				return checkArrayEquality(jsq, jb);
+			return checkEquality(jsq, jb);
 		case jqiIn:
-			return checkIn(jqBase, jqPos, type, jb);
+			return checkIn(jsq, jb);
 		case jqiOverlap:
 		case jqiContains:
 		case jqiContained:
-			return executeArrayOp(jqBase, jqPos, type, op, jb);
+			return executeArrayOp(jsq, op, jb);
 		case jqiLess:
 		case jqiGreater:
 		case jqiLessOrEqual:
 		case jqiGreaterOrEqual:
-			return makeCompare(jqBase, jqPos, type, op, jb);
+			return makeCompare(jsq, op, jb);
 		default:
 			elog(ERROR, "Unknown operation");
 	}
@@ -322,60 +302,62 @@ executeExpr(char *jqBase, int32 jqPos, int32 op, JsonbValue *jb)
 }
 
 static bool
-recursiveExecute(char *jqBase, int32 jqPos, JsonbValue *jb)
+recursiveExecute(JsQueryItemR *jsq, JsonbValue *jb)
 {
-	JsQueryItemType	type;
-	int32			nextPos;
-	int32			left, right, arg;
+	JsQueryItemR	elem;
 	bool			res = false;
 
 	check_stack_depth();
 
-	jqPos = readJsQueryHeader(jqBase, jqPos, &type, &nextPos);
-
-	switch(type) {
+	switch(jsq->type) {
 		case jqiAnd:
-			read_int32(left, jqBase, jqPos);
-			read_int32(right, jqBase, jqPos);
-			Assert(nextPos == 0);
-			res = (recursiveExecute(jqBase, left, jb) && recursiveExecute(jqBase, right, jb));
+			jsqGetLeftArg(jsq, &elem);
+			res = recursiveExecute(&elem, jb);
+			if (res == true)
+			{
+				jsqGetRightArg(jsq, &elem);
+				res = recursiveExecute(&elem, jb);
+			}
 			break;
 		case jqiOr:
-			read_int32(left, jqBase, jqPos);
-			read_int32(right, jqBase, jqPos);
-			Assert(nextPos == 0);
-			res = (recursiveExecute(jqBase, left, jb) || recursiveExecute(jqBase, right, jb));
+			jsqGetLeftArg(jsq, &elem);
+			res = recursiveExecute(&elem, jb);
+			if (res == false)
+			{
+				jsqGetRightArg(jsq, &elem);
+				res = recursiveExecute(&elem, jb);
+			}
 			break;
 		case jqiNot:
-			read_int32(arg, jqBase, jqPos);
-			Assert(nextPos == 0);
-			res = ! recursiveExecute(jqBase, arg, jb);
+			jsqGetArg(jsq, &elem);
+			res = !recursiveExecute(&elem, jb);
 			break;
 		case jqiKey:
 			if (JsonbType(jb) == jbvObject) {
-				int32 		len;
 				JsonbValue	*v, key;
 
-				read_int32(len, jqBase, jqPos);
 				key.type = jbvString;
-				key.val.string.val = jqBase + jqPos;
-				key.val.string.len = len;
-				jqPos += len + 1;
+				key.val.string.val = jsqGetString(jsq, &key.val.string.len);
 
 				v = findJsonbValueFromContainer(jb->val.binary.data, JB_FOBJECT, &key);
 
-				Assert(nextPos != 0);
-				res = ((v != NULL) && recursiveExecute(jqBase, nextPos, v));
+				if (v != NULL)
+				{
+					jsqGetNext(jsq, &elem);
+					res = recursiveExecute(&elem, v);
+					pfree(v);
+				}
 			}
 			break;
 		case jqiAny:
-			Assert(nextPos != 0);
-			if (recursiveExecute(jqBase, nextPos, jb))
+			jsqGetNext(jsq, &elem);
+			if (recursiveExecute(&elem, jb))
 				res = true;
 			else if (jb->type == jbvBinary)
-				res = recursiveAny(jqBase, nextPos, jb);
+				res = recursiveAny(&elem, jb);
 			break;
 		case jqiCurrent:
+			jsqGetNext(jsq, &elem);
 			if (JsonbType(jb) == jbvScalar)
 			{
 				JsonbIterator	*it;
@@ -392,44 +374,44 @@ recursiveExecute(char *jqBase, int32 jqPos, JsonbValue *jb)
 				r = JsonbIteratorNext(&it, &v, true);
 				Assert(r == WJB_ELEM);
 
-				res = recursiveExecute(jqBase, nextPos, &v);
+				res = recursiveExecute(&elem, &v);
 			}
 			else
 			{
-				res = recursiveExecute(jqBase, nextPos, jb);
+				res = recursiveExecute(&elem, jb);
 			}
 			break;
 		case jqiAnyArray:
-			Assert(nextPos != 0);
 			if (JsonbType(jb) == jbvArray)
 			{
 				JsonbIterator	*it;
 				int32			r;
 				JsonbValue		v;
 
+				jsqGetNext(jsq, &elem);
 				it = JsonbIteratorInit(jb->val.binary.data);
 
 				while(res == false && (r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 				{
 					if (r == WJB_ELEM)
-						res = recursiveExecute(jqBase, nextPos, &v);
+						res = recursiveExecute(&elem, &v);
 				}
 			}
 			break;
 		case jqiAnyKey:
-			Assert(nextPos != 0);
 			if (JsonbType(jb) == jbvObject)
 			{
 				JsonbIterator	*it;
 				int32			r;
 				JsonbValue		v;
 
+				jsqGetNext(jsq, &elem);
 				it = JsonbIteratorInit(jb->val.binary.data);
 
 				while(res == false && (r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 				{
 					if (r == WJB_VALUE)
-						res = recursiveExecute(jqBase, nextPos, &v);
+						res = recursiveExecute(&elem, &v);
 				}
 			}
 			break;
@@ -442,11 +424,11 @@ recursiveExecute(char *jqBase, int32 jqPos, JsonbValue *jb)
 		case jqiContains:
 		case jqiContained:
 		case jqiOverlap:
-			read_int32(arg, jqBase, jqPos);
-			res = executeExpr(jqBase, arg, type, jb);
+			jsqGetArg(jsq, &elem);
+			res = executeExpr(&elem, jsq->type, jb);
 			break;
 		default:
-			elog(ERROR,"Wrong state: %d", type);
+			elog(ERROR,"Wrong state: %d", jsq->type);
 	}
 
 	return res;
@@ -456,16 +438,19 @@ PG_FUNCTION_INFO_V1(jsquery_json_exec);
 Datum
 jsquery_json_exec(PG_FUNCTION_ARGS)
 {
-	JsQuery		*jq = PG_GETARG_JSQUERY(0);
-	Jsonb		*jb = PG_GETARG_JSONB(1);
-	bool		res;
-	JsonbValue	jbv;
+	JsQuery			*jq = PG_GETARG_JSQUERY(0);
+	Jsonb			*jb = PG_GETARG_JSONB(1);
+	bool			res;
+	JsonbValue		jbv;
+	JsQueryItemR	jsq;
 
 	jbv.type = jbvBinary;
 	jbv.val.binary.data = &jb->root;
 	jbv.val.binary.len = VARSIZE_ANY_EXHDR(jb);
 
-	res = recursiveExecute(VARDATA(jq), 0, &jbv);
+	jsqInit(&jsq, VARDATA(jq), 0);
+
+	res = recursiveExecute(&jsq, &jbv);
 
 	PG_FREE_IF_COPY(jq, 0);
 	PG_FREE_IF_COPY(jb, 1);
@@ -477,16 +462,19 @@ PG_FUNCTION_INFO_V1(json_jsquery_exec);
 Datum
 json_jsquery_exec(PG_FUNCTION_ARGS)
 {
-	Jsonb		*jb = PG_GETARG_JSONB(0);
-	JsQuery		*jq = PG_GETARG_JSQUERY(1);
-	bool		res;
-	JsonbValue	jbv;
+	Jsonb			*jb = PG_GETARG_JSONB(0);
+	JsQuery			*jq = PG_GETARG_JSQUERY(1);
+	bool			res;
+	JsonbValue		jbv;
+	JsQueryItemR	jsq;
 
 	jbv.type = jbvBinary;
 	jbv.val.binary.data = &jb->root;
 	jbv.val.binary.len = VARSIZE_ANY_EXHDR(jb);
 
-	res = recursiveExecute(VARDATA(jq), 0, &jbv);
+	jsqInit(&jsq, VARDATA(jq), 0);
+
+	res = recursiveExecute(&jsq, &jbv);
 
 	PG_FREE_IF_COPY(jb, 0);
 	PG_FREE_IF_COPY(jq, 1);
@@ -495,23 +483,17 @@ json_jsquery_exec(PG_FUNCTION_ARGS)
 }
 
 static int
-compareJsQuery(char *base1, int32 pos1, char *base2, int32 pos2)
+compareJsQuery(JsQueryItemR *v1, JsQueryItemR *v2)
 {
-	JsQueryItemType	type1,
-					type2;
-	int32			nextPos1,
-					nextPos2;
+	JsQueryItemR	elem1, elem2;
 	int32			res = 0;
 
 	check_stack_depth();
 
-	pos1 = readJsQueryHeader(base1, pos1, &type1, &nextPos1);
-	pos2 = readJsQueryHeader(base2, pos2, &type2, &nextPos2);
+	if (v1->type != v2->type)
+		return (v1->type > v2->type) ? 1 : -1;
 
-	if (type1 != type2)
-		return (type1 > type2) ? 1 : -1;
-
-	switch(type1)
+	switch(v1->type)
 	{
 		case jqiNull:
 		case jqiAny:
@@ -523,62 +505,44 @@ compareJsQuery(char *base1, int32 pos1, char *base2, int32 pos2)
 		case jqiString:
 			{
 				int32 len1, len2;
+				char *s1, *s2;
 
-				read_int32(len1, base1, pos1);
-				read_int32(len2, base2, pos2);
+				s1 = jsqGetString(v1, &len1);
+				s2 = jsqGetString(v2, &len2);
 
 				if (len1 != len2)
 					res = (len1 > len2) ? 1 : -1;
 				else
-					res = memcmp(base1 + pos1, base2 + pos2, len1);
+					res = memcmp(s1, s2, len1);
 			}
 			break;
 		case jqiNumeric:
-			res = compareNumeric((Numeric)(base1 + pos1), (Numeric)(base2 + pos2));
+			res = compareNumeric(jsqGetNumeric(v1), jsqGetNumeric(v2));
 			break;
 		case jqiBool:
-			{
-				bool v1, v2;
-
-				read_byte(v1, base1, pos1);
-				read_byte(v2, base2, pos2);
-
-				if (v1 != v2)
-					res = (v1 > v2) ? 1 : -1;
-			}
+			if (jsqGetBool(v1) != jsqGetBool(v2))
+				res = (jsqGetBool(v1) > jsqGetBool(v2)) ? 1 : -1;
 			break;
 		case jqiArray:
-			{
-				int32	i;
-				int32	nelems1, *arrayPos1,
-						nelems2, *arrayPos2;
+			if (v1->array.nelems != v2->array.nelems)
+				res = (v1->array.nelems > v2->array.nelems) ? 1 : -1;
 
-				read_int32(nelems1, base1, pos1);
-				arrayPos1 = (int32*)(base1 + pos1);
-				read_int32(nelems2, base2, pos2);
-				arrayPos2 = (int32*)(base2 + pos2);
-
-				if (nelems1 != nelems2)
-					res = (nelems1 > nelems2) ? 1 : -1;
-
-				for(i=0; i<nelems1 && res == 0; i++)
-					res = compareJsQuery(base1, arrayPos1[i], base2, arrayPos2[i]);
-			}
+			while(res == 0 && jsqIterateArray(v1, &elem1) && jsqIterateArray(v2, &elem2))
+				res = compareJsQuery(&elem1, &elem2);
 			break;
 		case jqiAnd:
 		case jqiOr:
+			jsqGetLeftArg(v1, &elem1);
+			jsqGetLeftArg(v2, &elem2);
+
+			res = compareJsQuery(&elem1, &elem2);
+
+			if (res == 0)
 			{
-				int32	left1, right1,
-						left2, right2;
+				jsqGetRightArg(v1, &elem1);
+				jsqGetRightArg(v2, &elem2);
 
-				read_int32(left1, base1, pos1);
-				read_int32(right1, base1, pos1);
-				read_int32(left2, base2, pos2);
-				read_int32(right2, base2, pos2);
-
-				res = compareJsQuery(base1, left1, base2, left2);
-				if (res == 0)
-					res = compareJsQuery(base1, right1, base2, right2);
+				res = compareJsQuery(&elem1, &elem2);
 			}
 			break;
 		case jqiEqual:
@@ -591,25 +555,28 @@ compareJsQuery(char *base1, int32 pos1, char *base2, int32 pos2)
 		case jqiContained:
 		case jqiOverlap:
 		case jqiNot:
-			{
-				int32	arg1, arg2;
+			jsqGetArg(v1, &elem1);
+			jsqGetArg(v2, &elem2);
 
-				read_int32(arg1, base1, pos1);
-				read_int32(arg2, base2, pos2);
-
-				res = compareJsQuery(base1, arg1, base2, arg2);
-			}
+			res = compareJsQuery(&elem1, &elem2);
 			break;
 		default:
-			elog(ERROR, "Unknown JsQueryItem type: %d", type1);
+			elog(ERROR, "Unknown JsQueryItem type: %d", v1->type);
 	}
 
-	if (res == 0 && !(nextPos2 == 0 && nextPos1 == 0))
+	if (res == 0)
 	{
-		if (nextPos1 == 0 || nextPos2 == 0)
-			res = (nextPos1 > nextPos2) ? 1 : -1;
-		else
-			res = compareJsQuery(base1, nextPos1, base2, nextPos2);
+		if (jsqGetNext(v1, &elem1))
+		{
+			if (jsqGetNext(v2, &elem2))
+				res = compareJsQuery(&elem1, &elem2);
+			else
+				res = 1;
+		}
+		else if (jsqGetNext(v2, &elem2))
+		{
+			res = -1;
+		}
 	}
 
 	return res;
@@ -619,11 +586,15 @@ PG_FUNCTION_INFO_V1(jsquery_cmp);
 Datum
 jsquery_cmp(PG_FUNCTION_ARGS)
 {
-	JsQuery		*jq1 = PG_GETARG_JSQUERY(0);
-	JsQuery		*jq2 = PG_GETARG_JSQUERY(1);
-	int32		res;
+	JsQuery			*jq1 = PG_GETARG_JSQUERY(0);
+	JsQuery			*jq2 = PG_GETARG_JSQUERY(1);
+	int32			res;
+	JsQueryItemR	v1, v2;
 
-	res = compareJsQuery(VARDATA(jq1), 0, VARDATA(jq2), 0); 
+	jsqInit(&v1, VARDATA(jq1), 0);
+	jsqInit(&v2, VARDATA(jq2), 0);
+
+	res = compareJsQuery(&v1, &v2);
 
 	PG_FREE_IF_COPY(jq1, 0);
 	PG_FREE_IF_COPY(jq2, 1);
@@ -635,11 +606,15 @@ PG_FUNCTION_INFO_V1(jsquery_lt);
 Datum
 jsquery_lt(PG_FUNCTION_ARGS)
 {
-	JsQuery		*jq1 = PG_GETARG_JSQUERY(0);
-	JsQuery		*jq2 = PG_GETARG_JSQUERY(1);
-	int32		res;
+	JsQuery			*jq1 = PG_GETARG_JSQUERY(0);
+	JsQuery			*jq2 = PG_GETARG_JSQUERY(1);
+	int32			res;
+	JsQueryItemR	v1, v2;
 
-	res = compareJsQuery(VARDATA(jq1), 0, VARDATA(jq2), 0); 
+	jsqInit(&v1, VARDATA(jq1), 0);
+	jsqInit(&v2, VARDATA(jq2), 0);
+
+	res = compareJsQuery(&v1, &v2);
 
 	PG_FREE_IF_COPY(jq1, 0);
 	PG_FREE_IF_COPY(jq2, 1);
@@ -651,11 +626,15 @@ PG_FUNCTION_INFO_V1(jsquery_le);
 Datum
 jsquery_le(PG_FUNCTION_ARGS)
 {
-	JsQuery		*jq1 = PG_GETARG_JSQUERY(0);
-	JsQuery		*jq2 = PG_GETARG_JSQUERY(1);
-	int32		res;
+	JsQuery			*jq1 = PG_GETARG_JSQUERY(0);
+	JsQuery			*jq2 = PG_GETARG_JSQUERY(1);
+	int32			res;
+	JsQueryItemR	v1, v2;
 
-	res = compareJsQuery(VARDATA(jq1), 0, VARDATA(jq2), 0); 
+	jsqInit(&v1, VARDATA(jq1), 0);
+	jsqInit(&v2, VARDATA(jq2), 0);
+
+	res = compareJsQuery(&v1, &v2);
 
 	PG_FREE_IF_COPY(jq1, 0);
 	PG_FREE_IF_COPY(jq2, 1);
@@ -667,11 +646,15 @@ PG_FUNCTION_INFO_V1(jsquery_eq);
 Datum
 jsquery_eq(PG_FUNCTION_ARGS)
 {
-	JsQuery		*jq1 = PG_GETARG_JSQUERY(0);
-	JsQuery		*jq2 = PG_GETARG_JSQUERY(1);
-	int32		res;
+	JsQuery			*jq1 = PG_GETARG_JSQUERY(0);
+	JsQuery			*jq2 = PG_GETARG_JSQUERY(1);
+	int32			res;
+	JsQueryItemR	v1, v2;
 
-	res = compareJsQuery(VARDATA(jq1), 0, VARDATA(jq2), 0); 
+	jsqInit(&v1, VARDATA(jq1), 0);
+	jsqInit(&v2, VARDATA(jq2), 0);
+
+	res = compareJsQuery(&v1, &v2);
 
 	PG_FREE_IF_COPY(jq1, 0);
 	PG_FREE_IF_COPY(jq2, 1);
@@ -683,11 +666,15 @@ PG_FUNCTION_INFO_V1(jsquery_ne);
 Datum
 jsquery_ne(PG_FUNCTION_ARGS)
 {
-	JsQuery		*jq1 = PG_GETARG_JSQUERY(0);
-	JsQuery		*jq2 = PG_GETARG_JSQUERY(1);
-	int32		res;
+	JsQuery			*jq1 = PG_GETARG_JSQUERY(0);
+	JsQuery			*jq2 = PG_GETARG_JSQUERY(1);
+	int32			res;
+	JsQueryItemR	v1, v2;
 
-	res = compareJsQuery(VARDATA(jq1), 0, VARDATA(jq2), 0); 
+	jsqInit(&v1, VARDATA(jq1), 0);
+	jsqInit(&v2, VARDATA(jq2), 0);
+
+	res = compareJsQuery(&v1, &v2);
 
 	PG_FREE_IF_COPY(jq1, 0);
 	PG_FREE_IF_COPY(jq2, 1);
@@ -699,11 +686,15 @@ PG_FUNCTION_INFO_V1(jsquery_ge);
 Datum
 jsquery_ge(PG_FUNCTION_ARGS)
 {
-	JsQuery		*jq1 = PG_GETARG_JSQUERY(0);
-	JsQuery		*jq2 = PG_GETARG_JSQUERY(1);
-	int32		res;
+	JsQuery			*jq1 = PG_GETARG_JSQUERY(0);
+	JsQuery			*jq2 = PG_GETARG_JSQUERY(1);
+	int32			res;
+	JsQueryItemR	v1, v2;
 
-	res = compareJsQuery(VARDATA(jq1), 0, VARDATA(jq2), 0); 
+	jsqInit(&v1, VARDATA(jq1), 0);
+	jsqInit(&v2, VARDATA(jq2), 0);
+
+	res = compareJsQuery(&v1, &v2);
 
 	PG_FREE_IF_COPY(jq1, 0);
 	PG_FREE_IF_COPY(jq2, 1);
@@ -715,11 +706,15 @@ PG_FUNCTION_INFO_V1(jsquery_gt);
 Datum
 jsquery_gt(PG_FUNCTION_ARGS)
 {
-	JsQuery		*jq1 = PG_GETARG_JSQUERY(0);
-	JsQuery		*jq2 = PG_GETARG_JSQUERY(1);
-	int32		res;
+	JsQuery			*jq1 = PG_GETARG_JSQUERY(0);
+	JsQuery			*jq2 = PG_GETARG_JSQUERY(1);
+	int32			res;
+	JsQueryItemR	v1, v2;
 
-	res = compareJsQuery(VARDATA(jq1), 0, VARDATA(jq2), 0); 
+	jsqInit(&v1, VARDATA(jq1), 0);
+	jsqInit(&v2, VARDATA(jq2), 0);
+
+	res = compareJsQuery(&v1, &v2);
 
 	PG_FREE_IF_COPY(jq1, 0);
 	PG_FREE_IF_COPY(jq2, 1);
@@ -728,18 +723,15 @@ jsquery_gt(PG_FUNCTION_ARGS)
 }
 
 static void
-hashJsQuery(char *base, int32 pos, pg_crc32 *crc)
+hashJsQuery(JsQueryItemR *v, pg_crc32 *crc)
 {
-	JsQueryItemType	type;
-	int32			nextPos;
+	JsQueryItemR	elem;
 
 	check_stack_depth();
 
-	pos = readJsQueryHeader(base, pos, &type, &nextPos);
+	COMP_CRC32(*crc, &v->type, sizeof(v->type));
 
-	COMP_CRC32(*crc, &type, sizeof(type));
-
-	switch(type)
+	switch(v->type)
 	{
 		case jqiNull:
 			COMP_CRC32(*crc, "null", 5);
@@ -748,52 +740,38 @@ hashJsQuery(char *base, int32 pos, pg_crc32 *crc)
 		case jqiString:
 			{
 				int32	len;
+				char	*s;
 
-				read_int32(len, base, pos);
+				s = jsqGetString(v, &len);
 
-				if (type == jqiKey)
+				if (v->type == jqiKey)
 					len++; /* include trailing '\0' */
-				COMP_CRC32(*crc, base + pos, len);
+				COMP_CRC32(*crc, s, len);
 			}
 			break;
 		case jqiNumeric:
 			*crc ^= (pg_crc32)DatumGetInt32(DirectFunctionCall1(
 												hash_numeric,
-												PointerGetDatum((Numeric)(base + pos))));
+												PointerGetDatum(jsqGetNumeric(v))));
 			break;
 		case jqiBool:
 			{
-				bool	v;
+				bool	b = jsqGetBool(v);
 
-				read_byte(v, base, pos);
-
-				COMP_CRC32(*crc, &v, 1);
+				COMP_CRC32(*crc, &b, 1);
 			}
 			break;
 		case jqiArray:
-			{
-				int32	i, nelems, *arrayPos;
-
-				read_int32(nelems, base, pos);
-				arrayPos = (int32*)(base + pos);
-
-				COMP_CRC32(*crc, &nelems, sizeof(nelems));
-
-				for(i=0; i<nelems; i++)
-					hashJsQuery(base, arrayPos[i], crc);
-			}
+			COMP_CRC32(*crc, &v->array.nelems, sizeof(v->array.nelems));
+			while(jsqIterateArray(v, &elem))
+				hashJsQuery(&elem, crc);
 			break;
 		case jqiAnd:
 		case jqiOr:
-			{
-				int32 left, right;
-
-				read_int32(left, base, pos);
-				read_int32(right, base, pos);
-
-				hashJsQuery(base, left, crc);
-				hashJsQuery(base, right, crc);
-			}
+			jsqGetLeftArg(v, &elem);
+			hashJsQuery(&elem, crc);
+			jsqGetRightArg(v, &elem);
+			hashJsQuery(&elem, crc);
 			break;
 		case jqiNot:
 		case jqiEqual:
@@ -805,12 +783,8 @@ hashJsQuery(char *base, int32 pos, pg_crc32 *crc)
 		case jqiContains:
 		case jqiContained:
 		case jqiOverlap:
-			{
-				int32 arg;
-
-				read_int32(arg, base, pos);
-				hashJsQuery(base, arg, crc);
-			}
+			jsqGetArg(v, &elem);
+			hashJsQuery(&elem, crc);
 			break;
 		case jqiAny:
 		case jqiCurrent:
@@ -818,7 +792,7 @@ hashJsQuery(char *base, int32 pos, pg_crc32 *crc)
 		case jqiAnyKey:
 			break;
 		default:
-			elog(ERROR, "Unknown JsQueryItem type: %d", type);
+			elog(ERROR, "Unknown JsQueryItem type: %d", v->type);
 	}
 }
 
@@ -826,11 +800,13 @@ PG_FUNCTION_INFO_V1(jsquery_hash);
 Datum
 jsquery_hash(PG_FUNCTION_ARGS)
 {
-	JsQuery		*jq = PG_GETARG_JSQUERY(0);
-	pg_crc32	res;
+	JsQuery			*jq = PG_GETARG_JSQUERY(0);
+	JsQueryItemR	v;
+	pg_crc32		res;
 
 	INIT_CRC32(res);
-	hashJsQuery(VARDATA(jq), 0, &res);
+	jsqInit(&v, VARDATA(jq), 0);
+	hashJsQuery(&v, &res);
 	FIN_CRC32(res);
 
 	PG_FREE_IF_COPY(jq, 0);

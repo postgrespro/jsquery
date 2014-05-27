@@ -58,6 +58,7 @@ typedef struct JsQueryItem JsQueryItem;
 
 struct JsQueryItem {
 	JsQueryItemType	type;
+	JsQueryItem	*next; /* next in path */
 
 	union {
 		struct {
@@ -71,7 +72,7 @@ struct JsQueryItem {
 		bool		boolean;
 		struct {
 			uint32      len;
-			char        *val; /* could be not null-terminated */
+			char        *val; /* could not be not null-terminated */
 		} string;
 
 		struct {
@@ -80,8 +81,44 @@ struct JsQueryItem {
 		} array;
 	};
 
-	JsQueryItem	*next; /* next in path */
 };
+
+typedef struct JsQueryItemR {
+	JsQueryItemType	type;
+	int32			nextPos;
+	char			*base;
+
+	union {
+		struct {
+			char		*data;
+			int			datalen; /* filled only for string */
+		} value; 
+
+		struct {
+			int32	left;
+			int32	right;
+		} args;
+		int32		arg;
+		struct {
+			int		nelems;
+			int		current;
+			int32	*arrayPtr;
+		} array;
+	};
+
+
+} JsQueryItemR;
+
+extern void jsqInit(JsQueryItemR *v, char *base, int32 pos);
+extern bool jsqGetNext(JsQueryItemR *v, JsQueryItemR *a);
+extern void jsqGetArg(JsQueryItemR *v, JsQueryItemR *a);
+extern void jsqGetLeftArg(JsQueryItemR *v, JsQueryItemR *a);
+extern void jsqGetRightArg(JsQueryItemR *v, JsQueryItemR *a);
+extern Numeric	jsqGetNumeric(JsQueryItemR *v);
+extern bool		jsqGetBool(JsQueryItemR *v);
+extern char * jsqGetString(JsQueryItemR *v, int32 *len);
+extern void jsqIterateInit(JsQueryItemR *v);
+extern bool jsqIterateArray(JsQueryItemR *v, JsQueryItemR *e);
 
 /*
  * support
