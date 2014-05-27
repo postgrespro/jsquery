@@ -22,12 +22,12 @@ static int compareJsQueryValue(JsQueryValue *v1, JsQueryValue *v2);
 static ExtractedNode *
 recursiveExtract(char *jqBase, int32 jqPos,	bool indirect, PathItem *path)
 {
-	int32	type, childType;
-	int32	nextPos;
-	int32	left, right, arg;
-	ExtractedNode *leftNode, *rightNode, *result;
-	int32	len, *arrayPos, nelems, i;
-	PathItem	*pathItem;
+	JsQueryItemType	type, childType;
+	int32			nextPos;
+	int32			left, right, arg;
+	ExtractedNode 	*leftNode, *rightNode, *result;
+	int32			len, *arrayPos, nelems, i;
+	PathItem		*pathItem;
 
 	check_stack_depth();
 

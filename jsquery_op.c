@@ -92,7 +92,7 @@ recursiveAny(char *jqBase, int32 jqPos, JsonbValue *jb)
 }
 
 static bool
-checkEquality(char *jqBase, int32 jqPos, int32 type, JsonbValue *jb)
+checkEquality(char *jqBase, int32 jqPos, JsQueryItemType type, JsonbValue *jb)
 {
 	int		len;
 
@@ -123,7 +123,7 @@ checkEquality(char *jqBase, int32 jqPos, int32 type, JsonbValue *jb)
 }
 
 static bool
-checkArrayEquality(char *jqBase, int32 jqPos, int32 type, JsonbValue *jb)
+checkArrayEquality(char *jqBase, int32 jqPos, JsQueryItemType type, JsonbValue *jb)
 {
 	int32   		i, nelems, *arrayPos;
 	int32			r;
@@ -159,7 +159,7 @@ checkArrayEquality(char *jqBase, int32 jqPos, int32 type, JsonbValue *jb)
 }
 
 static bool
-checkIn(char *jqBase, int32 jqPos, int32 type, JsonbValue *jb)
+checkIn(char *jqBase, int32 jqPos, JsQueryItemType type, JsonbValue *jb)
 {
 	int32   i, nelems, *arrayPos;
 
@@ -180,7 +180,7 @@ checkIn(char *jqBase, int32 jqPos, int32 type, JsonbValue *jb)
 }
 
 static bool
-executeArrayOp(char *jqBase, int32 jqPos, int32 type, int32 op, JsonbValue *jb)
+executeArrayOp(char *jqBase, int32 jqPos, JsQueryItemType type, int32 op, JsonbValue *jb)
 {
 	int32   		i, nelems, *arrayPos;
 	int32			r;
@@ -252,7 +252,7 @@ executeArrayOp(char *jqBase, int32 jqPos, int32 type, int32 op, JsonbValue *jb)
 }
 
 static bool
-makeCompare(char *jqBase, int32 jqPos, int32 type, int32 op, JsonbValue *jb)
+makeCompare(char *jqBase, int32 jqPos, JsQueryItemType type, int32 op, JsonbValue *jb)
 {
 	int	res;
 
@@ -283,8 +283,8 @@ makeCompare(char *jqBase, int32 jqPos, int32 type, int32 op, JsonbValue *jb)
 static bool
 executeExpr(char *jqBase, int32 jqPos, int32 op, JsonbValue *jb)
 {
-	int32	type;
-	int32	nextPos;
+	JsQueryItemType	type;
+	int32			nextPos;
 
 	check_stack_depth();
 
@@ -324,10 +324,10 @@ executeExpr(char *jqBase, int32 jqPos, int32 op, JsonbValue *jb)
 static bool
 recursiveExecute(char *jqBase, int32 jqPos, JsonbValue *jb)
 {
-	int32	type;
-	int32	nextPos;
-	int32	left, right, arg;
-	bool	res = false;
+	JsQueryItemType	type;
+	int32			nextPos;
+	int32			left, right, arg;
+	bool			res = false;
 
 	check_stack_depth();
 
@@ -497,11 +497,11 @@ json_jsquery_exec(PG_FUNCTION_ARGS)
 static int
 compareJsQuery(char *base1, int32 pos1, char *base2, int32 pos2)
 {
-	int32	type1,
-			nextPos1,
-			type2,
-			nextPos2;
-	int32	res = 0;
+	JsQueryItemType	type1,
+					type2;
+	int32			nextPos1,
+					nextPos2;
+	int32			res = 0;
 
 	check_stack_depth();
 
@@ -730,8 +730,8 @@ jsquery_gt(PG_FUNCTION_ARGS)
 static void
 hashJsQuery(char *base, int32 pos, pg_crc32 *crc)
 {
-	int32	type;
-	int32	nextPos;
+	JsQueryItemType	type;
+	int32			nextPos;
 
 	check_stack_depth();
 

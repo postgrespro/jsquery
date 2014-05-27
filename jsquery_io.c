@@ -166,7 +166,7 @@ jsquery_in(PG_FUNCTION_ARGS)
 }
 
 int32
-readJsQueryHeader(char *base, int32 pos, int32 *type, int32 *nextPos)
+readJsQueryHeader(char *base, int32 pos, JsQueryItemType *type, int32 *nextPos)
 {
 	read_byte(*type, base, pos);
 	switch(INTALIGN(pos) - pos)
@@ -183,7 +183,7 @@ readJsQueryHeader(char *base, int32 pos, int32 *type, int32 *nextPos)
 
 
 static void
-printOperation(StringInfo buf, int type)
+printOperation(StringInfo buf, JsQueryItemType type)
 {
 	switch(type)
 	{
@@ -215,8 +215,8 @@ printOperation(StringInfo buf, int type)
 static void
 printJsQueryItem(StringInfo buf, char *base, int32 pos, bool inKey, bool printBracketes)
 {
-	int32		type;
-	int32		nextPos;
+	JsQueryItemType		type;
+	int32			nextPos;
 
 	check_stack_depth();
 

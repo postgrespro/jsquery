@@ -29,11 +29,7 @@ typedef struct
 #define PG_GETARG_JSQUERY(x)	DatumGetJsQueryP(PG_GETARG_DATUM(x))
 #define PG_RETURN_JSQUERY(p)	PG_RETURN_POINTER(p)
 
-
-typedef struct JsQueryItem JsQueryItem;
-
-struct JsQueryItem {
-	enum {
+typedef enum JsQueryItemType {
 		jqiNull = jbvNull, 
 		jqiString = jbvString, 
 		jqiNumeric = jbvNumeric, 
@@ -56,7 +52,12 @@ struct JsQueryItem {
 		jqiKey = 'K',
 		jqiCurrent = '$',
 		jqiIn = 'I'
-	} type;
+} JsQueryItemType;
+
+typedef struct JsQueryItem JsQueryItem;
+
+struct JsQueryItem {
+	JsQueryItemType	type;
 
 	union {
 		struct {
@@ -88,7 +89,7 @@ struct JsQueryItem {
 
 extern JsQueryItem* parsejsquery(const char *str, int len);
 
-int32 readJsQueryHeader(char *base, int32 pos, int32 *type, int32 *nextPos);
+int32 readJsQueryHeader(char *base, int32 pos, JsQueryItemType *type, int32 *nextPos);
 
 #define read_byte(v, b, p) do {     \
 	(v) = *(int8*)((b) + (p));      \

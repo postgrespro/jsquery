@@ -22,8 +22,9 @@
 static int32
 copyJsQuery(StringInfo buf, char *jqBase, int32 jqPos)
 {
-	int32 	resPos = buf->len - VARHDRSZ; /* position from begining of jsquery data */
-	int32	type, nextPos, chld, next;
+	int32 			resPos = buf->len - VARHDRSZ; /* position from begining of jsquery data */
+	JsQueryItemType	type;
+	int32			nextPos, chld, next;
 
 	check_stack_depth();
 
@@ -131,7 +132,7 @@ copyJsQuery(StringInfo buf, char *jqBase, int32 jqPos)
 }
 
 static JsQuery*
-joinJsQuery(int32 type, JsQuery *jq1, JsQuery *jq2)
+joinJsQuery(JsQueryItemType type, JsQuery *jq1, JsQuery *jq2)
 {
 	JsQuery			*out;
 	StringInfoData	buf;
