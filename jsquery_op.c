@@ -90,7 +90,7 @@ recursiveAny(JsQueryItemR *jsq, JsonbValue *jb)
 }
 
 static bool
-checkEquality(JsQueryItemR *jsq,  JsonbValue *jb)
+checkScalarEquality(JsQueryItemR *jsq,  JsonbValue *jb)
 {
 	int		len;
 	char	*s;
@@ -148,7 +148,7 @@ checkArrayEquality(JsQueryItemR *jsq, JsonbValue *jb)
 
 		jsqIterateArray(jsq, &elem);
 
-		if (checkEquality(&elem, &v) == false)
+		if (checkScalarEquality(&elem, &v) == false)
 			return false;
 	}
 	
@@ -156,7 +156,7 @@ checkArrayEquality(JsQueryItemR *jsq, JsonbValue *jb)
 }
 
 static bool
-checkIn(JsQueryItemR *jsq, JsonbValue *jb)
+checkScalarIn(JsQueryItemR *jsq, JsonbValue *jb)
 {
 	JsQueryItemR	elem;
 
@@ -167,7 +167,7 @@ checkIn(JsQueryItemR *jsq, JsonbValue *jb)
 		return false;
 
 	while(jsqIterateArray(jsq, &elem))
-		if (checkEquality(&elem, jb))
+		if (checkScalarEquality(&elem, jb))
 			return true;
 
 	return false;
@@ -196,7 +196,7 @@ executeArrayOp(JsQueryItemR *jsq, int32 op, JsonbValue *jb)
 
 			while(res == false && (r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 			{
-				if (r == WJB_ELEM && checkEquality(&elem, &v))
+				if (r == WJB_ELEM && checkScalarEquality(&elem, &v))
 					res = true;
 			}
 
@@ -217,7 +217,7 @@ executeArrayOp(JsQueryItemR *jsq, int32 op, JsonbValue *jb)
 				jsqIterateInit(jsq);
 				while(jsqIterateArray(jsq, &elem))
 				{
-					if (checkEquality(&elem, &v))
+					if (checkScalarEquality(&elem, &v))
 					{
 						if (op == jqiOverlap)
 							return true;
@@ -282,9 +282,9 @@ executeExpr(JsQueryItemR *jsq, int32 op, JsonbValue *jb)
 		case jqiEqual:
 			if (JsonbType(jb) == jbvArray && jsq->type == jqiArray)
 				return checkArrayEquality(jsq, jb);
-			return checkEquality(jsq, jb);
+			return checkScalarEquality(jsq, jb);
 		case jqiIn:
-			return checkIn(jsq, jb);
+			return checkScalarIn(jsq, jb);
 		case jqiOverlap:
 		case jqiContains:
 		case jqiContained:
