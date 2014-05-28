@@ -54,34 +54,6 @@ typedef enum JsQueryItemType {
 		jqiIn = 'I'
 } JsQueryItemType;
 
-typedef struct JsQueryItem JsQueryItem;
-
-struct JsQueryItem {
-	JsQueryItemType	type;
-	JsQueryItem	*next; /* next in path */
-
-	union {
-		struct {
-			JsQueryItem	*left;
-			JsQueryItem	*right;
-		} args;
-
-		JsQueryItem	*arg;
-
-		Numeric		numeric;
-		bool		boolean;
-		struct {
-			uint32      len;
-			char        *val; /* could not be not null-terminated */
-		} string;
-
-		struct {
-			int			nelems;
-			JsQueryItem	**elems;
-		} array;
-	};
-};
-
 typedef struct JsQueryItemR {
 	JsQueryItemType	type;
 	int32			nextPos;
@@ -121,34 +93,49 @@ extern void jsqIterateInit(JsQueryItemR *v);
 extern bool jsqIterateArray(JsQueryItemR *v, JsQueryItemR *e);
 
 /*
- * support
+ * Parsing
  */
+
+typedef struct JsQueryItem JsQueryItem;
+
+struct JsQueryItem {
+	JsQueryItemType	type;
+	JsQueryItem	*next; /* next in path */
+
+	union {
+		struct {
+			JsQueryItem	*left;
+			JsQueryItem	*right;
+		} args;
+
+		JsQueryItem	*arg;
+
+		Numeric		numeric;
+		bool		boolean;
+		struct {
+			uint32      len;
+			char        *val; /* could not be not null-terminated */
+		} string;
+
+		struct {
+			int			nelems;
+			JsQueryItem	**elems;
+		} array;
+	};
+};
 
 extern JsQueryItem* parsejsquery(const char *str, int len);
 
-int32 readJsQueryHeader(char *base, int32 pos, JsQueryItemType *type, int32 *nextPos);
-
-#define read_byte(v, b, p) do {     \
-	(v) = *(int8*)((b) + (p));      \
-	(p) += 1;                       \
-} while(0)                          \
-
-#define read_int32(v, b, p) do {    \
-	(v) = *(int32*)((b) + (p));     \
-	(p) += sizeof(int32);           \
-} while(0)                          \
-
 void alignStringInfoInt(StringInfo buf);
-#endif
 
 /* jsquery_extract.c */
 
 typedef enum
 {
-	iAny = 1,
-	iAnyArray,
-	iKey,
-	iAnyKey
+	iAny 		= jqiAny,
+	iAnyArray 	= jqiAnyArray,
+	iKey 		= jqiKey,
+	iAnyKey 	= jqiAnyKey
 } PathItemType;
 
 typedef struct PathItem PathItem;
@@ -163,9 +150,9 @@ struct PathItem
 typedef enum
 {
 	eScalar = 1,
-	eAnd,
-	eOr,
-	eNot
+	eAnd	= jqiAnd,
+	eOr		= jqiOr,
+	eNot 	= jqiNot
 } ExtractedNodeType;
 
 typedef struct ExtractedNode ExtractedNode;
@@ -199,3 +186,5 @@ typedef int (*MakeEntryHandler)(ExtractedNode *node, Pointer extra);
 ExtractedNode *extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra);
 bool execRecursive(ExtractedNode *node, bool *check);
 bool execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check);
+
+#endif

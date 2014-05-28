@@ -16,6 +16,16 @@
 
 #include "jsquery.h"
 
+#define read_byte(v, b, p) do {		\
+	(v) = *(int8*)((b) + (p));		\
+	(p) += 1;						\
+} while(0)							\
+
+#define read_int32(v, b, p) do {	\
+	(v) = *(int32*)((b) + (p));		\
+	(p) += sizeof(int32);			\
+} while(0)							\
+
 void
 jsqInit(JsQueryItemR *v, JsQuery *js)
 {
@@ -78,7 +88,7 @@ jsqInitByBuffer(JsQueryItemR *v, char *base, int32 pos)
 			read_int32(v->arg, base, pos);
 			break;
 		default:
-			elog(ERROR, "Unknown JsQueryItem type: %d", v->type);
+			elog(ERROR, "Unknown type: %d", v->type);
 	}
 }
 

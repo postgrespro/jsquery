@@ -165,23 +165,6 @@ jsquery_in(PG_FUNCTION_ARGS)
 	PG_RETURN_NULL();
 }
 
-int32
-readJsQueryHeader(char *base, int32 pos, JsQueryItemType *type, int32 *nextPos)
-{
-	read_byte(*type, base, pos);
-	switch(INTALIGN(pos) - pos)
-	{
-		case 3: pos++;
-		case 2: pos++;
-		case 1: pos++;
-		default: break;
-	}
-	read_int32(*nextPos, base, pos);
-
-	return pos;
-}
-
-
 static void
 printOperation(StringInfo buf, JsQueryItemType type)
 {
