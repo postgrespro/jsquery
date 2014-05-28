@@ -953,3 +953,187 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
      4
 (1 row)
 
+create index t_idx on test_jsquery using gin (v jsonb_bloom_value_ops);
+set enable_seqscan = off;
+explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+                               QUERY PLAN                               
+------------------------------------------------------------------------
+ Aggregate
+   ->  Bitmap Heap Scan on test_jsquery
+         Recheck Cond: (v @@ '"review_helpful_votes" > 0'::jsquery)
+         ->  Bitmap Index Scan on t_idx
+               Index Cond: (v @@ '"review_helpful_votes" > 0'::jsquery)
+(5 rows)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+ count 
+-------
+   653
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
+ count 
+-------
+    13
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19';
+ count 
+-------
+   984
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
+ count 
+-------
+    16
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19';
+ count 
+-------
+   987
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19';
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16' AND
+										v @@ 'review_helpful_votes < 20';
+ count 
+-------
+     8
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 & review_helpful_votes < 20';
+ count 
+-------
+     8
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 & $ < 20)';
+ count 
+-------
+     8
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"]';
+ count 
+-------
+     7
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
+ count 
+-------
+     7
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
+ count 
+-------
+     7
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+ count 
+-------
+     4
+(1 row)
+
+drop index t_idx;
+create index t_idx on test_jsquery using gin (v jsonb_hash_value_ops);
+set enable_seqscan = off;
+explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+                               QUERY PLAN                               
+------------------------------------------------------------------------
+ Aggregate
+   ->  Bitmap Heap Scan on test_jsquery
+         Recheck Cond: (v @@ '"review_helpful_votes" > 0'::jsquery)
+         ->  Bitmap Index Scan on t_idx
+               Index Cond: (v @@ '"review_helpful_votes" > 0'::jsquery)
+(5 rows)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+ count 
+-------
+   653
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
+ count 
+-------
+    13
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19';
+ count 
+-------
+   984
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
+ count 
+-------
+    16
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19';
+ count 
+-------
+   987
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19';
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16' AND
+										v @@ 'review_helpful_votes < 20';
+ count 
+-------
+     8
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 & review_helpful_votes < 20';
+ count 
+-------
+     8
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 & $ < 20)';
+ count 
+-------
+     8
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"]';
+ count 
+-------
+     7
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
+ count 
+-------
+     7
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
+ count 
+-------
+     7
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+ count 
+-------
+     4
+(1 row)
+
+RESET enable_seqscan;

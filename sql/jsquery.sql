@@ -195,3 +195,47 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
 select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+
+create index t_idx on test_jsquery using gin (v jsonb_bloom_value_ops);
+set enable_seqscan = off;
+
+explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16' AND
+										v @@ 'review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 & review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 & $ < 20)';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+
+drop index t_idx;
+
+create index t_idx on test_jsquery using gin (v jsonb_hash_value_ops);
+set enable_seqscan = off;
+
+explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16' AND
+										v @@ 'review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 & review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 & $ < 20)';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+
+RESET enable_seqscan;
