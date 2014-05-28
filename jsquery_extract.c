@@ -1,3 +1,17 @@
+/*-------------------------------------------------------------------------
+ *
+ * jsquery_extract.c
+ *     Functions and operations to support jsquery in indexes  
+ *
+ * Copyright (c) 2014, PostgreSQL Global Development Group
+ * Author: Alexander Korotkov <aekorotkov@gmail.com>
+ *
+ * IDENTIFICATION
+ *    contrib/jsquery/jsquery_extract.c
+ *
+ *-------------------------------------------------------------------------
+ */
+
 #include "postgres.h"
 
 #include "access/gin.h"

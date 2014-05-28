@@ -54,6 +54,10 @@ typedef enum JsQueryItemType {
 		jqiIn = 'I'
 } JsQueryItemType;
 
+/*
+ * Support functions to parse/construct binary value  
+ */
+
 typedef struct JsQueryItem {
 	JsQueryItemType	type;
 	int32			nextPos;
@@ -94,6 +98,8 @@ extern char * jsqGetString(JsQueryItem *v, int32 *len);
 extern void jsqIterateInit(JsQueryItem *v);
 extern bool jsqIterateArray(JsQueryItem *v, JsQueryItem *e);
 
+void alignStringInfoInt(StringInfo buf);
+
 /*
  * Parsing
  */
@@ -127,8 +133,6 @@ struct JsQueryParseItem {
 };
 
 extern JsQueryParseItem* parsejsquery(const char *str, int len);
-
-void alignStringInfoInt(StringInfo buf);
 
 /* jsquery_extract.c */
 

@@ -27,6 +27,22 @@
 } while(0)							\
 
 void
+alignStringInfoInt(StringInfo buf)
+{
+	switch(INTALIGN(buf->len) - buf->len)
+	{
+		case 3:
+			appendStringInfoCharMacro(buf, 0);
+		case 2:
+			appendStringInfoCharMacro(buf, 0);
+		case 1:
+			appendStringInfoCharMacro(buf, 0);
+		default:
+			break;
+	}
+}
+
+void
 jsqInit(JsQueryItem *v, JsQuery *js)
 {
 	jsqInitByBuffer(v, VARDATA(js), 0);
