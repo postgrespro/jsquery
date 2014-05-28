@@ -2,6 +2,10 @@ CREATE EXTENSION jsquery;
 
 set escape_string_warning=off;
 
+CREATE TABLE test_jsquery (v jsonb);
+
+\copy test_jsquery from 'data/test_jsquery.data'
+
 select 'asd.zzz = 13'::jsquery;
 select 'asd.zzz < 13'::jsquery;
 select 'asd(zzz < 13)'::jsquery;
@@ -163,3 +167,31 @@ select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%=[5,6]';
 
 select '"XXX"'::jsonb @@ '$="XXX"';
 select '"XXX"'::jsonb @@ '#.$="XXX"';
+
+
+---table and index
+
+select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 0;
+select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 19;
+select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 < 19;
+select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 >= 19;
+select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 <= 19;
+select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 = 19;
+select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 16 AND
+										(v->>'review_helpful_votes')::int4 < 20;
+
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16' AND
+										v @@ 'review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 & review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 & $ < 20)';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';

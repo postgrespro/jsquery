@@ -1,5 +1,7 @@
 CREATE EXTENSION jsquery;
 set escape_string_warning=off;
+CREATE TABLE test_jsquery (v jsonb);
+\copy test_jsquery from 'data/test_jsquery.data'
 select 'asd.zzz = 13'::jsquery;
      jsquery      
 ------------------
@@ -826,5 +828,128 @@ select '"XXX"'::jsonb @@ '#.$="XXX"';
  ?column? 
 ----------
  f
+(1 row)
+
+---table and index
+select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 0;
+ count 
+-------
+   653
+(1 row)
+
+select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 19;
+ count 
+-------
+    13
+(1 row)
+
+select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 < 19;
+ count 
+-------
+   984
+(1 row)
+
+select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 >= 19;
+ count 
+-------
+    16
+(1 row)
+
+select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 <= 19;
+ count 
+-------
+   987
+(1 row)
+
+select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 = 19;
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 16 AND
+										(v->>'review_helpful_votes')::int4 < 20;
+ count 
+-------
+     8
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+ count 
+-------
+   653
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
+ count 
+-------
+    13
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19';
+ count 
+-------
+   984
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
+ count 
+-------
+    16
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19';
+ count 
+-------
+   987
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19';
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16' AND
+										v @@ 'review_helpful_votes < 20';
+ count 
+-------
+     8
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 & review_helpful_votes < 20';
+ count 
+-------
+     8
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 & $ < 20)';
+ count 
+-------
+     8
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"]';
+ count 
+-------
+     7
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
+ count 
+-------
+     7
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
+ count 
+-------
+     7
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+ count 
+-------
+     4
 (1 row)
 
