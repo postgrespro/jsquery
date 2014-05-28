@@ -20,9 +20,9 @@
 #include "jsquery.h"
 
 static int32
-copyJsQuery(StringInfo buf, JsQueryItemR *jsq)
+copyJsQuery(StringInfo buf, JsQueryItem *jsq)
 {
-	JsQueryItemR	elem;
+	JsQueryItem	elem;
 	int32			next, chld;
 	int32           resPos = buf->len - VARHDRSZ; /* position from begining of jsquery data */
 
@@ -128,7 +128,7 @@ copyJsQuery(StringInfo buf, JsQueryItemR *jsq)
 		case jqiAnyKey:
 			break;
 		default:
-			elog(ERROR, "Unknown JsQueryItem type: %d", jsq->type);
+			elog(ERROR, "Unknown type: %d", jsq->type);
 	}
 
 	if (jsqGetNext(jsq, &elem))
@@ -143,7 +143,7 @@ joinJsQuery(JsQueryItemType type, JsQuery *jq1, JsQuery *jq2)
 	JsQuery			*out;
 	StringInfoData	buf;
 	int32			left, right, chld;
-	JsQueryItemR	v;	
+	JsQueryItem	v;	
 
 	initStringInfo(&buf);
 	enlargeStringInfo(&buf, VARSIZE_ANY(jq1) + VARSIZE_ANY(jq2) + 4 * sizeof(int32) + VARHDRSZ);
@@ -217,7 +217,7 @@ jsquery_not(PG_FUNCTION_ARGS)
 	JsQuery			*out;
 	StringInfoData	buf;
 	int32			arg, chld;
-	JsQueryItemR	v;
+	JsQueryItem		v;
 
 	initStringInfo(&buf);
 	enlargeStringInfo(&buf, VARSIZE_ANY(jq) + 4 * sizeof(int32) + VARHDRSZ);

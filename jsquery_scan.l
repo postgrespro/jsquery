@@ -257,9 +257,9 @@ addchar(bool init, char s) {
 		scanstring.len++;
 }
 
-JsQueryItem* 
+JsQueryParseItem* 
 parsejsquery(const char *str, int len) {
-	JsQueryItem		*parseresult;
+	JsQueryParseItem		*parseresult;
 
 	jsquery_scanner_init(str, len);
 

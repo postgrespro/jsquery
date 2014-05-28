@@ -39,7 +39,7 @@ alignStringInfoInt(StringInfo buf)
 }
 
 static int
-flattenJsQueryItem(StringInfo buf, JsQueryItem *item)
+flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item)
 {
 	int32	pos = buf->len - VARHDRSZ; /* position from begining of jsquery data */
 	int32	chld, next;
@@ -79,7 +79,7 @@ flattenJsQueryItem(StringInfo buf, JsQueryItem *item)
 
 				for(i=0; i<item->array.nelems; i++)
 				{
-					chld = flattenJsQueryItem(buf, item->array.elems[i]);
+					chld = flattenJsQueryParseItem(buf, item->array.elems[i]);
 					*(int32*)(buf->data + arrayStart + i * sizeof(i)) = chld;
 				}
 
@@ -95,9 +95,9 @@ flattenJsQueryItem(StringInfo buf, JsQueryItem *item)
 				right = buf->len;
 				appendBinaryStringInfo(buf, (char*)&right /* fake value */, sizeof(right));
 
-				chld = flattenJsQueryItem(buf, item->args.left);
+				chld = flattenJsQueryParseItem(buf, item->args.left);
 				*(int32*)(buf->data + left) = chld;
-				chld = flattenJsQueryItem(buf, item->args.right);
+				chld = flattenJsQueryParseItem(buf, item->args.right);
 				*(int32*)(buf->data + right) = chld;
 			}
 			break;
@@ -117,7 +117,7 @@ flattenJsQueryItem(StringInfo buf, JsQueryItem *item)
 				arg = buf->len;
 				appendBinaryStringInfo(buf, (char*)&arg /* fake value */, sizeof(arg));
 
-				chld = flattenJsQueryItem(buf, item->arg);
+				chld = flattenJsQueryParseItem(buf, item->arg);
 				*(int32*)(buf->data + arg) = chld;
 			}
 			break;
@@ -128,11 +128,11 @@ flattenJsQueryItem(StringInfo buf, JsQueryItem *item)
 		case jqiAnyKey:
 			break;
 		default:
-			elog(ERROR, "Unknown JsQueryItem type: %d", item->type);
+			elog(ERROR, "Unknown type: %d", item->type);
 	}
 
 	if (item->next)
-		*(int32*)(buf->data + next) = flattenJsQueryItem(buf, item->next);
+		*(int32*)(buf->data + next) = flattenJsQueryParseItem(buf, item->next);
 
 	return  pos;
 }
@@ -141,9 +141,9 @@ PG_FUNCTION_INFO_V1(jsquery_in);
 Datum
 jsquery_in(PG_FUNCTION_ARGS)
 {
-	char			*in = PG_GETARG_CSTRING(0);
-	int32			len = strlen(in);
-	JsQueryItem		*jsquery = parsejsquery(in, len);
+	char				*in = PG_GETARG_CSTRING(0);
+	int32				len = strlen(in);
+	JsQueryParseItem	*jsquery = parsejsquery(in, len);
 	JsQuery			*res;
 	StringInfoData	buf;
 
@@ -154,7 +154,7 @@ jsquery_in(PG_FUNCTION_ARGS)
 
 	if (jsquery != NULL)
 	{
-		flattenJsQueryItem(&buf, jsquery);
+		flattenJsQueryParseItem(&buf, jsquery);
 
 		res = (JsQuery*)buf.data;
 		SET_VARSIZE(res, buf.len);
@@ -191,14 +191,14 @@ printOperation(StringInfo buf, JsQueryItemType type)
 		case jqiOverlap:
 			appendBinaryStringInfo(buf, " && ", 4); break;
 		default:
-			elog(ERROR, "Unknown JsQueryItem type: %d", type);
+			elog(ERROR, "Unknown type: %d", type);
 	}
 }
 
 static void
-printJsQueryItem(StringInfo buf, JsQueryItemR *v, bool inKey, bool printBracketes)
+printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes)
 {
-	JsQueryItemR	elem;
+	JsQueryItem	elem;
 	bool			first = true;
 
 	check_stack_depth();
@@ -310,7 +310,7 @@ jsquery_out(PG_FUNCTION_ARGS)
 {
 	JsQuery			*in = PG_GETARG_JSQUERY(0);
 	StringInfoData	buf;
-	JsQueryItemR	v;
+	JsQueryItem		v;
 
 	initStringInfo(&buf);
 	enlargeStringInfo(&buf, VARSIZE(in) /* estimation */); 

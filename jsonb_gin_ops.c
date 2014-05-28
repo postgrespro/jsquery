@@ -59,7 +59,7 @@ typedef struct
 static uint32 get_bloom_value(uint32 hash);
 static uint32 get_path_bloom(PathHashStack *stack);
 static GINKey *make_gin_key(JsonbValue *v, uint32 hash);
-static GINKey *make_gin_query_key(JsQueryItemR *value, uint32 hash);
+static GINKey *make_gin_query_key(JsQueryItem *value, uint32 hash);
 static GINKey *make_gin_query_key_minus_inf(uint32 hash);
 static int32 compare_gin_key_value(GINKey *arg1, GINKey *arg2);
 static int add_entry(Entries *e, Datum key, Pointer extra, bool pmatch);
@@ -281,7 +281,7 @@ make_gin_key(JsonbValue *v, uint32 hash)
 }
 
 static GINKey *
-make_gin_query_key(JsQueryItemR *value, uint32 hash)
+make_gin_query_key(JsQueryItem *value, uint32 hash)
 {
 	GINKey *key;
 	int32	len;
@@ -851,7 +851,7 @@ make_hash_entry_handler(ExtractedNode *node, Pointer extra)
 	{
 		if (node->bounds.exact->type == jqiAny)
 		{
-			JsQueryItemR value;
+			JsQueryItem value;
 
 			value.type = jqiNull;
 			value.nextPos = 0;

@@ -20,7 +20,7 @@
 
 #include "jsquery.h"
 
-static bool recursiveExecute(JsQueryItemR *jsq, JsonbValue *jb);
+static bool recursiveExecute(JsQueryItem *jsq, JsonbValue *jb);
 
 static int
 compareNumeric(Numeric a, Numeric b)
@@ -58,7 +58,7 @@ JsonbType(JsonbValue *jb)
 }
 
 static bool
-recursiveAny(JsQueryItemR *jsq, JsonbValue *jb)
+recursiveAny(JsQueryItem *jsq, JsonbValue *jb)
 {
 	bool			res = false;
 	JsonbIterator	*it;
@@ -90,7 +90,7 @@ recursiveAny(JsQueryItemR *jsq, JsonbValue *jb)
 }
 
 static bool
-checkScalarEquality(JsQueryItemR *jsq,  JsonbValue *jb)
+checkScalarEquality(JsQueryItem *jsq,  JsonbValue *jb)
 {
 	int		len;
 	char	*s;
@@ -123,12 +123,12 @@ checkScalarEquality(JsQueryItemR *jsq,  JsonbValue *jb)
 }
 
 static bool
-checkArrayEquality(JsQueryItemR *jsq, JsonbValue *jb)
+checkArrayEquality(JsQueryItem *jsq, JsonbValue *jb)
 {
 	int32			r;
 	JsonbIterator	*it;
 	JsonbValue		v;
-	JsQueryItemR	elem;
+	JsQueryItem	elem;
 
 	if (!(jsq->type == jqiArray && JsonbType(jb) == jbvArray))
 		return false;
@@ -156,9 +156,9 @@ checkArrayEquality(JsQueryItemR *jsq, JsonbValue *jb)
 }
 
 static bool
-checkScalarIn(JsQueryItemR *jsq, JsonbValue *jb)
+checkScalarIn(JsQueryItem *jsq, JsonbValue *jb)
 {
-	JsQueryItemR	elem;
+	JsQueryItem	elem;
 
 	if (jb->type == jbvBinary)
 		return false;
@@ -174,12 +174,12 @@ checkScalarIn(JsQueryItemR *jsq, JsonbValue *jb)
 }
 
 static bool
-executeArrayOp(JsQueryItemR *jsq, int32 op, JsonbValue *jb)
+executeArrayOp(JsQueryItem *jsq, int32 op, JsonbValue *jb)
 {
 	int32			r;
 	JsonbIterator	*it;
 	JsonbValue		v;
-	JsQueryItemR	elem;
+	JsQueryItem	elem;
 
 	if (JsonbType(jb) != jbvArray)
 		return false;
@@ -239,7 +239,7 @@ executeArrayOp(JsQueryItemR *jsq, int32 op, JsonbValue *jb)
 }
 
 static bool
-makeCompare(JsQueryItemR *jsq, int32 op, JsonbValue *jb)
+makeCompare(JsQueryItem *jsq, int32 op, JsonbValue *jb)
 {
 	int	res;
 
@@ -268,7 +268,7 @@ makeCompare(JsQueryItemR *jsq, int32 op, JsonbValue *jb)
 }
 
 static bool
-executeExpr(JsQueryItemR *jsq, int32 op, JsonbValue *jb)
+executeExpr(JsQueryItem *jsq, int32 op, JsonbValue *jb)
 {
 	/*
 	 * read arg type 
@@ -302,9 +302,9 @@ executeExpr(JsQueryItemR *jsq, int32 op, JsonbValue *jb)
 }
 
 static bool
-recursiveExecute(JsQueryItemR *jsq, JsonbValue *jb)
+recursiveExecute(JsQueryItem *jsq, JsonbValue *jb)
 {
-	JsQueryItemR	elem;
+	JsQueryItem	elem;
 	bool			res = false;
 
 	check_stack_depth();
@@ -442,7 +442,7 @@ jsquery_json_exec(PG_FUNCTION_ARGS)
 	Jsonb			*jb = PG_GETARG_JSONB(1);
 	bool			res;
 	JsonbValue		jbv;
-	JsQueryItemR	jsq;
+	JsQueryItem	jsq;
 
 	jbv.type = jbvBinary;
 	jbv.val.binary.data = &jb->root;
@@ -466,7 +466,7 @@ json_jsquery_exec(PG_FUNCTION_ARGS)
 	JsQuery			*jq = PG_GETARG_JSQUERY(1);
 	bool			res;
 	JsonbValue		jbv;
-	JsQueryItemR	jsq;
+	JsQueryItem	jsq;
 
 	jbv.type = jbvBinary;
 	jbv.val.binary.data = &jb->root;
@@ -483,9 +483,9 @@ json_jsquery_exec(PG_FUNCTION_ARGS)
 }
 
 static int
-compareJsQuery(JsQueryItemR *v1, JsQueryItemR *v2)
+compareJsQuery(JsQueryItem *v1, JsQueryItem *v2)
 {
-	JsQueryItemR	elem1, elem2;
+	JsQueryItem	elem1, elem2;
 	int32			res = 0;
 
 	check_stack_depth();
@@ -589,7 +589,7 @@ jsquery_cmp(PG_FUNCTION_ARGS)
 	JsQuery			*jq1 = PG_GETARG_JSQUERY(0);
 	JsQuery			*jq2 = PG_GETARG_JSQUERY(1);
 	int32			res;
-	JsQueryItemR	v1, v2;
+	JsQueryItem		v1, v2;
 
 	jsqInit(&v1, jq1);
 	jsqInit(&v2, jq2);
@@ -609,7 +609,7 @@ jsquery_lt(PG_FUNCTION_ARGS)
 	JsQuery			*jq1 = PG_GETARG_JSQUERY(0);
 	JsQuery			*jq2 = PG_GETARG_JSQUERY(1);
 	int32			res;
-	JsQueryItemR	v1, v2;
+	JsQueryItem		v1, v2;
 
 	jsqInit(&v1, jq1);
 	jsqInit(&v2, jq2);
@@ -629,7 +629,7 @@ jsquery_le(PG_FUNCTION_ARGS)
 	JsQuery			*jq1 = PG_GETARG_JSQUERY(0);
 	JsQuery			*jq2 = PG_GETARG_JSQUERY(1);
 	int32			res;
-	JsQueryItemR	v1, v2;
+	JsQueryItem		v1, v2;
 
 	jsqInit(&v1, jq1);
 	jsqInit(&v2, jq2);
@@ -649,7 +649,7 @@ jsquery_eq(PG_FUNCTION_ARGS)
 	JsQuery			*jq1 = PG_GETARG_JSQUERY(0);
 	JsQuery			*jq2 = PG_GETARG_JSQUERY(1);
 	int32			res;
-	JsQueryItemR	v1, v2;
+	JsQueryItem		v1, v2;
 
 	jsqInit(&v1, jq1);
 	jsqInit(&v2, jq2);
@@ -669,7 +669,7 @@ jsquery_ne(PG_FUNCTION_ARGS)
 	JsQuery			*jq1 = PG_GETARG_JSQUERY(0);
 	JsQuery			*jq2 = PG_GETARG_JSQUERY(1);
 	int32			res;
-	JsQueryItemR	v1, v2;
+	JsQueryItem		v1, v2;
 
 	jsqInit(&v1, jq1);
 	jsqInit(&v2, jq2);
@@ -689,7 +689,7 @@ jsquery_ge(PG_FUNCTION_ARGS)
 	JsQuery			*jq1 = PG_GETARG_JSQUERY(0);
 	JsQuery			*jq2 = PG_GETARG_JSQUERY(1);
 	int32			res;
-	JsQueryItemR	v1, v2;
+	JsQueryItem		v1, v2;
 
 	jsqInit(&v1, jq1);
 	jsqInit(&v2, jq2);
@@ -709,7 +709,7 @@ jsquery_gt(PG_FUNCTION_ARGS)
 	JsQuery			*jq1 = PG_GETARG_JSQUERY(0);
 	JsQuery			*jq2 = PG_GETARG_JSQUERY(1);
 	int32			res;
-	JsQueryItemR	v1, v2;
+	JsQueryItem		v1, v2;
 
 	jsqInit(&v1, jq1);
 	jsqInit(&v2, jq2);
@@ -723,9 +723,9 @@ jsquery_gt(PG_FUNCTION_ARGS)
 }
 
 static void
-hashJsQuery(JsQueryItemR *v, pg_crc32 *crc)
+hashJsQuery(JsQueryItem *v, pg_crc32 *crc)
 {
-	JsQueryItemR	elem;
+	JsQueryItem	elem;
 
 	check_stack_depth();
 
@@ -801,7 +801,7 @@ Datum
 jsquery_hash(PG_FUNCTION_ARGS)
 {
 	JsQuery			*jq = PG_GETARG_JSQUERY(0);
-	JsQueryItemR	v;
+	JsQueryItem		v;
 	pg_crc32		res;
 
 	INIT_CRC32(res);

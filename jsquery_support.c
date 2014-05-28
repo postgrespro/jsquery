@@ -27,13 +27,13 @@
 } while(0)							\
 
 void
-jsqInit(JsQueryItemR *v, JsQuery *js)
+jsqInit(JsQueryItem *v, JsQuery *js)
 {
 	jsqInitByBuffer(v, VARDATA(js), 0);
 }
 
 void
-jsqInitByBuffer(JsQueryItemR *v, char *base, int32 pos)
+jsqInitByBuffer(JsQueryItem *v, char *base, int32 pos)
 {
 	v->base = base;
 
@@ -93,7 +93,7 @@ jsqInitByBuffer(JsQueryItemR *v, char *base, int32 pos)
 }
 
 void
-jsqGetArg(JsQueryItemR *v, JsQueryItemR *a)
+jsqGetArg(JsQueryItem *v, JsQueryItem *a)
 {
 	Assert(
 		v->type == jqiEqual ||
@@ -112,7 +112,7 @@ jsqGetArg(JsQueryItemR *v, JsQueryItemR *a)
 }
 
 bool
-jsqGetNext(JsQueryItemR *v, JsQueryItemR *a)
+jsqGetNext(JsQueryItem *v, JsQueryItem *a)
 {
 	if (v->nextPos > 0)
 	{
@@ -133,7 +133,7 @@ jsqGetNext(JsQueryItemR *v, JsQueryItemR *a)
 }
 
 void
-jsqGetLeftArg(JsQueryItemR *v, JsQueryItemR *a)
+jsqGetLeftArg(JsQueryItem *v, JsQueryItem *a)
 {
 	Assert(
 		v->type == jqiAnd ||
@@ -144,7 +144,7 @@ jsqGetLeftArg(JsQueryItemR *v, JsQueryItemR *a)
 }
 
 void
-jsqGetRightArg(JsQueryItemR *v, JsQueryItemR *a)
+jsqGetRightArg(JsQueryItem *v, JsQueryItem *a)
 {
 	Assert(
 		v->type == jqiAnd ||
@@ -155,7 +155,7 @@ jsqGetRightArg(JsQueryItemR *v, JsQueryItemR *a)
 }
 
 bool
-jsqGetBool(JsQueryItemR *v)
+jsqGetBool(JsQueryItem *v)
 {
 	Assert(v->type == jqiBool);
 
@@ -163,7 +163,7 @@ jsqGetBool(JsQueryItemR *v)
 }
 
 Numeric
-jsqGetNumeric(JsQueryItemR *v)
+jsqGetNumeric(JsQueryItem *v)
 {
 	Assert(v->type == jqiNumeric);
 
@@ -171,7 +171,7 @@ jsqGetNumeric(JsQueryItemR *v)
 }
 
 char*
-jsqGetString(JsQueryItemR *v, int32 *len)
+jsqGetString(JsQueryItem *v, int32 *len)
 {
 	Assert(
 		v->type == jqiKey ||
@@ -184,7 +184,7 @@ jsqGetString(JsQueryItemR *v, int32 *len)
 }
 
 void
-jsqIterateInit(JsQueryItemR *v)
+jsqIterateInit(JsQueryItem *v)
 {
 	Assert(v->type == jqiArray);
 
@@ -192,7 +192,7 @@ jsqIterateInit(JsQueryItemR *v)
 }
 
 bool
-jsqIterateArray(JsQueryItemR *v, JsQueryItemR *e)
+jsqIterateArray(JsQueryItem *v, JsQueryItem *e)
 {
 	Assert(v->type == jqiArray);
 

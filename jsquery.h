@@ -54,22 +54,24 @@ typedef enum JsQueryItemType {
 		jqiIn = 'I'
 } JsQueryItemType;
 
-typedef struct JsQueryItemR {
+typedef struct JsQueryItem {
 	JsQueryItemType	type;
 	int32			nextPos;
 	char			*base;
 
 	union {
 		struct {
-			char		*data;
-			int			datalen; /* filled only for string */
+			char		*data;  /* for bool, numeric and string/key */
+			int			datalen; /* filled only for string/key */
 		} value; 
 
 		struct {
 			int32	left;
 			int32	right;
 		} args;
+
 		int32		arg;
+
 		struct {
 			int		nelems;
 			int		current;
@@ -78,37 +80,37 @@ typedef struct JsQueryItemR {
 	};
 
 
-} JsQueryItemR;
+} JsQueryItem;
 
-extern void jsqInit(JsQueryItemR *v, JsQuery *js);
-extern void jsqInitByBuffer(JsQueryItemR *v, char *base, int32 pos);
-extern bool jsqGetNext(JsQueryItemR *v, JsQueryItemR *a);
-extern void jsqGetArg(JsQueryItemR *v, JsQueryItemR *a);
-extern void jsqGetLeftArg(JsQueryItemR *v, JsQueryItemR *a);
-extern void jsqGetRightArg(JsQueryItemR *v, JsQueryItemR *a);
-extern Numeric	jsqGetNumeric(JsQueryItemR *v);
-extern bool		jsqGetBool(JsQueryItemR *v);
-extern char * jsqGetString(JsQueryItemR *v, int32 *len);
-extern void jsqIterateInit(JsQueryItemR *v);
-extern bool jsqIterateArray(JsQueryItemR *v, JsQueryItemR *e);
+extern void jsqInit(JsQueryItem *v, JsQuery *js);
+extern void jsqInitByBuffer(JsQueryItem *v, char *base, int32 pos);
+extern bool jsqGetNext(JsQueryItem *v, JsQueryItem *a);
+extern void jsqGetArg(JsQueryItem *v, JsQueryItem *a);
+extern void jsqGetLeftArg(JsQueryItem *v, JsQueryItem *a);
+extern void jsqGetRightArg(JsQueryItem *v, JsQueryItem *a);
+extern Numeric	jsqGetNumeric(JsQueryItem *v);
+extern bool		jsqGetBool(JsQueryItem *v);
+extern char * jsqGetString(JsQueryItem *v, int32 *len);
+extern void jsqIterateInit(JsQueryItem *v);
+extern bool jsqIterateArray(JsQueryItem *v, JsQueryItem *e);
 
 /*
  * Parsing
  */
 
-typedef struct JsQueryItem JsQueryItem;
+typedef struct JsQueryParseItem JsQueryParseItem;
 
-struct JsQueryItem {
+struct JsQueryParseItem {
 	JsQueryItemType	type;
-	JsQueryItem	*next; /* next in path */
+	JsQueryParseItem	*next; /* next in path */
 
 	union {
 		struct {
-			JsQueryItem	*left;
-			JsQueryItem	*right;
+			JsQueryParseItem	*left;
+			JsQueryParseItem	*right;
 		} args;
 
-		JsQueryItem	*arg;
+		JsQueryParseItem	*arg;
 
 		Numeric		numeric;
 		bool		boolean;
@@ -118,13 +120,13 @@ struct JsQueryItem {
 		} string;
 
 		struct {
-			int			nelems;
-			JsQueryItem	**elems;
+			int					nelems;
+			JsQueryParseItem	**elems;
 		} array;
 	};
 };
 
-extern JsQueryItem* parsejsquery(const char *str, int len);
+extern JsQueryParseItem* parsejsquery(const char *str, int len);
 
 void alignStringInfoInt(StringInfo buf);
 
@@ -173,9 +175,9 @@ struct ExtractedNode
 			bool			inequality;
 			bool			leftInclusive;
 			bool			rightInclusive;
-			JsQueryItemR	*exact;
-			JsQueryItemR	*leftBound;
-			JsQueryItemR	*rightBound;
+			JsQueryItem		*exact;
+			JsQueryItem		*leftBound;
+			JsQueryItem		*rightBound;
 		} bounds;
 		int	entryNum;
 	};

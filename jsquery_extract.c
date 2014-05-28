@@ -7,7 +7,7 @@
 #include "miscadmin.h"
 #include "jsquery.h"
 
-static ExtractedNode *recursiveExtract(JsQueryItemR *jsq, bool indirect, PathItem *path);
+static ExtractedNode *recursiveExtract(JsQueryItem *jsq, bool indirect, PathItem *path);
 static int coundChildren(ExtractedNode *node, ExtractedNodeType type, bool first, bool *found);
 static void fillChildren(ExtractedNode *node, ExtractedNodeType type, bool first, ExtractedNode **items, int *i);
 static void flatternTree(ExtractedNode *node);
@@ -16,14 +16,14 @@ static ExtractedNode *makeEntries(ExtractedNode *node, MakeEntryHandler handler,
 static int compareNodes(const void *a1, const void *a2);
 static void processGroup(ExtractedNode *node, int start, int end);
 static void simplifyRecursive(ExtractedNode *node);
-static int compareJsQueryItemR(JsQueryItemR *v1, JsQueryItemR *v2);
+static int compareJsQueryItem(JsQueryItem *v1, JsQueryItem *v2);
 
 static ExtractedNode *
-recursiveExtract(JsQueryItemR *jsq,	bool indirect, PathItem *path)
+recursiveExtract(JsQueryItem *jsq,	bool indirect, PathItem *path)
 {
 	ExtractedNode 	*leftNode, *rightNode, *result;
 	PathItem		*pathItem;
-	JsQueryItemR	elem, e;
+	JsQueryItem	elem, e;
 
 	check_stack_depth();
 
@@ -112,7 +112,7 @@ recursiveExtract(JsQueryItemR *jsq,	bool indirect, PathItem *path)
 			result->path = path;
 			result->indirect = indirect;
 			result->bounds.inequality = false;
-			result->bounds.exact = (JsQueryItemR *)palloc(sizeof(JsQueryItemR));
+			result->bounds.exact = (JsQueryItem *)palloc(sizeof(JsQueryItem));
 			jsqGetArg(jsq, result->bounds.exact);
 			return result;
 		case jqiIn:
@@ -146,7 +146,7 @@ recursiveExtract(JsQueryItemR *jsq,	bool indirect, PathItem *path)
 				item->path = pathItem;
 
 				item->bounds.inequality = false;
-				item->bounds.exact = (JsQueryItemR *)palloc(sizeof(JsQueryItemR));
+				item->bounds.exact = (JsQueryItem *)palloc(sizeof(JsQueryItem));
 				*item->bounds.exact = e;
 				result->args.items[result->args.count] = item;
 				result->args.count++;
@@ -166,14 +166,14 @@ recursiveExtract(JsQueryItemR *jsq,	bool indirect, PathItem *path)
 			{
 				result->bounds.leftInclusive = (jsq->type == jqiGreaterOrEqual);
 				result->bounds.rightBound = NULL;
-				result->bounds.leftBound = (JsQueryItemR *)palloc(sizeof(JsQueryItemR));
+				result->bounds.leftBound = (JsQueryItem *)palloc(sizeof(JsQueryItem));
 				jsqGetArg(jsq, result->bounds.leftBound);
 			}
 			else
 			{
 				result->bounds.rightInclusive = (jsq->type == jqiLessOrEqual);
 				result->bounds.leftBound = NULL;
-				result->bounds.rightBound = (JsQueryItemR *)palloc(sizeof(JsQueryItemR));
+				result->bounds.rightBound = (JsQueryItem *)palloc(sizeof(JsQueryItem));
 				jsqGetArg(jsq, result->bounds.rightBound);
 			}
 			return result;
@@ -319,7 +319,7 @@ compareNodes(const void *a1, const void *a2)
 }
 
 static int
-compareJsQueryItemR(JsQueryItemR *v1, JsQueryItemR *v2)
+compareJsQueryItem(JsQueryItem *v1, JsQueryItem *v2)
 {
 	char	*s1, *s2;
 	int32	len1, len2, cmp;
@@ -358,7 +358,7 @@ static void
 processGroup(ExtractedNode *node, int start, int end)
 {
 	int 			i;
-	JsQueryItemR 	*leftBound = NULL, *rightBound = NULL, *exact = NULL;
+	JsQueryItem 	*leftBound = NULL, *rightBound = NULL, *exact = NULL;
 	bool 			leftInclusive = false, rightInclusive = false;
 	ExtractedNode 	*child;
 
@@ -391,7 +391,7 @@ processGroup(ExtractedNode *node, int start, int end)
 				leftBound = child->bounds.leftBound;
 				leftInclusive = child->bounds.leftInclusive;
 			}
-			cmp = compareJsQueryItemR(child->bounds.leftBound, leftBound);
+			cmp = compareJsQueryItem(child->bounds.leftBound, leftBound);
 			if (cmp > 0)
 			{
 				leftBound = child->bounds.leftBound;
@@ -409,7 +409,7 @@ processGroup(ExtractedNode *node, int start, int end)
 				rightBound = child->bounds.rightBound;
 				rightInclusive = child->bounds.rightInclusive;
 			}
-			cmp = compareJsQueryItemR(child->bounds.rightBound, rightBound);
+			cmp = compareJsQueryItem(child->bounds.rightBound, rightBound);
 			if (cmp > 0)
 			{
 				rightBound = child->bounds.rightBound;
@@ -593,7 +593,7 @@ ExtractedNode *
 extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra)
 {
 	ExtractedNode 	*root;
-	JsQueryItemR	jsq;
+	JsQueryItem		jsq;
 
 	jsqInit(&jsq, jq);
 	root = recursiveExtract(&jsq, false, NULL);

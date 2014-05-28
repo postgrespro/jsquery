@@ -64,9 +64,9 @@ typedef union YYSTYPE
 
 	string 			str;
 	Numeric			numeric;
-	List			*elems; 		/* list of JsQueryItem */
+	List			*elems; 		/* list of JsQueryParseItem */
 
-	JsQueryItem		*value;
+	JsQueryParseItem		*value;
 
 
 /* Line 2053 of yacc.c  */
