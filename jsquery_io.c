@@ -228,6 +228,7 @@ printJsQueryItem(StringInfo buf, JsQueryItemR *v, bool inKey, bool printBrackete
 		case jqiKey:
 			if (inKey)
 				appendStringInfoChar(buf, '.');
+			/* follow next */
 		case jqiString:
 			escape_json(buf, jsqGetString(v, NULL));
 			break;
@@ -331,7 +332,7 @@ jsquery_out(PG_FUNCTION_ARGS)
 	initStringInfo(&buf);
 	enlargeStringInfo(&buf, VARSIZE(in) /* estimation */); 
 
-	jsqInit(&v, VARDATA(in), 0);
+	jsqInit(&v, in);
 	printJsQueryItem(&buf, &v, false, true);
 
 	PG_RETURN_CSTRING(buf.data);

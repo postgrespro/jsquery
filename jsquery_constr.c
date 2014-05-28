@@ -20,77 +20,84 @@
 #include "jsquery.h"
 
 static int32
-copyJsQuery(StringInfo buf, char *jqBase, int32 jqPos)
+copyJsQuery(StringInfo buf, JsQueryItemR *jsq)
 {
-	int32 			resPos = buf->len - VARHDRSZ; /* position from begining of jsquery data */
-	JsQueryItemType	type;
-	int32			nextPos, chld, next;
+	JsQueryItemR	elem;
+	int32			next, chld;
+	int32           resPos = buf->len - VARHDRSZ; /* position from begining of jsquery data */
 
 	check_stack_depth();
 
-	jqPos = readJsQueryHeader(jqBase, jqPos, &type, &nextPos);
-
-	appendStringInfoChar(buf, (char)type);
+	appendStringInfoChar(buf, (char)jsq->type);
 	alignStringInfoInt(buf);
 
-	next = (nextPos > 0) ? buf->len : 0;;
+	next = (jsqGetNext(jsq, NULL)) ? buf->len : 0;
 	appendBinaryStringInfo(buf, (char*)&next /* fake value */, sizeof(next));
 
-	switch(type)
+	switch(jsq->type)
 	{
 		case jqiKey:
 		case jqiString:
 			{
-				int32 len;
+				int32 	len;
+				char	*s;
 
-				read_int32(len, jqBase, jqPos);
+				s = jsqGetString(jsq, &len);
 				appendBinaryStringInfo(buf, (char*)&len, sizeof(len));
-				appendBinaryStringInfo(buf, jqBase + jqPos, len + 1 /* \0 */);
+				appendBinaryStringInfo(buf, s, len + 1 /* \0 */);
 			}
 			break;
 		case jqiNumeric:
-			appendBinaryStringInfo(buf, jqBase + jqPos, VARSIZE(jqBase + jqPos));
+			{
+				Numeric n = jsqGetNumeric(jsq);
+
+				appendBinaryStringInfo(buf, (char*)n, VARSIZE_ANY(n));
+			}
 			break;
 		case jqiBool:
-			appendBinaryStringInfo(buf, jqBase + jqPos, 1);
+			{
+				bool v = jsqGetBool(jsq);
+
+				appendBinaryStringInfo(buf, (char*)&v, 1);
+			}
 			break;
 		case jqiArray:
 			{
-				int32 i, nelems, arrayStart, *arrayPosIn;
+				int32 i, arrayStart;
 
-				read_int32(nelems, jqBase, jqPos);
-				appendBinaryStringInfo(buf, (char*)&nelems /* fake value */, sizeof(nelems));
+				appendBinaryStringInfo(buf, (char*)&jsq->array.nelems, 
+									   sizeof(jsq->array.nelems));
 
 				arrayStart = buf->len;
-				arrayPosIn = (int32*)(jqBase + jqPos);
 
 				/* reserve place for "pointers" to array's elements */
-				for(i=0; i<nelems; i++)
+				for(i=0; i<jsq->array.nelems; i++)
 					appendBinaryStringInfo(buf, (char*)&i /* fake value */, sizeof(i));
 
-				for(i=0; i<nelems; i++)
+				while(jsqIterateArray(jsq, &elem))
 				{
-					chld = copyJsQuery(buf, jqBase, arrayPosIn[i]);
+					chld = copyJsQuery(buf, &elem);
 					*(int32*)(buf->data + arrayStart + i * sizeof(i)) = chld;
+					i++;
 				}
 			}
 			break;
 		case jqiAnd:
 		case jqiOr:
 			{
-				int32	leftIn, rightIn, leftOut, rightOut;
+				int32	leftOut, rightOut;
 
 				leftOut = buf->len;
 				appendBinaryStringInfo(buf, (char*)&leftOut /* fake value */, sizeof(leftOut));
 				rightOut = buf->len;
 				appendBinaryStringInfo(buf, (char*)&rightOut /* fake value */, sizeof(rightOut));
 
-				read_int32(leftIn, jqBase, jqPos);
-				chld = copyJsQuery(buf, jqBase, leftIn);
+				jsqGetLeftArg(jsq, &elem);
+				chld = copyJsQuery(buf, &elem);
 				*(int32*)(buf->data + leftOut) = chld;
 
-				read_int32(rightIn, jqBase, jqPos);
-				chld = copyJsQuery(buf, jqBase, rightIn);
+				jsqGetRightArg(jsq, &elem);
+				chld = copyJsQuery(buf, &elem);
 				*(int32*)(buf->data + rightOut) = chld;
 			}
 			break;
@@ -105,13 +112,12 @@ copyJsQuery(StringInfo buf, char *jqBase, int32 jqPos)
 		case jqiOverlap:
 		case jqiNot:
 			{
-				int32	argIn, argOut;
+				int32	argOut = buf->len;
 
-				argOut = buf->len;
 				appendBinaryStringInfo(buf, (char*)&argOut /* fake value */, sizeof(argOut));
 
-				read_int32(argIn, jqBase, jqPos);
-				chld = copyJsQuery(buf, jqBase, argIn);
+				jsqGetArg(jsq, &elem);
+				chld = copyJsQuery(buf, &elem);
 				*(int32*)(buf->data + argOut) = chld;
 			}
 			break;
@@ -122,11 +128,11 @@ copyJsQuery(StringInfo buf, char *jqBase, int32 jqPos)
 		case jqiAnyKey:
 			break;
 		default:
-			elog(ERROR, "Unknown JsQueryItem type: %d", type);
+			elog(ERROR, "Unknown JsQueryItem type: %d", jsq->type);
 	}
 
-	if (nextPos)
-		*(int32*)(buf->data + next) = copyJsQuery(buf, jqBase, nextPos);
+	if (jsqGetNext(jsq, &elem))
+		*(int32*)(buf->data + next) = copyJsQuery(buf, &elem);
 
 	return resPos;
 }
@@ -137,17 +143,19 @@ joinJsQuery(JsQueryItemType type, JsQuery *jq1, JsQuery *jq2)
 	JsQuery			*out;
 	StringInfoData	buf;
 	int32			left, right, chld;
+	JsQueryItemR	v;	
 
 	initStringInfo(&buf);
 	enlargeStringInfo(&buf, VARSIZE_ANY(jq1) + VARSIZE_ANY(jq2) + 4 * sizeof(int32) + VARHDRSZ);
 
 	appendStringInfoSpaces(&buf, VARHDRSZ);
 
+	/* form jqiAnd/jqiOr header */
 	appendStringInfoChar(&buf, (char)type);
 	alignStringInfoInt(&buf);
 
-	/* next */
-	chld = 0;
+	/* nextPos field of header*/
+	chld = 0; /* actual value, not a fake */
 	appendBinaryStringInfo(&buf, (char*)&chld, sizeof(chld));
 
 	left = buf.len;
@@ -155,9 +163,12 @@ joinJsQuery(JsQueryItemType type, JsQuery *jq1, JsQuery *jq2)
 	right = buf.len;
 	appendBinaryStringInfo(&buf, (char*)&right /* fake value */, sizeof(right));
 
-	chld = copyJsQuery(&buf, VARDATA(jq1), 0);
+	/* dump left and right subtree */
+	jsqInit(&v, jq1);
+	chld = copyJsQuery(&buf, &v);
 	*(int32*)(buf.data + left) = chld;
-	chld = copyJsQuery(&buf, VARDATA(jq2), 0);
+	jsqInit(&v, jq2);
+	chld = copyJsQuery(&buf, &v);
 	*(int32*)(buf.data + right) = chld;
 
 	out = (JsQuery*)buf.data;
@@ -206,23 +217,26 @@ jsquery_not(PG_FUNCTION_ARGS)
 	JsQuery			*out;
 	StringInfoData	buf;
 	int32			arg, chld;
+	JsQueryItemR	v;
 
 	initStringInfo(&buf);
 	enlargeStringInfo(&buf, VARSIZE_ANY(jq) + 4 * sizeof(int32) + VARHDRSZ);
 
 	appendStringInfoSpaces(&buf, VARHDRSZ);
 
+	/* form jsquery header */
 	appendStringInfoChar(&buf, (char)jqiNot);
 	alignStringInfoInt(&buf);
 
-	/* next */
-	chld = 0;
+	/* nextPos field of header*/
+	chld = 0; /* actual value, not a fake */
 	appendBinaryStringInfo(&buf, (char*)&chld, sizeof(chld));
 
 	arg = buf.len;
 	appendBinaryStringInfo(&buf, (char*)&arg /* fake value */, sizeof(arg));
 
-	chld = copyJsQuery(&buf, VARDATA(jq), 0);
+	jsqInit(&v, jq);
+	chld = copyJsQuery(&buf, &v);
 	*(int32*)(buf.data + arg) = chld;
 
 	out = (JsQuery*)buf.data;

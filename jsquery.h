@@ -80,7 +80,6 @@ struct JsQueryItem {
 			JsQueryItem	**elems;
 		} array;
 	};
-
 };
 
 typedef struct JsQueryItemR {
@@ -109,7 +108,8 @@ typedef struct JsQueryItemR {
 
 } JsQueryItemR;
 
-extern void jsqInit(JsQueryItemR *v, char *base, int32 pos);
+extern void jsqInit(JsQueryItemR *v, JsQuery *js);
+extern void jsqInitByBuffer(JsQueryItemR *v, char *base, int32 pos);
 extern bool jsqGetNext(JsQueryItemR *v, JsQueryItemR *a);
 extern void jsqGetArg(JsQueryItemR *v, JsQueryItemR *a);
 extern void jsqGetLeftArg(JsQueryItemR *v, JsQueryItemR *a);

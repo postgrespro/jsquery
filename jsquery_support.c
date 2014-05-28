@@ -17,7 +17,13 @@
 #include "jsquery.h"
 
 void
-jsqInit(JsQueryItemR *v, char *base, int32 pos)
+jsqInit(JsQueryItemR *v, JsQuery *js)
+{
+	jsqInitByBuffer(v, VARDATA(js), 0);
+}
+
+void
+jsqInitByBuffer(JsQueryItemR *v, char *base, int32 pos)
 {
 	v->base = base;
 
@@ -44,6 +50,7 @@ jsqInit(JsQueryItemR *v, char *base, int32 pos)
 		case jqiKey:
 		case jqiString:
 			read_int32(v->value.datalen, base, pos);
+			/* follow next */
 		case jqiNumeric:
 		case jqiBool:
 			v->value.data = base + pos;
@@ -91,7 +98,7 @@ jsqGetArg(JsQueryItemR *v, JsQueryItemR *a)
 		v->type == jqiNot
 	);
 
-	jsqInit(a, v->base, v->arg);
+	jsqInitByBuffer(a, v->base, v->arg);
 }
 
 bool
@@ -107,7 +114,8 @@ jsqGetNext(JsQueryItemR *v, JsQueryItemR *a)
 			v->type == jqiCurrent
 		);
 
-		jsqInit(a, v->base, v->nextPos);
+		if (a)
+			jsqInitByBuffer(a, v->base, v->nextPos);
 		return true;
 	}
 
@@ -122,7 +130,7 @@ jsqGetLeftArg(JsQueryItemR *v, JsQueryItemR *a)
 		v->type == jqiOr
 	);
 
-	jsqInit(a, v->base, v->args.left);
+	jsqInitByBuffer(a, v->base, v->args.left);
 }
 
 void
@@ -133,7 +141,7 @@ jsqGetRightArg(JsQueryItemR *v, JsQueryItemR *a)
 		v->type == jqiOr
 	);
 
-	jsqInit(a, v->base, v->args.right);
+	jsqInitByBuffer(a, v->base, v->args.right);
 }
 
 bool
@@ -180,7 +188,7 @@ jsqIterateArray(JsQueryItemR *v, JsQueryItemR *e)
 
 	if (v->array.current < v->array.nelems)
 	{
-		jsqInit(e, v->base, v->array.arrayPtr[v->array.current]);
+		jsqInitByBuffer(e, v->base, v->array.arrayPtr[v->array.current]);
 		v->array.current++;
 		return true;
 	}

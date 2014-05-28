@@ -273,7 +273,7 @@ executeExpr(JsQueryItemR *jsq, int32 op, JsonbValue *jb)
 	/*
 	 * read arg type 
 	 */
-	Assert(jsq->nextPos == 0);
+	Assert(jsqGetNext(jsq, NULL) == false);
 	Assert(jsq->type == jqiAny || jsq->type == jqiString || jsq->type == jqiNumeric || 
 		   jsq->type == jqiNull || jsq->type == jqiBool || jsq->type == jqiArray);
 
@@ -448,7 +448,7 @@ jsquery_json_exec(PG_FUNCTION_ARGS)
 	jbv.val.binary.data = &jb->root;
 	jbv.val.binary.len = VARSIZE_ANY_EXHDR(jb);
 
-	jsqInit(&jsq, VARDATA(jq), 0);
+	jsqInit(&jsq, jq);
 
 	res = recursiveExecute(&jsq, &jbv);
 
@@ -472,7 +472,7 @@ json_jsquery_exec(PG_FUNCTION_ARGS)
 	jbv.val.binary.data = &jb->root;
 	jbv.val.binary.len = VARSIZE_ANY_EXHDR(jb);
 
-	jsqInit(&jsq, VARDATA(jq), 0);
+	jsqInit(&jsq, jq);
 
 	res = recursiveExecute(&jsq, &jbv);
 
@@ -591,8 +591,8 @@ jsquery_cmp(PG_FUNCTION_ARGS)
 	int32			res;
 	JsQueryItemR	v1, v2;
 
-	jsqInit(&v1, VARDATA(jq1), 0);
-	jsqInit(&v2, VARDATA(jq2), 0);
+	jsqInit(&v1, jq1);
+	jsqInit(&v2, jq2);
 
 	res = compareJsQuery(&v1, &v2);
 
@@ -611,8 +611,8 @@ jsquery_lt(PG_FUNCTION_ARGS)
 	int32			res;
 	JsQueryItemR	v1, v2;
 
-	jsqInit(&v1, VARDATA(jq1), 0);
-	jsqInit(&v2, VARDATA(jq2), 0);
+	jsqInit(&v1, jq1);
+	jsqInit(&v2, jq2);
 
 	res = compareJsQuery(&v1, &v2);
 
@@ -631,8 +631,8 @@ jsquery_le(PG_FUNCTION_ARGS)
 	int32			res;
 	JsQueryItemR	v1, v2;
 
-	jsqInit(&v1, VARDATA(jq1), 0);
-	jsqInit(&v2, VARDATA(jq2), 0);
+	jsqInit(&v1, jq1);
+	jsqInit(&v2, jq2);
 
 	res = compareJsQuery(&v1, &v2);
 
@@ -651,8 +651,8 @@ jsquery_eq(PG_FUNCTION_ARGS)
 	int32			res;
 	JsQueryItemR	v1, v2;
 
-	jsqInit(&v1, VARDATA(jq1), 0);
-	jsqInit(&v2, VARDATA(jq2), 0);
+	jsqInit(&v1, jq1);
+	jsqInit(&v2, jq2);
 
 	res = compareJsQuery(&v1, &v2);
 
@@ -671,8 +671,8 @@ jsquery_ne(PG_FUNCTION_ARGS)
 	int32			res;
 	JsQueryItemR	v1, v2;
 
-	jsqInit(&v1, VARDATA(jq1), 0);
-	jsqInit(&v2, VARDATA(jq2), 0);
+	jsqInit(&v1, jq1);
+	jsqInit(&v2, jq2);
 
 	res = compareJsQuery(&v1, &v2);
 
@@ -691,8 +691,8 @@ jsquery_ge(PG_FUNCTION_ARGS)
 	int32			res;
 	JsQueryItemR	v1, v2;
 
-	jsqInit(&v1, VARDATA(jq1), 0);
-	jsqInit(&v2, VARDATA(jq2), 0);
+	jsqInit(&v1, jq1);
+	jsqInit(&v2, jq2);
 
 	res = compareJsQuery(&v1, &v2);
 
@@ -711,8 +711,8 @@ jsquery_gt(PG_FUNCTION_ARGS)
 	int32			res;
 	JsQueryItemR	v1, v2;
 
-	jsqInit(&v1, VARDATA(jq1), 0);
-	jsqInit(&v2, VARDATA(jq2), 0);
+	jsqInit(&v1, jq1);
+	jsqInit(&v2, jq2);
 
 	res = compareJsQuery(&v1, &v2);
 
@@ -805,7 +805,7 @@ jsquery_hash(PG_FUNCTION_ARGS)
 	pg_crc32		res;
 
 	INIT_CRC32(res);
-	jsqInit(&v, VARDATA(jq), 0);
+	jsqInit(&v, jq);
 	hashJsQuery(&v, &res);
 	FIN_CRC32(res);
 
