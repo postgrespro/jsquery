@@ -59,7 +59,7 @@ typedef struct
 static uint32 get_bloom_value(uint32 hash);
 static uint32 get_path_bloom(PathHashStack *stack);
 static GINKey *make_gin_key(JsonbValue *v, uint32 hash);
-static GINKey *make_gin_query_key(JsQueryValue *value, uint32 hash);
+static GINKey *make_gin_query_key(JsQueryItemR *value, uint32 hash);
 static GINKey *make_gin_query_key_minus_inf(uint32 hash);
 static int32 compare_gin_key_value(GINKey *arg1, GINKey *arg2);
 static int add_entry(Entries *e, Datum key, Pointer extra, bool pmatch);
@@ -281,11 +281,11 @@ make_gin_key(JsonbValue *v, uint32 hash)
 }
 
 static GINKey *
-make_gin_query_key(JsQueryValue *value, uint32 hash)
+make_gin_query_key(JsQueryItemR *value, uint32 hash)
 {
 	GINKey *key;
-	char   *jqBase = value->jqBase;
-	int		len, jqPos = value->jqPos;
+	int32	len;
+	char	*s;
 	Numeric	numeric;
 
 	switch(value->type)
@@ -296,21 +296,19 @@ make_gin_query_key(JsQueryValue *value, uint32 hash)
 			SET_VARSIZE(key, GINKEYLEN);
 			break;
 		case jqiString:
-			read_int32(len, jqBase, jqPos);
 			key = (GINKey *)palloc(GINKeyLenString);
 			key->type = jbvString;
-			GINKeyDataString(key) = hash_any((unsigned char *)jqBase + jqPos,
-															  len);
+			s = jsqGetString(value, &len);
+			GINKeyDataString(key) = hash_any((unsigned char *)s, len);
 			SET_VARSIZE(key, GINKeyLenString);
 			break;
 		case jqiBool:
-			read_byte(len, jqBase, jqPos);
 			key = (GINKey *)palloc(GINKEYLEN);
-			key->type = jbvBool | (len ? GINKeyTrue : 0);
+			key->type = jbvBool | (jsqGetBool(value) ? GINKeyTrue : 0);
 			SET_VARSIZE(key, GINKEYLEN);
 			break;
 		case jqiNumeric:
-			numeric = (Numeric)(jqBase + jqPos);
+			numeric = jsqGetNumeric(value);
 			key = (GINKey *)palloc(GINKeyLenNumeric(VARSIZE_ANY(numeric)));
 			key->type = jbvNumeric;
 			memcpy(GINKeyDataNumeric(key), numeric, VARSIZE_ANY(numeric));
@@ -319,6 +317,7 @@ make_gin_query_key(JsQueryValue *value, uint32 hash)
 		default:
 			elog(ERROR,"Wrong state");
 	}
+
 	key->hash = hash;
 	return key;
 }
@@ -852,10 +851,11 @@ make_hash_entry_handler(ExtractedNode *node, Pointer extra)
 	{
 		if (node->bounds.exact->type == jqiAny)
 		{
-			JsQueryValue value;
-			value.jqBase = NULL;
-			value.jqPos = 0;
+			JsQueryItemR value;
+
 			value.type = jqiNull;
+			value.nextPos = 0;
+			value.base = NULL;
 			key = make_gin_query_key(&value, hash);
 			partialMatch = true;
 			keyExtra->lossy = true;

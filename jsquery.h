@@ -154,9 +154,9 @@ typedef enum
 typedef struct PathItem PathItem;
 struct PathItem
 {
-	char		   *s;
 	PathItemType	type;
 	int				len;
+	char		   *s;
 	PathItem	   *parent;
 };
 
@@ -167,13 +167,6 @@ typedef enum
 	eOr,
 	eNot
 } ExtractedNodeType;
-
-typedef struct
-{
-	char   *jqBase;
-	int32	jqPos;
-	int32	type;
-} JsQueryValue;
 
 typedef struct ExtractedNode ExtractedNode;
 struct ExtractedNode
@@ -193,9 +186,9 @@ struct ExtractedNode
 			bool			inequality;
 			bool			leftInclusive;
 			bool			rightInclusive;
-			JsQueryValue   *exact;
-			JsQueryValue   *leftBound;
-			JsQueryValue   *rightBound;
+			JsQueryItemR	*exact;
+			JsQueryItemR	*leftBound;
+			JsQueryItemR	*rightBound;
 		} bounds;
 		int	entryNum;
 	};
