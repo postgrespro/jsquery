@@ -168,6 +168,13 @@ select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%=[5,6]';
 select '"XXX"'::jsonb @@ '$="XXX"';
 select '"XXX"'::jsonb @@ '#.$="XXX"';
 
+--Unicode
+
+select 'a\t = "dollar \u0024 character"'::jsquery;
+select '{ "a":  "dollar \u0024 character" }'::jsonb @@ '* = "dollar \u0024 character"';
+select '{ "a":  "dollar \u0024 character" }'::jsonb @@ '* = "dollar $ character"';
+select '{ "a":  "dollar $ character" }'::jsonb @@ '* = "dollar \u0024 character"';
+select 'a\r = "\n\""'::jsquery;
 
 ---table and index
 

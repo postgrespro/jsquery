@@ -830,6 +830,37 @@ select '"XXX"'::jsonb @@ '#.$="XXX"';
  f
 (1 row)
 
+--Unicode
+select 'a\t = "dollar \u0024 character"'::jsquery;
+           jsquery            
+------------------------------
+ "a\t" = "dollar $ character"
+(1 row)
+
+select '{ "a":  "dollar \u0024 character" }'::jsonb @@ '* = "dollar \u0024 character"';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{ "a":  "dollar \u0024 character" }'::jsonb @@ '* = "dollar $ character"';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{ "a":  "dollar $ character" }'::jsonb @@ '* = "dollar \u0024 character"';
+ ?column? 
+----------
+ t
+(1 row)
+
+select 'a\r = "\n\""'::jsquery;
+    jsquery     
+----------------
+ "a\r" = "\n\""
+(1 row)
+
 ---table and index
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 0;
  count 
