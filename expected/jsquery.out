@@ -865,7 +865,7 @@ select 'a\r = "\n\""'::jsquery;
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 0;
  count 
 -------
-   653
+   654
 (1 row)
 
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 19;
@@ -877,7 +877,7 @@ select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 19;
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 < 19;
  count 
 -------
-   984
+   985
 (1 row)
 
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 >= 19;
@@ -889,7 +889,7 @@ select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 >= 19
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 <= 19;
  count 
 -------
-   987
+   988
 (1 row)
 
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 = 19;
@@ -908,7 +908,7 @@ select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 16 
 select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
  count 
 -------
-   653
+   654
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
@@ -920,7 +920,7 @@ select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
 select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19';
  count 
 -------
-   984
+   985
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
@@ -932,7 +932,7 @@ select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
 select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19';
  count 
 -------
-   987
+   988
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19';
@@ -982,6 +982,24 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
  count 
 -------
      4
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'customer_id = null';
+ count 
+-------
+     1
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_votes = true';
+ count 
+-------
+     1
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'product_group = false';
+ count 
+-------
+     1
 (1 row)
 
 create index t_idx on test_jsquery using gin (v jsonb_bloom_value_ops);
@@ -999,7 +1017,7 @@ explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful
 select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
  count 
 -------
-   653
+   654
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
@@ -1011,7 +1029,7 @@ select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
 select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19';
  count 
 -------
-   984
+   985
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
@@ -1023,7 +1041,7 @@ select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
 select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19';
  count 
 -------
-   987
+   988
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19';
@@ -1073,6 +1091,24 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
  count 
 -------
      4
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'customer_id = null';
+ count 
+-------
+     1
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_votes = true';
+ count 
+-------
+     1
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'product_group = false';
+ count 
+-------
+     1
 (1 row)
 
 drop index t_idx;
@@ -1091,7 +1127,7 @@ explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful
 select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
  count 
 -------
-   653
+   654
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
@@ -1103,7 +1139,7 @@ select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
 select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19';
  count 
 -------
-   984
+   985
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
@@ -1115,7 +1151,7 @@ select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
 select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19';
  count 
 -------
-   987
+   988
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19';
@@ -1165,6 +1201,24 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
  count 
 -------
      4
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'customer_id = null';
+ count 
+-------
+     1
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_votes = true';
+ count 
+-------
+     1
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'product_group = false';
+ count 
+-------
+     1
 (1 row)
 
 RESET enable_seqscan;

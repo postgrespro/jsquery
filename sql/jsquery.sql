@@ -202,6 +202,9 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
 select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'customer_id = null';
+select count(*) from test_jsquery where v @@ 'review_votes = true';
+select count(*) from test_jsquery where v @@ 'product_group = false';
 
 create index t_idx on test_jsquery using gin (v jsonb_bloom_value_ops);
 set enable_seqscan = off;
@@ -222,6 +225,9 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
 select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'customer_id = null';
+select count(*) from test_jsquery where v @@ 'review_votes = true';
+select count(*) from test_jsquery where v @@ 'product_group = false';
 
 drop index t_idx;
 
@@ -244,5 +250,8 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
 select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'customer_id = null';
+select count(*) from test_jsquery where v @@ 'review_votes = true';
+select count(*) from test_jsquery where v @@ 'product_group = false';
 
 RESET enable_seqscan;
