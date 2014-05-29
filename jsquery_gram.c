@@ -115,10 +115,10 @@ int jsquery_yylex(YYSTYPE * yylval_param);
 int jsquery_yyparse(void *result);
 void jsquery_yyerror(const char *message);
 
-static JsQueryItem*
-makeJsQueryItemType(int type)
+static JsQueryParseItem*
+makeItemType(int type)
 {
-	JsQueryItem* v = palloc(sizeof(*v));
+	JsQueryParseItem* v = palloc(sizeof(*v));
 
 	v->type = type;
 	v->next = NULL;
@@ -126,18 +126,18 @@ makeJsQueryItemType(int type)
 	return v;
 }
 
-static JsQueryItem*
-makeJsQueryItemString(string *s)
+static JsQueryParseItem*
+makeItemString(string *s)
 {
-	JsQueryItem *v;
+	JsQueryParseItem *v;
 
 	if (s == NULL)
 	{
-		v = makeJsQueryItemType(jqiNull);
+		v = makeItemType(jqiNull);
 	}
 	else
 	{
-		v = makeJsQueryItemType(jqiString);
+		v = makeItemType(jqiString);
 		v->string.val = s->val;
 		v->string.len = s->len;
 	}
@@ -145,30 +145,30 @@ makeJsQueryItemString(string *s)
 	return v;
 }
 
-static JsQueryItem*
-makeJsQueryItemNumeric(string *s)
+static JsQueryParseItem*
+makeItemNumeric(string *s)
 {
-	JsQueryItem		*v;
+	JsQueryParseItem		*v;
 
-	v = makeJsQueryItemType(jqiNumeric);
+	v = makeItemType(jqiNumeric);
 	v->numeric = DatumGetNumeric(DirectFunctionCall3(numeric_in, CStringGetDatum(s->val), 0, -1));
 
 	return v;
 }
 
-static JsQueryItem*
-makeJsQueryItemBool(bool val) {
-	JsQueryItem *v = makeJsQueryItemType(jqiBool);
+static JsQueryParseItem*
+makeItemBool(bool val) {
+	JsQueryParseItem *v = makeItemType(jqiBool);
 
 	v->boolean = val;
 
 	return v;
 }
 
-static JsQueryItem*
-makeJsQueryItemArray(List *list)
+static JsQueryParseItem*
+makeItemArray(List *list)
 {
-	JsQueryItem	*v = makeJsQueryItemType(jqiArray);
+	JsQueryParseItem	*v = makeItemType(jqiArray);
 
 	v->array.nelems = list_length(list);
 
@@ -177,10 +177,10 @@ makeJsQueryItemArray(List *list)
 		ListCell	*cell;
 		int			i = 0;
 
-		v->array.elems = palloc(sizeof(JsQueryItem) * v->array.nelems);
+		v->array.elems = palloc(sizeof(JsQueryParseItem) * v->array.nelems);
 
 		foreach(cell, list)
-			v->array.elems[i++] = (JsQueryItem*)lfirst(cell);
+			v->array.elems[i++] = (JsQueryParseItem*)lfirst(cell);
 	}
 	else
 	{
@@ -190,10 +190,10 @@ makeJsQueryItemArray(List *list)
 	return v;
 }
 
-static JsQueryItem*
-makeJsQueryItemBinary(int type, JsQueryItem* la, JsQueryItem *ra)
+static JsQueryParseItem*
+makeItemBinary(int type, JsQueryParseItem* la, JsQueryParseItem *ra)
 {
-	JsQueryItem  *v = makeJsQueryItemType(type);
+	JsQueryParseItem  *v = makeItemType(type);
 
 	v->args.left = la;
 	v->args.right = ra;
@@ -201,26 +201,26 @@ makeJsQueryItemBinary(int type, JsQueryItem* la, JsQueryItem *ra)
 	return v;
 }
 
-static JsQueryItem*
-makeJsQueryItemUnary(int type, JsQueryItem* a)
+static JsQueryParseItem*
+makeItemUnary(int type, JsQueryParseItem* a)
 {
-	JsQueryItem  *v = makeJsQueryItemType(type);
+	JsQueryParseItem  *v = makeItemType(type);
 
 	v->arg = a;
 
 	return v;
 }
 
-static JsQueryItem*
-makeJsQueryItemList(List *list) {
-	JsQueryItem	*head, *end;
+static JsQueryParseItem*
+makeItemList(List *list) {
+	JsQueryParseItem	*head, *end;
 	ListCell	*cell;
 
-	head = end = (JsQueryItem*)linitial(list);
+	head = end = (JsQueryParseItem*)linitial(list);
 
 	foreach(cell, list)
 	{
-		JsQueryItem	*c = (JsQueryItem*)lfirst(cell);
+		JsQueryParseItem	*c = (JsQueryParseItem*)lfirst(cell);
 
 		if (c == head)
 			continue;
@@ -288,9 +288,9 @@ typedef union YYSTYPE
 
 	string 			str;
 	Numeric			numeric;
-	List			*elems; 		/* list of JsQueryItem */
+	List			*elems; 		/* list of JsQueryParseItem */
 
-	JsQueryItem		*value;
+	JsQueryParseItem		*value;
 
 
 /* Line 387 of yacc.c  */
@@ -1577,55 +1577,55 @@ yyreduce:
         case 2:
 /* Line 1787 of yacc.c  */
 #line 210 "jsquery_gram.y"
-    { *((JsQueryItem**)result) = (yyvsp[(1) - (1)].value); }
+    { *((JsQueryParseItem**)result) = (yyvsp[(1) - (1)].value); }
     break;
 
   case 3:
 /* Line 1787 of yacc.c  */
 #line 211 "jsquery_gram.y"
-    { *((JsQueryItem**)result) = NULL; }
+    { *((JsQueryParseItem**)result) = NULL; }
     break;
 
   case 4:
 /* Line 1787 of yacc.c  */
 #line 215 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemArray((yyvsp[(2) - (3)].elems)); }
+    { (yyval.value) = makeItemArray((yyvsp[(2) - (3)].elems)); }
     break;
 
   case 5:
 /* Line 1787 of yacc.c  */
 #line 219 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemString(NULL); }
+    { (yyval.value) = makeItemString(NULL); }
     break;
 
   case 6:
 /* Line 1787 of yacc.c  */
 #line 220 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemString(&(yyvsp[(1) - (1)].str)); }
+    { (yyval.value) = makeItemString(&(yyvsp[(1) - (1)].str)); }
     break;
 
   case 7:
 /* Line 1787 of yacc.c  */
 #line 221 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemString(&(yyvsp[(1) - (1)].str)); }
+    { (yyval.value) = makeItemString(&(yyvsp[(1) - (1)].str)); }
     break;
 
   case 8:
 /* Line 1787 of yacc.c  */
 #line 222 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemBool(true); }
+    { (yyval.value) = makeItemBool(true); }
     break;
 
   case 9:
 /* Line 1787 of yacc.c  */
 #line 223 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemBool(false); }
+    { (yyval.value) = makeItemBool(false); }
     break;
 
   case 10:
 /* Line 1787 of yacc.c  */
 #line 224 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemNumeric(&(yyvsp[(1) - (1)].str)); }
+    { (yyval.value) = makeItemNumeric(&(yyvsp[(1) - (1)].str)); }
     break;
 
   case 11:
@@ -1643,79 +1643,79 @@ yyreduce:
   case 13:
 /* Line 1787 of yacc.c  */
 #line 233 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemUnary(jqiEqual, (yyvsp[(2) - (2)].value)); }
+    { (yyval.value) = makeItemUnary(jqiEqual, (yyvsp[(2) - (2)].value)); }
     break;
 
   case 14:
 /* Line 1787 of yacc.c  */
 #line 234 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemUnary(jqiIn, makeJsQueryItemArray((yyvsp[(3) - (4)].elems))); }
+    { (yyval.value) = makeItemUnary(jqiIn, makeItemArray((yyvsp[(3) - (4)].elems))); }
     break;
 
   case 15:
 /* Line 1787 of yacc.c  */
 #line 235 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemUnary(jqiEqual, (yyvsp[(2) - (2)].value)); }
+    { (yyval.value) = makeItemUnary(jqiEqual, (yyvsp[(2) - (2)].value)); }
     break;
 
   case 16:
 /* Line 1787 of yacc.c  */
 #line 236 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemUnary(jqiEqual, makeJsQueryItemType(jqiAny)); }
+    { (yyval.value) = makeItemUnary(jqiEqual, makeItemType(jqiAny)); }
     break;
 
   case 17:
 /* Line 1787 of yacc.c  */
 #line 237 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemUnary(jqiLess, makeJsQueryItemNumeric(&(yyvsp[(2) - (2)].str))); }
+    { (yyval.value) = makeItemUnary(jqiLess, makeItemNumeric(&(yyvsp[(2) - (2)].str))); }
     break;
 
   case 18:
 /* Line 1787 of yacc.c  */
 #line 238 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemUnary(jqiGreater, makeJsQueryItemNumeric(&(yyvsp[(2) - (2)].str))); }
+    { (yyval.value) = makeItemUnary(jqiGreater, makeItemNumeric(&(yyvsp[(2) - (2)].str))); }
     break;
 
   case 19:
 /* Line 1787 of yacc.c  */
 #line 239 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemUnary(jqiLessOrEqual, makeJsQueryItemNumeric(&(yyvsp[(3) - (3)].str))); }
+    { (yyval.value) = makeItemUnary(jqiLessOrEqual, makeItemNumeric(&(yyvsp[(3) - (3)].str))); }
     break;
 
   case 20:
 /* Line 1787 of yacc.c  */
 #line 240 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemUnary(jqiGreaterOrEqual, makeJsQueryItemNumeric(&(yyvsp[(3) - (3)].str))); }
+    { (yyval.value) = makeItemUnary(jqiGreaterOrEqual, makeItemNumeric(&(yyvsp[(3) - (3)].str))); }
     break;
 
   case 21:
 /* Line 1787 of yacc.c  */
 #line 241 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemUnary(jqiContains, (yyvsp[(3) - (3)].value)); }
+    { (yyval.value) = makeItemUnary(jqiContains, (yyvsp[(3) - (3)].value)); }
     break;
 
   case 22:
 /* Line 1787 of yacc.c  */
 #line 242 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemUnary(jqiContained, (yyvsp[(3) - (3)].value)); }
+    { (yyval.value) = makeItemUnary(jqiContained, (yyvsp[(3) - (3)].value)); }
     break;
 
   case 23:
 /* Line 1787 of yacc.c  */
 #line 243 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemUnary(jqiOverlap, (yyvsp[(3) - (3)].value)); }
+    { (yyval.value) = makeItemUnary(jqiOverlap, (yyvsp[(3) - (3)].value)); }
     break;
 
   case 24:
 /* Line 1787 of yacc.c  */
 #line 247 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemList(lappend((yyvsp[(1) - (2)].elems), (yyvsp[(2) - (2)].value))); }
+    { (yyval.value) = makeItemList(lappend((yyvsp[(1) - (2)].elems), (yyvsp[(2) - (2)].value))); }
     break;
 
   case 25:
 /* Line 1787 of yacc.c  */
 #line 248 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemList(lappend((yyvsp[(1) - (4)].elems), (yyvsp[(3) - (4)].value))); }
+    { (yyval.value) = makeItemList(lappend((yyvsp[(1) - (4)].elems), (yyvsp[(3) - (4)].value))); }
     break;
 
   case 26:
@@ -1727,19 +1727,19 @@ yyreduce:
   case 27:
 /* Line 1787 of yacc.c  */
 #line 250 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemUnary(jqiNot, (yyvsp[(2) - (2)].value)); }
+    { (yyval.value) = makeItemUnary(jqiNot, (yyvsp[(2) - (2)].value)); }
     break;
 
   case 28:
 /* Line 1787 of yacc.c  */
 #line 251 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemBinary(jqiAnd, (yyvsp[(1) - (3)].value), (yyvsp[(3) - (3)].value)); }
+    { (yyval.value) = makeItemBinary(jqiAnd, (yyvsp[(1) - (3)].value), (yyvsp[(3) - (3)].value)); }
     break;
 
   case 29:
 /* Line 1787 of yacc.c  */
 #line 252 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemBinary(jqiOr, (yyvsp[(1) - (3)].value), (yyvsp[(3) - (3)].value)); }
+    { (yyval.value) = makeItemBinary(jqiOr, (yyvsp[(1) - (3)].value), (yyvsp[(3) - (3)].value)); }
     break;
 
   case 30:
@@ -1781,31 +1781,31 @@ yyreduce:
   case 36:
 /* Line 1787 of yacc.c  */
 #line 268 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemType(jqiAny); }
+    { (yyval.value) = makeItemType(jqiAny); }
     break;
 
   case 37:
 /* Line 1787 of yacc.c  */
 #line 269 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemType(jqiAnyArray); }
+    { (yyval.value) = makeItemType(jqiAnyArray); }
     break;
 
   case 38:
 /* Line 1787 of yacc.c  */
 #line 270 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemType(jqiAnyKey); }
+    { (yyval.value) = makeItemType(jqiAnyKey); }
     break;
 
   case 39:
 /* Line 1787 of yacc.c  */
 #line 271 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemType(jqiCurrent); }
+    { (yyval.value) = makeItemType(jqiCurrent); }
     break;
 
   case 40:
 /* Line 1787 of yacc.c  */
 #line 272 "jsquery_gram.y"
-    { (yyval.value) = makeJsQueryItemString(&(yyvsp[(1) - (1)].str)); (yyval.value)->type = jqiKey; }
+    { (yyval.value) = makeItemString(&(yyvsp[(1) - (1)].str)); (yyval.value)->type = jqiKey; }
     break;
 
   case 41:

@@ -215,20 +215,16 @@ typedef struct
 } JsonbVodkaKey;
 
 static JsonbVodkaValue *
-make_vodka_value(JsQueryValue *value)
+make_vodka_value(JsQueryItem *value)
 {
 	JsonbVodkaValue *result;
-	int32		len, jqPos;
-	char	   *jqBase;
+	int32		len;
+	char	   *s;
 
 	if (!value || value->type == jqiAny)
 		return NULL;
 
 	result = (JsonbVodkaValue *)palloc(sizeof(JsonbVodkaValue));
-
-	jqBase = value->jqBase;
-	jqPos = value->jqPos;
-
 	switch (value->type)
 	{
 		case jqiNull:
@@ -236,18 +232,17 @@ make_vodka_value(JsQueryValue *value)
 			break;
 		case jqiBool:
 			result->type = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_BOOL;
-			read_byte(len, jqBase, jqPos);
-			if (len)
+			if (jsqGetBool(value))
 				result->type |= JSONB_VODKA_FLAG_TRUE;
 			break;
 		case jqiString:
 			result->type = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_STRING;
-			read_int32(len, jqBase, jqPos);
-			result->hash = hash_any((unsigned char *)jqBase + jqPos, len);
+			s = jsqGetString(value, &len);
+			result->hash = hash_any((unsigned char *)s, len);
 			break;
 		case jqiNumeric:
 			result->type = JSONB_VODKA_FLAG_VALUE | JSONB_VODKA_FLAG_NUMERIC;
-			result->n = (Numeric)(jqBase + jqPos);
+			result->n = jsqGetNumeric(value);
 			break;
 		default:
 			elog(ERROR, "invalid jsonb scalar type");

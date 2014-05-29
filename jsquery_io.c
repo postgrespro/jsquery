@@ -22,24 +22,8 @@
 
 PG_MODULE_MAGIC;
 
-void
-alignStringInfoInt(StringInfo buf)
-{
-	switch(INTALIGN(buf->len) - buf->len)
-	{
-		case 3:
-			appendStringInfoCharMacro(buf, 0);
-		case 2:
-			appendStringInfoCharMacro(buf, 0);
-		case 1:
-			appendStringInfoCharMacro(buf, 0);
-		default:
-			break;
-	}
-}
-
 static int
-flattenJsQueryItem(StringInfo buf, JsQueryItem *item)
+flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item)
 {
 	int32	pos = buf->len - VARHDRSZ; /* position from begining of jsquery data */
 	int32	chld, next;
@@ -79,7 +63,7 @@ flattenJsQueryItem(StringInfo buf, JsQueryItem *item)
 
 				for(i=0; i<item->array.nelems; i++)
 				{
-					chld = flattenJsQueryItem(buf, item->array.elems[i]);
+					chld = flattenJsQueryParseItem(buf, item->array.elems[i]);
 					*(int32*)(buf->data + arrayStart + i * sizeof(i)) = chld;
 				}
 
@@ -95,9 +79,9 @@ flattenJsQueryItem(StringInfo buf, JsQueryItem *item)
 				right = buf->len;
 				appendBinaryStringInfo(buf, (char*)&right /* fake value */, sizeof(right));
 
-				chld = flattenJsQueryItem(buf, item->args.left);
+				chld = flattenJsQueryParseItem(buf, item->args.left);
 				*(int32*)(buf->data + left) = chld;
-				chld = flattenJsQueryItem(buf, item->args.right);
+				chld = flattenJsQueryParseItem(buf, item->args.right);
 				*(int32*)(buf->data + right) = chld;
 			}
 			break;
@@ -117,7 +101,7 @@ flattenJsQueryItem(StringInfo buf, JsQueryItem *item)
 				arg = buf->len;
 				appendBinaryStringInfo(buf, (char*)&arg /* fake value */, sizeof(arg));
 
-				chld = flattenJsQueryItem(buf, item->arg);
+				chld = flattenJsQueryParseItem(buf, item->arg);
 				*(int32*)(buf->data + arg) = chld;
 			}
 			break;
@@ -128,11 +112,11 @@ flattenJsQueryItem(StringInfo buf, JsQueryItem *item)
 		case jqiAnyKey:
 			break;
 		default:
-			elog(ERROR, "Unknown JsQueryItem type: %d", item->type);
+			elog(ERROR, "Unknown type: %d", item->type);
 	}
 
 	if (item->next)
-		*(int32*)(buf->data + next) = flattenJsQueryItem(buf, item->next);
+		*(int32*)(buf->data + next) = flattenJsQueryParseItem(buf, item->next);
 
 	return  pos;
 }
@@ -141,9 +125,9 @@ PG_FUNCTION_INFO_V1(jsquery_in);
 Datum
 jsquery_in(PG_FUNCTION_ARGS)
 {
-	char			*in = PG_GETARG_CSTRING(0);
-	int32			len = strlen(in);
-	JsQueryItem		*jsquery = parsejsquery(in, len);
+	char				*in = PG_GETARG_CSTRING(0);
+	int32				len = strlen(in);
+	JsQueryParseItem	*jsquery = parsejsquery(in, len);
 	JsQuery			*res;
 	StringInfoData	buf;
 
@@ -154,7 +138,7 @@ jsquery_in(PG_FUNCTION_ARGS)
 
 	if (jsquery != NULL)
 	{
-		flattenJsQueryItem(&buf, jsquery);
+		flattenJsQueryParseItem(&buf, jsquery);
 
 		res = (JsQuery*)buf.data;
 		SET_VARSIZE(res, buf.len);
@@ -165,25 +149,8 @@ jsquery_in(PG_FUNCTION_ARGS)
 	PG_RETURN_NULL();
 }
 
-int32
-readJsQueryHeader(char *base, int32 pos, int32 *type, int32 *nextPos)
-{
-	read_byte(*type, base, pos);
-	switch(INTALIGN(pos) - pos)
-	{
-		case 3: pos++;
-		case 2: pos++;
-		case 1: pos++;
-		default: break;
-	}
-	read_int32(*nextPos, base, pos);
-
-	return pos;
-}
-
-
 static void
-printOperation(StringInfo buf, int type)
+printOperation(StringInfo buf, JsQueryItemType type)
 {
 	switch(type)
 	{
@@ -208,97 +175,66 @@ printOperation(StringInfo buf, int type)
 		case jqiOverlap:
 			appendBinaryStringInfo(buf, " && ", 4); break;
 		default:
-			elog(ERROR, "Unknown JsQueryItem type: %d", type);
+			elog(ERROR, "Unknown type: %d", type);
 	}
 }
 
 static void
-printJsQueryItem(StringInfo buf, char *base, int32 pos, bool inKey, bool printBracketes)
+printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes)
 {
-	int32		type;
-	int32		nextPos;
+	JsQueryItem	elem;
+	bool			first = true;
 
 	check_stack_depth();
 
-	pos = readJsQueryHeader(base, pos, &type, &nextPos);
-
-	switch(type)
+	switch(v->type)
 	{
 		case jqiNull:
 			appendStringInfoString(buf, "null");
 			break;
 		case jqiKey:
+			if (inKey)
+				appendStringInfoChar(buf, '.');
+			/* follow next */
 		case jqiString:
-			{
-				int32 len;
-
-				read_int32(len, base, pos);
-				if (inKey && type == jqiKey)
-					appendStringInfoChar(buf, '.');
-				escape_json(buf, base + pos);
-				pos += len + 1;
-			}
+			escape_json(buf, jsqGetString(v, NULL));
 			break;
 		case jqiNumeric:
-			{
-				Numeric	n = (Numeric)(base + pos);
-
-				pos += VARSIZE(n);
-
-				appendStringInfoString(buf,
-										DatumGetCString(DirectFunctionCall1(numeric_out,
-											PointerGetDatum(n))));
-			}
-			break;
+			appendStringInfoString(buf,
+									DatumGetCString(DirectFunctionCall1(numeric_out,
+										PointerGetDatum(jsqGetNumeric(v)))));
+		break;
 		case jqiBool:
-			{
-				bool	v;
-
-				read_byte(v, base, pos);
-
-				if (v)
-					appendBinaryStringInfo(buf, "true", 4);
-				else
-					appendBinaryStringInfo(buf, "false", 5);
-			}
+			if (jsqGetBool(v))
+				appendBinaryStringInfo(buf, "true", 4);
+			else
+				appendBinaryStringInfo(buf, "false", 5);
 			break;
 		case jqiArray:
+			if (printBracketes)
+				appendStringInfoChar(buf, '['); 
+
+			while(jsqIterateArray(v, &elem))
 			{
-				int32	i, nelems, *arrayPos;
-
-				read_int32(nelems, base, pos);
-				arrayPos = (int32*)(base + pos);
-				pos += nelems * sizeof(*arrayPos);
-
-				if (printBracketes)
-					appendStringInfoChar(buf, '['); 
-
-				for(i=0; i<nelems; i++)
-				{
-					if (i != 0)
-						appendBinaryStringInfo(buf, ", ", 2);
-
-					printJsQueryItem(buf, base, arrayPos[i], false, true);
-				}
-
-				if (printBracketes)
-					appendStringInfoChar(buf, ']');
+				if (first == false)
+					appendBinaryStringInfo(buf, ", ", 2);
+				else
+					first = false;
+				printJsQueryItem(buf, &elem, false, true);
 			}
+
+			if (printBracketes)
+				appendStringInfoChar(buf, ']');
 			break;
 		case jqiAnd:
 		case jqiOr:
-			{
-				int32	left, right;
-
-				read_int32(left, base, pos);
-				read_int32(right, base, pos);
-
-				appendStringInfoChar(buf, '(');
-				printJsQueryItem(buf, base, left, false, true);
-				printOperation(buf, type);
-				printJsQueryItem(buf, base, right, false, true);
-				appendStringInfoChar(buf, ')');
-			}
+			appendStringInfoChar(buf, '(');
+			jsqGetLeftArg(v, &elem);
+			printJsQueryItem(buf, &elem, false, true);
+			printOperation(buf, v->type);
+			jsqGetRightArg(v, &elem);
+			printJsQueryItem(buf, &elem, false, true);
+			appendStringInfoChar(buf, ')');
 			break;
 		case jqiEqual:
 		case jqiLess:
@@ -308,36 +244,21 @@ printJsQueryItem(StringInfo buf, char *base, int32 pos, bool inKey, bool printBr
 		case jqiContains:
 		case jqiContained:
 		case jqiOverlap:
-			{
-				int32 arg;
-
-				read_int32(arg, base, pos);
-
-				printOperation(buf, type);
-				printJsQueryItem(buf, base, arg, false, true);
-			}
+			printOperation(buf, v->type);
+			jsqGetArg(v, &elem);
+			printJsQueryItem(buf, &elem, false, true);
 			break;
 		case jqiIn:
-			{
-				int32 arg;
-
-				read_int32(arg, base, pos);
-
-				appendBinaryStringInfo(buf, " IN (", 5);
-				printJsQueryItem(buf, base, arg, false, false);
-				appendStringInfoChar(buf, ')');
-			}
+			appendBinaryStringInfo(buf, " IN (", 5);
+			jsqGetArg(v, &elem);
+			printJsQueryItem(buf, &elem, false, false);
+			appendStringInfoChar(buf, ')');
 			break;
 		case jqiNot:
-			{
-				int32 arg;
-
-				read_int32(arg, base, pos);
-
-				appendBinaryStringInfo(buf, "!(", 2);
-				printJsQueryItem(buf, base, arg, false, true);
-				appendStringInfoChar(buf, ')');
-			}
+			appendBinaryStringInfo(buf, "!(", 2);
+			jsqGetArg(v, &elem);
+			printJsQueryItem(buf, &elem, false, true);
+			appendStringInfoChar(buf, ')');
 			break;
 		case jqiAny:
 			if (inKey)
@@ -360,11 +281,11 @@ printJsQueryItem(StringInfo buf, char *base, int32 pos, bool inKey, bool printBr
 			appendStringInfoChar(buf, '%');
 			break;
 		default:
-			elog(ERROR, "Unknown JsQueryItem type: %d", type);
+			elog(ERROR, "Unknown JsQueryItem type: %d", v->type);
 	}
 
-	if (nextPos > 0)
-		printJsQueryItem(buf, base, nextPos, true, true);
+	if (jsqGetNext(v, &elem))
+		printJsQueryItem(buf, &elem, true, true);
 }
 
 PG_FUNCTION_INFO_V1(jsquery_out);
@@ -373,11 +294,13 @@ jsquery_out(PG_FUNCTION_ARGS)
 {
 	JsQuery			*in = PG_GETARG_JSQUERY(0);
 	StringInfoData	buf;
+	JsQueryItem		v;
 
 	initStringInfo(&buf);
 	enlargeStringInfo(&buf, VARSIZE(in) /* estimation */); 
 
-	printJsQueryItem(&buf, VARDATA(in), 0, false, true);
+	jsqInit(&v, in);
+	printJsQueryItem(&buf, &v, false, true);
 
 	PG_RETURN_CSTRING(buf.data);
 }

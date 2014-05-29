@@ -29,11 +29,7 @@ typedef struct
 #define PG_GETARG_JSQUERY(x)	DatumGetJsQueryP(PG_GETARG_DATUM(x))
 #define PG_RETURN_JSQUERY(p)	PG_RETURN_POINTER(p)
 
-
-typedef struct JsQueryItem JsQueryItem;
-
-struct JsQueryItem {
-	enum {
+typedef enum JsQueryItemType {
 		jqiNull = jbvNull, 
 		jqiString = jbvString, 
 		jqiNumeric = jbvNumeric, 
@@ -56,86 +52,114 @@ struct JsQueryItem {
 		jqiKey = 'K',
 		jqiCurrent = '$',
 		jqiIn = 'I'
-	} type;
+} JsQueryItemType;
+
+/*
+ * Support functions to parse/construct binary value  
+ */
+
+typedef struct JsQueryItem {
+	JsQueryItemType	type;
+	int32			nextPos;
+	char			*base;
 
 	union {
 		struct {
-			JsQueryItem	*left;
-			JsQueryItem	*right;
+			char		*data;  /* for bool, numeric and string/key */
+			int			datalen; /* filled only for string/key */
+		} value; 
+
+		struct {
+			int32	left;
+			int32	right;
 		} args;
 
-		JsQueryItem	*arg;
+		int32		arg;
+
+		struct {
+			int		nelems;
+			int		current;
+			int32	*arrayPtr;
+		} array;
+	};
+
+
+} JsQueryItem;
+
+extern void jsqInit(JsQueryItem *v, JsQuery *js);
+extern void jsqInitByBuffer(JsQueryItem *v, char *base, int32 pos);
+extern bool jsqGetNext(JsQueryItem *v, JsQueryItem *a);
+extern void jsqGetArg(JsQueryItem *v, JsQueryItem *a);
+extern void jsqGetLeftArg(JsQueryItem *v, JsQueryItem *a);
+extern void jsqGetRightArg(JsQueryItem *v, JsQueryItem *a);
+extern Numeric	jsqGetNumeric(JsQueryItem *v);
+extern bool		jsqGetBool(JsQueryItem *v);
+extern char * jsqGetString(JsQueryItem *v, int32 *len);
+extern void jsqIterateInit(JsQueryItem *v);
+extern bool jsqIterateArray(JsQueryItem *v, JsQueryItem *e);
+
+void alignStringInfoInt(StringInfo buf);
+
+/*
+ * Parsing
+ */
+
+typedef struct JsQueryParseItem JsQueryParseItem;
+
+struct JsQueryParseItem {
+	JsQueryItemType	type;
+	JsQueryParseItem	*next; /* next in path */
+
+	union {
+		struct {
+			JsQueryParseItem	*left;
+			JsQueryParseItem	*right;
+		} args;
+
+		JsQueryParseItem	*arg;
 
 		Numeric		numeric;
 		bool		boolean;
 		struct {
 			uint32      len;
-			char        *val; /* could be not null-terminated */
+			char        *val; /* could not be not null-terminated */
 		} string;
 
 		struct {
-			int			nelems;
-			JsQueryItem	**elems;
+			int					nelems;
+			JsQueryParseItem	**elems;
 		} array;
 	};
-
-	JsQueryItem	*next; /* next in path */
 };
 
-/*
- * support
- */
-
-extern JsQueryItem* parsejsquery(const char *str, int len);
-
-int32 readJsQueryHeader(char *base, int32 pos, int32 *type, int32 *nextPos);
-
-#define read_byte(v, b, p) do {     \
-	(v) = *(int8*)((b) + (p));      \
-	(p) += 1;                       \
-} while(0)                          \
-
-#define read_int32(v, b, p) do {    \
-	(v) = *(int32*)((b) + (p));     \
-	(p) += sizeof(int32);           \
-} while(0)                          \
-
-void alignStringInfoInt(StringInfo buf);
-#endif
+extern JsQueryParseItem* parsejsquery(const char *str, int len);
 
 /* jsquery_extract.c */
 
 typedef enum
 {
-	iAny = 1,
-	iAnyArray,
-	iKey,
-	iAnyKey
+	iAny 		= jqiAny,
+	iAnyArray 	= jqiAnyArray,
+	iKey 		= jqiKey,
+	iAnyKey 	= jqiAnyKey
 } PathItemType;
 
 typedef struct PathItem PathItem;
 struct PathItem
 {
-	char		   *s;
 	PathItemType	type;
 	int				len;
+	char		   *s;
 	PathItem	   *parent;
 };
 
 typedef enum
 {
 	eScalar = 1,
-	eAnd,
-	eOr,
-	eNot
+	eAnd	= jqiAnd,
+	eOr		= jqiOr,
+	eNot 	= jqiNot
 } ExtractedNodeType;
-
-typedef struct
-{
-	char   *jqBase;
-	int32	jqPos;
-	int32	type;
-} JsQueryValue;
 
 typedef struct ExtractedNode ExtractedNode;
 struct ExtractedNode
@@ -155,9 +179,9 @@ struct ExtractedNode
 			bool			inequality;
 			bool			leftInclusive;
 			bool			rightInclusive;
-			JsQueryValue   *exact;
-			JsQueryValue   *leftBound;
-			JsQueryValue   *rightBound;
+			JsQueryItem		*exact;
+			JsQueryItem		*leftBound;
+			JsQueryItem		*rightBound;
 		} bounds;
 		int	entryNum;
 	};
@@ -170,3 +194,5 @@ typedef int (*MakeEntryHandler)(ExtractedNode *node, Pointer extra);
 ExtractedNode *extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra);
 bool execRecursive(ExtractedNode *node, bool *check);
 bool execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check);
+
+#endif

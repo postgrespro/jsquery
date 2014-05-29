@@ -56,10 +56,10 @@ int jsquery_yylex(YYSTYPE * yylval_param);
 int jsquery_yyparse(void *result);
 void jsquery_yyerror(const char *message);
 
-static JsQueryItem*
-makeJsQueryItemType(int type)
+static JsQueryParseItem*
+makeItemType(int type)
 {
-	JsQueryItem* v = palloc(sizeof(*v));
+	JsQueryParseItem* v = palloc(sizeof(*v));
 
 	v->type = type;
 	v->next = NULL;
@@ -67,18 +67,18 @@ makeJsQueryItemType(int type)
 	return v;
 }
 
-static JsQueryItem*
-makeJsQueryItemString(string *s)
+static JsQueryParseItem*
+makeItemString(string *s)
 {
-	JsQueryItem *v;
+	JsQueryParseItem *v;
 
 	if (s == NULL)
 	{
-		v = makeJsQueryItemType(jqiNull);
+		v = makeItemType(jqiNull);
 	}
 	else
 	{
-		v = makeJsQueryItemType(jqiString);
+		v = makeItemType(jqiString);
 		v->string.val = s->val;
 		v->string.len = s->len;
 	}
@@ -86,30 +86,30 @@ makeJsQueryItemString(string *s)
 	return v;
 }
 
-static JsQueryItem*
-makeJsQueryItemNumeric(string *s)
+static JsQueryParseItem*
+makeItemNumeric(string *s)
 {
-	JsQueryItem		*v;
+	JsQueryParseItem		*v;
 
-	v = makeJsQueryItemType(jqiNumeric);
+	v = makeItemType(jqiNumeric);
 	v->numeric = DatumGetNumeric(DirectFunctionCall3(numeric_in, CStringGetDatum(s->val), 0, -1));
 
 	return v;
 }
 
-static JsQueryItem*
-makeJsQueryItemBool(bool val) {
-	JsQueryItem *v = makeJsQueryItemType(jqiBool);
+static JsQueryParseItem*
+makeItemBool(bool val) {
+	JsQueryParseItem *v = makeItemType(jqiBool);
 
 	v->boolean = val;
 
 	return v;
 }
 
-static JsQueryItem*
-makeJsQueryItemArray(List *list)
+static JsQueryParseItem*
+makeItemArray(List *list)
 {
-	JsQueryItem	*v = makeJsQueryItemType(jqiArray);
+	JsQueryParseItem	*v = makeItemType(jqiArray);
 
 	v->array.nelems = list_length(list);
 
@@ -118,10 +118,10 @@ makeJsQueryItemArray(List *list)
 		ListCell	*cell;
 		int			i = 0;
 
-		v->array.elems = palloc(sizeof(JsQueryItem) * v->array.nelems);
+		v->array.elems = palloc(sizeof(JsQueryParseItem) * v->array.nelems);
 
 		foreach(cell, list)
-			v->array.elems[i++] = (JsQueryItem*)lfirst(cell);
+			v->array.elems[i++] = (JsQueryParseItem*)lfirst(cell);
 	}
 	else
 	{
@@ -131,10 +131,10 @@ makeJsQueryItemArray(List *list)
 	return v;
 }
 
-static JsQueryItem*
-makeJsQueryItemBinary(int type, JsQueryItem* la, JsQueryItem *ra)
+static JsQueryParseItem*
+makeItemBinary(int type, JsQueryParseItem* la, JsQueryParseItem *ra)
 {
-	JsQueryItem  *v = makeJsQueryItemType(type);
+	JsQueryParseItem  *v = makeItemType(type);
 
 	v->args.left = la;
 	v->args.right = ra;
@@ -142,26 +142,26 @@ makeJsQueryItemBinary(int type, JsQueryItem* la, JsQueryItem *ra)
 	return v;
 }
 
-static JsQueryItem*
-makeJsQueryItemUnary(int type, JsQueryItem* a)
+static JsQueryParseItem*
+makeItemUnary(int type, JsQueryParseItem* a)
 {
-	JsQueryItem  *v = makeJsQueryItemType(type);
+	JsQueryParseItem  *v = makeItemType(type);
 
 	v->arg = a;
 
 	return v;
 }
 
-static JsQueryItem*
-makeJsQueryItemList(List *list) {
-	JsQueryItem	*head, *end;
+static JsQueryParseItem*
+makeItemList(List *list) {
+	JsQueryParseItem	*head, *end;
 	ListCell	*cell;
 
-	head = end = (JsQueryItem*)linitial(list);
+	head = end = (JsQueryParseItem*)linitial(list);
 
 	foreach(cell, list)
 	{
-		JsQueryItem	*c = (JsQueryItem*)lfirst(cell);
+		JsQueryParseItem	*c = (JsQueryParseItem*)lfirst(cell);
 
 		if (c == head)
 			continue;
@@ -184,9 +184,9 @@ makeJsQueryItemList(List *list) {
 %union {
 	string 			str;
 	Numeric			numeric;
-	List			*elems; 		/* list of JsQueryItem */
+	List			*elems; 		/* list of JsQueryParseItem */
 
-	JsQueryItem		*value;
+	JsQueryParseItem		*value;
 }
 
 %token	<str>			NULL_P STRING_P TRUE_P FALSE_P
@@ -207,21 +207,21 @@ makeJsQueryItemList(List *list) {
 %%
 
 result: 
-	expr							{ *((JsQueryItem**)result) = $1; } 
-	| /* EMPTY */					{ *((JsQueryItem**)result) = NULL; }
+	expr							{ *((JsQueryParseItem**)result) = $1; } 
+	| /* EMPTY */					{ *((JsQueryParseItem**)result) = NULL; }
 	;
 
 array:
-	'[' value_list ']'				{ $$ = makeJsQueryItemArray($2); }
+	'[' value_list ']'				{ $$ = makeItemArray($2); }
 	;
 
 scalar_value:
-	NULL_P							{ $$ = makeJsQueryItemString(NULL); }
-	| STRING_P						{ $$ = makeJsQueryItemString(&$1); }
-	| IN_P							{ $$ = makeJsQueryItemString(&$1); }
-	| TRUE_P						{ $$ = makeJsQueryItemBool(true); }
-	| FALSE_P						{ $$ = makeJsQueryItemBool(false); }
-	| NUMERIC_P						{ $$ = makeJsQueryItemNumeric(&$1); }
+	NULL_P							{ $$ = makeItemString(NULL); }
+	| STRING_P						{ $$ = makeItemString(&$1); }
+	| IN_P							{ $$ = makeItemString(&$1); }
+	| TRUE_P						{ $$ = makeItemBool(true); }
+	| FALSE_P						{ $$ = makeItemBool(false); }
+	| NUMERIC_P						{ $$ = makeItemNumeric(&$1); }
 	;
 
 value_list:
@@ -230,26 +230,26 @@ value_list:
 	;
 
 right_expr:
-	'='	scalar_value				{ $$ = makeJsQueryItemUnary(jqiEqual, $2); }
-	| IN_P '(' value_list ')'		{ $$ = makeJsQueryItemUnary(jqiIn, makeJsQueryItemArray($3)); }
-	| '=' array						{ $$ = makeJsQueryItemUnary(jqiEqual, $2); }
-	| '=' '*'						{ $$ = makeJsQueryItemUnary(jqiEqual, makeJsQueryItemType(jqiAny)); }
-	| '<' NUMERIC_P					{ $$ = makeJsQueryItemUnary(jqiLess, makeJsQueryItemNumeric(&$2)); }
-	| '>' NUMERIC_P					{ $$ = makeJsQueryItemUnary(jqiGreater, makeJsQueryItemNumeric(&$2)); }
-	| '<' '=' NUMERIC_P				{ $$ = makeJsQueryItemUnary(jqiLessOrEqual, makeJsQueryItemNumeric(&$3)); }
-	| '>' '=' NUMERIC_P				{ $$ = makeJsQueryItemUnary(jqiGreaterOrEqual, makeJsQueryItemNumeric(&$3)); }
-	| '@' '>' array					{ $$ = makeJsQueryItemUnary(jqiContains, $3); } 
-	| '<' '@' array					{ $$ = makeJsQueryItemUnary(jqiContained, $3); } 
-	| '&' '&' array					{ $$ = makeJsQueryItemUnary(jqiOverlap, $3); }
+	'='	scalar_value				{ $$ = makeItemUnary(jqiEqual, $2); }
+	| IN_P '(' value_list ')'		{ $$ = makeItemUnary(jqiIn, makeItemArray($3)); }
+	| '=' array						{ $$ = makeItemUnary(jqiEqual, $2); }
+	| '=' '*'						{ $$ = makeItemUnary(jqiEqual, makeItemType(jqiAny)); }
+	| '<' NUMERIC_P					{ $$ = makeItemUnary(jqiLess, makeItemNumeric(&$2)); }
+	| '>' NUMERIC_P					{ $$ = makeItemUnary(jqiGreater, makeItemNumeric(&$2)); }
+	| '<' '=' NUMERIC_P				{ $$ = makeItemUnary(jqiLessOrEqual, makeItemNumeric(&$3)); }
+	| '>' '=' NUMERIC_P				{ $$ = makeItemUnary(jqiGreaterOrEqual, makeItemNumeric(&$3)); }
+	| '@' '>' array					{ $$ = makeItemUnary(jqiContains, $3); } 
+	| '<' '@' array					{ $$ = makeItemUnary(jqiContained, $3); } 
+	| '&' '&' array					{ $$ = makeItemUnary(jqiOverlap, $3); }
 	;
 
 expr:
-	path right_expr					{ $$ = makeJsQueryItemList(lappend($1, $2)); }
-	| path '(' expr ')'				{ $$ = makeJsQueryItemList(lappend($1, $3)); }
+	path right_expr					{ $$ = makeItemList(lappend($1, $2)); }
+	| path '(' expr ')'				{ $$ = makeItemList(lappend($1, $3)); }
 	| '(' expr ')'					{ $$ = $2; }
-	| '!' expr 						{ $$ = makeJsQueryItemUnary(jqiNot, $2); }
-	| expr '&' expr					{ $$ = makeJsQueryItemBinary(jqiAnd, $1, $3); } 
-	| expr '|' expr					{ $$ = makeJsQueryItemBinary(jqiOr, $1, $3); }
+	| '!' expr 						{ $$ = makeItemUnary(jqiNot, $2); }
+	| expr '&' expr					{ $$ = makeItemBinary(jqiAnd, $1, $3); } 
+	| expr '|' expr					{ $$ = makeItemBinary(jqiOr, $1, $3); }
 	;
 
 /*
@@ -265,11 +265,11 @@ key:
 	;
 
 path_elem:
-	'*'								{ $$ = makeJsQueryItemType(jqiAny); }
-	| '#'							{ $$ = makeJsQueryItemType(jqiAnyArray); }
-	| '%'							{ $$ = makeJsQueryItemType(jqiAnyKey); }
-	| '$'							{ $$ = makeJsQueryItemType(jqiCurrent); }
-	| key							{ $$ = makeJsQueryItemString(&$1); $$->type = jqiKey; }
+	'*'								{ $$ = makeItemType(jqiAny); }
+	| '#'							{ $$ = makeItemType(jqiAnyArray); }
+	| '%'							{ $$ = makeItemType(jqiAnyKey); }
+	| '$'							{ $$ = makeItemType(jqiCurrent); }
+	| key							{ $$ = makeItemString(&$1); $$->type = jqiKey; }
 	;
 
 path:
