@@ -31,7 +31,7 @@ typedef struct
 	int count, total;
 } Entries;
 
-#define JSONB_VODKA_FLAG_VALUE		0x01
+#define JSONB_VODKA_FLAG_VALUE			0x01
 
 #define JSONB_VODKA_FLAG_NULL			0x00
 #define JSONB_VODKA_FLAG_STRING			0x02
@@ -43,7 +43,7 @@ typedef struct
 #define JSONB_VODKA_FLAG_TRUE			0x10
 #define JSONB_VODKA_FLAG_NAN			0x10
 
-#define JSONB_VODKA_FLAG_ARRAY		0x02
+#define JSONB_VODKA_FLAG_ARRAY			0x02
 
 PG_FUNCTION_INFO_V1(vodkajsonbconfig);
 PG_FUNCTION_INFO_V1(vodkajsonbextract);
