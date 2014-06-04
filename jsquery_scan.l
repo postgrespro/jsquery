@@ -96,6 +96,12 @@ unicode     \\u[0-9A-Fa-f]{4}
 									BEGIN xQUOTED;
 								}
 
+<INITIAL>\\						{
+									yyless(0);
+									addstring(true, "", 0);
+									BEGIN xNONQUOTED;
+								}
+
 <xNONQUOTED>{any}+				{ 
 									addstring(false, yytext, yyleng); 
 								}
@@ -120,27 +126,27 @@ unicode     \\u[0-9A-Fa-f]{4}
 									return checkSpecialVal();
 								}
 
-<INITIAL,xNONQUOTED,xQUOTED>\\[\"\\\/]	{ 
+<xNONQUOTED,xQUOTED>\\[\"\\\/]	{ 
 									addchar(false, yytext[1]); 
 								}
 
-<INITIAL,xNONQUOTED,xQUOTED>\\b { addchar(false, '\b'); }
+<xNONQUOTED,xQUOTED>\\b 		{ addchar(false, '\b'); }
 
-<INITIAL,xNONQUOTED,xQUOTED>\\f { addchar(false, '\f'); }
+<xNONQUOTED,xQUOTED>\\f 		{ addchar(false, '\f'); }
 
-<INITIAL,xNONQUOTED,xQUOTED>\\n { addchar(false, '\n'); }
+<xNONQUOTED,xQUOTED>\\n 		{ addchar(false, '\n'); }
 
-<INITIAL,xNONQUOTED,xQUOTED>\\r { addchar(false, '\r'); }
+<xNONQUOTED,xQUOTED>\\r 		{ addchar(false, '\r'); }
 
-<INITIAL,xNONQUOTED,xQUOTED>\\t { addchar(false, '\t'); }
+<xNONQUOTED,xQUOTED>\\t 		{ addchar(false, '\t'); }
 
-<INITIAL,xNONQUOTED,xQUOTED>{unicode}+ { parseUnicode(yytext, yyleng); }
+<xNONQUOTED,xQUOTED>{unicode}+	{ parseUnicode(yytext, yyleng); }
 
-<INITIAL,xNONQUOTED,xQUOTED>\\u { yyerror("Unicode sequence is invalid"); }
+<xNONQUOTED,xQUOTED>\\u 		{ yyerror("Unicode sequence is invalid"); }
 
-<INITIAL,xNONQUOTED,xQUOTED>\\. { yyerror("Escape sequence is invalid"); }
+<xNONQUOTED,xQUOTED>\\. 		{ yyerror("Escape sequence is invalid"); }
 
-<INITIAL,xNONQUOTED,xQUOTED>\\ 	{ yyerror("Unexpected end after backslesh"); }
+<xNONQUOTED,xQUOTED>\\ 			{ yyerror("Unexpected end after backslesh"); }
 
 <xQUOTED><<EOF>>				{ yyerror("Unexpected end of quoted string"); }
 

@@ -861,6 +861,103 @@ select 'a\r = "\n\""'::jsquery;
  "a\r" = "\n\""
 (1 row)
 
+select 'a\r = "\u0000"'::jsquery;
+     jsquery      
+------------------
+ "a\r" = "\u0000"
+(1 row)
+
+select 'a\r = \u0000'::jsquery;
+     jsquery      
+------------------
+ "a\r" = "\u0000"
+(1 row)
+
+select 'a\r = "\abcd"'::jsquery AS err;
+ERROR:  bad jsquery representation
+LINE 1: select 'a\r = "\abcd"'::jsquery AS err;
+               ^
+DETAIL:  Escape sequence is invalid at or near "\a"
+select 'a\r = "\\abcd"'::jsquery;
+     jsquery      
+------------------
+ "a\r" = "\\abcd"
+(1 row)
+
+select 'a\r = "x\u0000"'::jsquery;
+      jsquery      
+-------------------
+ "a\r" = "x\u0000"
+(1 row)
+
+select 'a\r = x\u0000'::jsquery;
+      jsquery      
+-------------------
+ "a\r" = "x\u0000"
+(1 row)
+
+select 'a\r = "x\abcd"'::jsquery AS err;
+ERROR:  bad jsquery representation
+LINE 1: select 'a\r = "x\abcd"'::jsquery AS err;
+               ^
+DETAIL:  Escape sequence is invalid at or near "\a"
+select 'a\r = "x\\abcd"'::jsquery;
+      jsquery      
+-------------------
+ "a\r" = "x\\abcd"
+(1 row)
+
+select 'a\r = "x\u0000x"'::jsquery;
+      jsquery       
+--------------------
+ "a\r" = "x\u0000x"
+(1 row)
+
+select 'a\r = x\u0000x'::jsquery;
+      jsquery       
+--------------------
+ "a\r" = "x\u0000x"
+(1 row)
+
+select 'a\r = "x\abcdx"'::jsquery AS err;
+ERROR:  bad jsquery representation
+LINE 1: select 'a\r = "x\abcdx"'::jsquery AS err;
+               ^
+DETAIL:  Escape sequence is invalid at or near "\a"
+select 'a\r = "x\\abcdx"'::jsquery;
+      jsquery       
+--------------------
+ "a\r" = "x\\abcdx"
+(1 row)
+
+select 'a\r = "\u0000x"'::jsquery;
+      jsquery      
+-------------------
+ "a\r" = "\u0000x"
+(1 row)
+
+select 'a\r = \u0000x'::jsquery;
+      jsquery      
+-------------------
+ "a\r" = "\u0000x"
+(1 row)
+
+select 'a\r = "\abcdx"'::jsquery AS err;
+ERROR:  bad jsquery representation
+LINE 1: select 'a\r = "\abcdx"'::jsquery AS err;
+               ^
+DETAIL:  Escape sequence is invalid at or near "\a"
+select 'a\r = "\\abcdx"'::jsquery;
+      jsquery      
+-------------------
+ "a\r" = "\\abcdx"
+(1 row)
+
+select 'a\r = x"\\abcd"'::jsquery AS err;
+ERROR:  bad jsquery representation
+LINE 1: select 'a\r = x"\\abcd"'::jsquery AS err;
+               ^
+DETAIL:  syntax error, unexpected STRING_P, expecting $end at or near """
 ---table and index
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 0;
  count 

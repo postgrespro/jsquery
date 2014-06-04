@@ -175,6 +175,23 @@ select '{ "a":  "dollar \u0024 character" }'::jsonb @@ '* = "dollar \u0024 chara
 select '{ "a":  "dollar \u0024 character" }'::jsonb @@ '* = "dollar $ character"';
 select '{ "a":  "dollar $ character" }'::jsonb @@ '* = "dollar \u0024 character"';
 select 'a\r = "\n\""'::jsquery;
+select 'a\r = "\u0000"'::jsquery;
+select 'a\r = \u0000'::jsquery;
+select 'a\r = "\abcd"'::jsquery AS err;
+select 'a\r = "\\abcd"'::jsquery;
+select 'a\r = "x\u0000"'::jsquery;
+select 'a\r = x\u0000'::jsquery;
+select 'a\r = "x\abcd"'::jsquery AS err;
+select 'a\r = "x\\abcd"'::jsquery;
+select 'a\r = "x\u0000x"'::jsquery;
+select 'a\r = x\u0000x'::jsquery;
+select 'a\r = "x\abcdx"'::jsquery AS err;
+select 'a\r = "x\\abcdx"'::jsquery;
+select 'a\r = "\u0000x"'::jsquery;
+select 'a\r = \u0000x'::jsquery;
+select 'a\r = "\abcdx"'::jsquery AS err;
+select 'a\r = "\\abcdx"'::jsquery;
+select 'a\r = x"\\abcd"'::jsquery AS err;
 
 ---table and index
 
