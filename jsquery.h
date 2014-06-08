@@ -55,7 +55,12 @@ typedef enum JsQueryItemType {
 } JsQueryItemType;
 
 /*
- * Support functions to parse/construct binary value  
+ * Support functions to parse/construct binary value.
+ * Unlike many other representation of expression the first/main
+ * node is not an operation but left operand of expression. That 
+ * allows to implement cheep follow-path descending in jsonb
+ * structure and then execute operator with right operand which 
+ * is always a constant. 
  */
 
 typedef struct JsQueryItem {
