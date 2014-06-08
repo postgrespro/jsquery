@@ -424,6 +424,7 @@ vodkaqueryjsonbextract(PG_FUNCTION_ARGS)
 			root = extractJsQuery(jq, make_entry_handler, (Pointer)&e);
 			if (root)
 			{
+				root->indirect = queryNeedRecheck(root);
 				*nentries = e.count;
 				keys = e.entries;
 				for (i = 0; i < e.count; i++)

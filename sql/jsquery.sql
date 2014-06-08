@@ -168,6 +168,30 @@ select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%=[5,6]';
 select '"XXX"'::jsonb @@ '$="XXX"';
 select '"XXX"'::jsonb @@ '#.$="XXX"';
 
+--Unicode
+
+select 'a\t = "dollar \u0024 character"'::jsquery;
+select '{ "a":  "dollar \u0024 character" }'::jsonb @@ '* = "dollar \u0024 character"';
+select '{ "a":  "dollar \u0024 character" }'::jsonb @@ '* = "dollar $ character"';
+select '{ "a":  "dollar $ character" }'::jsonb @@ '* = "dollar \u0024 character"';
+select 'a\r = "\n\""'::jsquery;
+select 'a\r = "\u0000"'::jsquery;
+select 'a\r = \u0000'::jsquery;
+select 'a\r = "\abcd"'::jsquery AS err;
+select 'a\r = "\\abcd"'::jsquery;
+select 'a\r = "x\u0000"'::jsquery;
+select 'a\r = x\u0000'::jsquery;
+select 'a\r = "x\abcd"'::jsquery AS err;
+select 'a\r = "x\\abcd"'::jsquery;
+select 'a\r = "x\u0000x"'::jsquery;
+select 'a\r = x\u0000x'::jsquery;
+select 'a\r = "x\abcdx"'::jsquery AS err;
+select 'a\r = "x\\abcdx"'::jsquery;
+select 'a\r = "\u0000x"'::jsquery;
+select 'a\r = \u0000x'::jsquery;
+select 'a\r = "\abcdx"'::jsquery AS err;
+select 'a\r = "\\abcdx"'::jsquery;
+select 'a\r = x"\\abcd"'::jsquery AS err;
 
 ---table and index
 
@@ -195,6 +219,9 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
 select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'customer_id = null';
+select count(*) from test_jsquery where v @@ 'review_votes = true';
+select count(*) from test_jsquery where v @@ 'product_group = false';
 
 create index t_idx on test_jsquery using gin (v jsonb_bloom_value_ops);
 set enable_seqscan = off;
@@ -215,6 +242,9 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
 select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'customer_id = null';
+select count(*) from test_jsquery where v @@ 'review_votes = true';
+select count(*) from test_jsquery where v @@ 'product_group = false';
 
 drop index t_idx;
 
@@ -237,5 +267,8 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
 select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'customer_id = null';
+select count(*) from test_jsquery where v @@ 'review_votes = true';
+select count(*) from test_jsquery where v @@ 'product_group = false';
 
 RESET enable_seqscan;

@@ -13,6 +13,8 @@
  */
 
 %{
+#include "mb/pg_wchar.h"
+
 static string scanstring;
 
 /* No reason to constrain amount of data slurped */
@@ -26,6 +28,8 @@ static int	scanbuflen;
 static void addstring(bool init, char *s, int l);
 static void addchar(bool init, char s);
 static int checkSpecialVal(void); /* examine scanstring for the special value */
+
+static void parseUnicode(char *s, int l);
 
 %}
 
@@ -45,7 +49,7 @@ static int checkSpecialVal(void); /* examine scanstring for the special value */
 special		 [\%\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\*]
 any			[^\%\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\* \t\n\r\f\\\"]
 blank		[ \t\n\r\f]
-
+unicode     \\u[0-9A-Fa-f]{4}
 
 %%
 
@@ -92,6 +96,12 @@ blank		[ \t\n\r\f]
 									BEGIN xQUOTED;
 								}
 
+<INITIAL>\\						{
+									yyless(0);
+									addstring(true, "", 0);
+									BEGIN xNONQUOTED;
+								}
+
 <xNONQUOTED>{any}+				{ 
 									addstring(false, yytext, yyleng); 
 								}
@@ -116,9 +126,27 @@ blank		[ \t\n\r\f]
 									return checkSpecialVal();
 								}
 
-<INITIAL,xNONQUOTED,xQUOTED>\\. { addchar(false, yytext[1]); }
+<xNONQUOTED,xQUOTED>\\[\"\\\/]	{ 
+									addchar(false, yytext[1]); 
+								}
 
-<INITIAL,xNONQUOTED,xQUOTED>\\ 	{ yyerror("Unexpected end after backslesh"); }
+<xNONQUOTED,xQUOTED>\\b 		{ addchar(false, '\b'); }
+
+<xNONQUOTED,xQUOTED>\\f 		{ addchar(false, '\f'); }
+
+<xNONQUOTED,xQUOTED>\\n 		{ addchar(false, '\n'); }
+
+<xNONQUOTED,xQUOTED>\\r 		{ addchar(false, '\r'); }
+
+<xNONQUOTED,xQUOTED>\\t 		{ addchar(false, '\t'); }
+
+<xNONQUOTED,xQUOTED>{unicode}+	{ parseUnicode(yytext, yyleng); }
+
+<xNONQUOTED,xQUOTED>\\u 		{ yyerror("Unicode sequence is invalid"); }
+
+<xNONQUOTED,xQUOTED>\\. 		{ yyerror("Escape sequence is invalid"); }
+
+<xNONQUOTED,xQUOTED>\\ 			{ yyerror("Unexpected end after backslesh"); }
 
 <xQUOTED><<EOF>>				{ yyerror("Unexpected end of quoted string"); }
 
@@ -270,4 +298,108 @@ parsejsquery(const char *str, int len) {
 
 	return parseresult;
 }
+
+static int
+hexval(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'a' && c <= 'f')
+		return c - 'a' + 0xA;
+	if (c >= 'A' && c <= 'F')
+		return c - 'A' + 0xA;
+	elog(ERROR, "invalid hexadecimal digit");
+	return 0; /* not reached */
+}
+
+/*
+ * parseUnicode was adopted from json_lex_string() in 
+ * src/backend/utils/adt/json.c
+ */
+static void
+parseUnicode(char *s, int l)
+{
+	int i, j;
+	int ch = 0;
+	int hi_surrogate = -1;
+
+	Assert(l % 6 /* \uXXXX */ == 0);
+
+	for(i = 0; i < l / 6; i++)
+	{
+		ch = 0;
+
+		for(j=0; j<4; j++)
+			ch = (ch << 4) | hexval(s[ i*6 + 2 + j]);
+
+		if (ch >= 0xd800 && ch <= 0xdbff)
+		{
+			if (hi_surrogate != -1)
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+						 errmsg("invalid input syntax for type jsquery"),
+						 errdetail("Unicode high surrogate must not follow a high surrogate.")));
+			hi_surrogate = (ch & 0x3ff) << 10;
+			continue;
+		}
+		else if (ch >= 0xdc00 && ch <= 0xdfff)
+		{
+			if (hi_surrogate == -1)
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+						 errmsg("invalid input syntax for type jsquery"),
+						 errdetail("Unicode low surrogate must follow a high surrogate.")));
+			ch = 0x10000 + hi_surrogate + (ch & 0x3ff);
+			hi_surrogate = -1;
+		}
+
+		if (hi_surrogate != -1)
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+					 errmsg("invalid input syntax for type jsquery"),
+					 errdetail("Unicode low surrogate must follow a high surrogate.")));
+
+		/*
+		 * For UTF8, replace the escape sequence by the actual
+		 * utf8 character in lex->strval. Do this also for other
+		 * encodings if the escape designates an ASCII character,
+		 * otherwise raise an error. We don't ever unescape a
+		 * \u0000, since that would result in an impermissible nul
+		 * byte.
+		 */
+
+		if (ch == 0)
+		{
+			addstring(false, "\\u0000", 6);
+		}
+		else if (GetDatabaseEncoding() == PG_UTF8)
+		{
+			char utf8str[5];
+			int utf8len;
+
+			unicode_to_utf8(ch, (unsigned char *) utf8str);
+			utf8len = pg_utf_mblen((unsigned char *) utf8str);
+			addstring(false, utf8str, utf8len);
+		}
+		else if (ch <= 0x007f)
+		{
+			/*
+			 * This is the only way to designate things like a
+			 * form feed character in JSON, so it's useful in all
+			 * encodings.
+			 */
+			addchar(false, (char) ch);
+		}
+		else
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+					 errmsg("invalid input syntax for type jsquery"),
+					 errdetail("Unicode escape values cannot be used for code point values above 007F when the server encoding is not UTF8.")));
+		}
+
+		hi_surrogate = -1;
+	}
+}
+
 

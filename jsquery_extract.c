@@ -26,14 +26,19 @@ static int coundChildren(ExtractedNode *node, ExtractedNodeType type, bool first
 static void fillChildren(ExtractedNode *node, ExtractedNodeType type, bool first, ExtractedNode **items, int *i);
 static void flatternTree(ExtractedNode *node);
 static int comparePathItems(PathItem *i1, PathItem *i2);
-static ExtractedNode *makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra);
 static int compareNodes(const void *a1, const void *a2);
+static int compareJsQueryItem(JsQueryItem *v1, JsQueryItem *v2);
 static void processGroup(ExtractedNode *node, int start, int end);
 static void simplifyRecursive(ExtractedNode *node);
-static int compareJsQueryItem(JsQueryItem *v1, JsQueryItem *v2);
+static ExtractedNode *makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra);
+static bool queryHasPositive(ExtractedNode *node);
+static bool needRecheckRecursive(ExtractedNode *node, bool not);
 
+/*
+ * Recursive function that turns jsquery into tree of ExtractedNode items.
+ */
 static ExtractedNode *
-recursiveExtract(JsQueryItem *jsq,	bool indirect, PathItem *path)
+recursiveExtract(JsQueryItem *jsq,bool indirect, PathItem *path)
 {
 	ExtractedNode 	*leftNode, *rightNode, *result;
 	PathItem		*pathItem;
@@ -199,8 +204,12 @@ recursiveExtract(JsQueryItem *jsq,	bool indirect, PathItem *path)
 	return NULL;
 }
 
+/*
+ * Count number of children connected with nodes of same type.
+ */
 static int
-coundChildren(ExtractedNode *node, ExtractedNodeType type, bool first, bool *found)
+coundChildren(ExtractedNode *node, ExtractedNodeType type,
+													bool first, bool *found)
 {
 	if ((node->indirect || node->type != type) && !first)
 	{
@@ -216,6 +225,9 @@ coundChildren(ExtractedNode *node, ExtractedNodeType type, bool first, bool *fou
 	}
 }
 
+/*
+ * Fill array of children connected with nodes of same type.
+ */
 static void
 fillChildren(ExtractedNode *node, ExtractedNodeType type, bool first,
 												ExtractedNode **items, int *i)
@@ -233,6 +245,10 @@ fillChildren(ExtractedNode *node, ExtractedNodeType type, bool first,
 	}
 }
 
+/*
+ * Turn tree into "flat" form, turning nested binary AND/OR operators into
+ * single n-ary AND/OR operators.
+ */
 static void
 flatternTree(ExtractedNode *node)
 {
@@ -260,6 +276,9 @@ flatternTree(ExtractedNode *node)
 	}
 }
 
+/*
+ * Compare path items chains from child to parent.
+ */
 static int
 comparePathItems(PathItem *i1, PathItem *i2)
 {
@@ -295,6 +314,10 @@ comparePathItems(PathItem *i1, PathItem *i2)
 	}
 }
 
+/*
+ * Compare nodes in the order where conditions to the same fields are located
+ * together.
+ */
 static int
 compareNodes(const void *a1, const void *a2)
 {
@@ -332,6 +355,9 @@ compareNodes(const void *a1, const void *a2)
 	}
 }
 
+/*
+ * Compare json values represented by JsQueryItems.
+ */
 static int
 compareJsQueryItem(JsQueryItem *v1, JsQueryItem *v2)
 {
@@ -368,6 +394,10 @@ compareJsQueryItem(JsQueryItem *v1, JsQueryItem *v2)
 	return 0; /* make compiler happy */
 }
 
+/*
+ * Process group of nodes representing conditions for the same field. After
+ * processing group of nodes is replaced with one node.
+ */
 static void
 processGroup(ExtractedNode *node, int start, int end)
 {
@@ -455,6 +485,10 @@ processGroup(ExtractedNode *node, int start, int end)
 		node->args.items[i] = NULL;
 }
 
+/*
+ * Reduce number of nodes in tree, by turning multiple conditions about
+ * same field in same context into one node.
+ */
 static void
 simplifyRecursive(ExtractedNode *node)
 {
@@ -494,6 +528,9 @@ simplifyRecursive(ExtractedNode *node)
 	}
 }
 
+/*
+ * Make entries for all leaf tree nodes using user-provided handler.
+ */
 static ExtractedNode *
 makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra)
 {
@@ -542,6 +579,10 @@ makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra)
 	}
 }
 
+/*
+ * Returns false when query can be satisfied with no entries matching. True
+ * return value guarantees than it can be evaluated using index.
+ */
 static bool
 queryHasPositive(ExtractedNode *node)
 {
@@ -578,6 +619,10 @@ queryHasPositive(ExtractedNode *node)
 	}
 }
 
+/*
+ * Checks if node evaluating with index needs recheck assuming match of
+ * entries itself doesn't need recheck.
+ */
 static bool
 needRecheckRecursive(ExtractedNode *node, bool not)
 {
@@ -603,6 +648,18 @@ needRecheckRecursive(ExtractedNode *node, bool not)
 	}
 }
 
+/*
+ * Wrapper for "needRecheckRecursive".
+ */
+bool
+queryNeedRecheck(ExtractedNode *node)
+{
+	return needRecheckRecursive(node, false);
+}
+
+/*
+ * Turn jsquery into tree of entries using user-provided handler.
+ */
 ExtractedNode *
 extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra)
 {
@@ -619,11 +676,12 @@ extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra)
 	}
 	if (root && !queryHasPositive(root))
 		root = NULL;
-	if (root)
-		root->indirect = needRecheckRecursive(root, false);
 	return root;
 }
 
+/*
+ * Evaluate previously extracted tree.
+ */
 bool
 execRecursive(ExtractedNode *node, bool *check)
 {
@@ -647,6 +705,9 @@ execRecursive(ExtractedNode *node, bool *check)
 	}
 }
 
+/*
+ * Evaluate previously extracted tree using tri-state logic.
+ */
 bool
 execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check)
 {

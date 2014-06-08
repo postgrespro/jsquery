@@ -77,33 +77,33 @@ static GINKey *make_gin_query_key_minus_inf(uint32 hash);
 static int32 compare_gin_key_value(GINKey *arg1, GINKey *arg2);
 static int add_entry(Entries *e, Datum key, Pointer extra, bool pmatch);
 
-PG_FUNCTION_INFO_V1(gin_compare_jsonb_bloom_value);
-PG_FUNCTION_INFO_V1(gin_compare_partial_jsonb_bloom_value);
-PG_FUNCTION_INFO_V1(gin_extract_jsonb_bloom_value);
-PG_FUNCTION_INFO_V1(gin_extract_jsonb_query_bloom_value);
-PG_FUNCTION_INFO_V1(gin_consistent_jsonb_bloom_value);
-PG_FUNCTION_INFO_V1(gin_triconsistent_jsonb_bloom_value);
+PG_FUNCTION_INFO_V1(gin_compare_jsonb_value_path);
+PG_FUNCTION_INFO_V1(gin_compare_partial_jsonb_value_path);
+PG_FUNCTION_INFO_V1(gin_extract_jsonb_value_path);
+PG_FUNCTION_INFO_V1(gin_extract_jsonb_query_value_path);
+PG_FUNCTION_INFO_V1(gin_consistent_jsonb_value_path);
+PG_FUNCTION_INFO_V1(gin_triconsistent_jsonb_value_path);
 
-Datum gin_compare_jsonb_bloom_value(PG_FUNCTION_ARGS);
-Datum gin_compare_partial_jsonb_bloom_value(PG_FUNCTION_ARGS);
-Datum gin_extract_jsonb_bloom_value(PG_FUNCTION_ARGS);
-Datum gin_extract_jsonb_query_bloom_value(PG_FUNCTION_ARGS);
-Datum gin_consistent_jsonb_bloom_value(PG_FUNCTION_ARGS);
-Datum gin_triconsistent_jsonb_bloom_value(PG_FUNCTION_ARGS);
+Datum gin_compare_jsonb_value_path(PG_FUNCTION_ARGS);
+Datum gin_compare_partial_jsonb_value_path(PG_FUNCTION_ARGS);
+Datum gin_extract_jsonb_value_path(PG_FUNCTION_ARGS);
+Datum gin_extract_jsonb_query_value_path(PG_FUNCTION_ARGS);
+Datum gin_consistent_jsonb_value_path(PG_FUNCTION_ARGS);
+Datum gin_triconsistent_jsonb_value_path(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(gin_compare_jsonb_hash_value);
-PG_FUNCTION_INFO_V1(gin_compare_partial_jsonb_hash_value);
-PG_FUNCTION_INFO_V1(gin_extract_jsonb_hash_value);
-PG_FUNCTION_INFO_V1(gin_extract_jsonb_query_hash_value);
-PG_FUNCTION_INFO_V1(gin_consistent_jsonb_hash_value);
-PG_FUNCTION_INFO_V1(gin_triconsistent_jsonb_hash_value);
+PG_FUNCTION_INFO_V1(gin_compare_jsonb_path_value);
+PG_FUNCTION_INFO_V1(gin_compare_partial_jsonb_path_value);
+PG_FUNCTION_INFO_V1(gin_extract_jsonb_path_value);
+PG_FUNCTION_INFO_V1(gin_extract_jsonb_query_path_value);
+PG_FUNCTION_INFO_V1(gin_consistent_jsonb_path_value);
+PG_FUNCTION_INFO_V1(gin_triconsistent_jsonb_path_value);
 
-Datum gin_compare_jsonb_hash_value(PG_FUNCTION_ARGS);
-Datum gin_compare_partial_jsonb_hash_value(PG_FUNCTION_ARGS);
-Datum gin_extract_jsonb_hash_value(PG_FUNCTION_ARGS);
-Datum gin_extract_jsonb_query_hash_value(PG_FUNCTION_ARGS);
-Datum gin_consistent_jsonb_hash_value(PG_FUNCTION_ARGS);
-Datum gin_triconsistent_jsonb_hash_value(PG_FUNCTION_ARGS);
+Datum gin_compare_jsonb_path_value(PG_FUNCTION_ARGS);
+Datum gin_compare_partial_jsonb_path_value(PG_FUNCTION_ARGS);
+Datum gin_extract_jsonb_path_value(PG_FUNCTION_ARGS);
+Datum gin_extract_jsonb_query_path_value(PG_FUNCTION_ARGS);
+Datum gin_consistent_jsonb_path_value(PG_FUNCTION_ARGS);
+Datum gin_triconsistent_jsonb_path_value(PG_FUNCTION_ARGS);
 
 static int
 add_entry(Entries *e, Datum key, Pointer extra, bool pmatch)
@@ -453,7 +453,7 @@ compare_gin_key_value(GINKey *arg1, GINKey *arg2)
 }
 
 Datum
-gin_compare_jsonb_bloom_value(PG_FUNCTION_ARGS)
+gin_compare_jsonb_value_path(PG_FUNCTION_ARGS)
 {
 	GINKey	   *arg1 = (GINKey *)PG_GETARG_VARLENA_P(0);
 	GINKey	   *arg2 = (GINKey *)PG_GETARG_VARLENA_P(1);
@@ -470,7 +470,7 @@ gin_compare_jsonb_bloom_value(PG_FUNCTION_ARGS)
 }
 
 Datum
-gin_compare_partial_jsonb_bloom_value(PG_FUNCTION_ARGS)
+gin_compare_partial_jsonb_value_path(PG_FUNCTION_ARGS)
 {
 	GINKey	   *partial_key = (GINKey *)PG_GETARG_VARLENA_P(0);
 	GINKey	   *key = (GINKey *)PG_GETARG_VARLENA_P(1);
@@ -621,7 +621,7 @@ gin_extract_jsonb_bloom_value_internal(Jsonb *jb, int32 *nentries, uint32 **bloo
 }
 
 Datum
-gin_extract_jsonb_bloom_value(PG_FUNCTION_ARGS)
+gin_extract_jsonb_value_path(PG_FUNCTION_ARGS)
 {
 	Jsonb	   *jb = PG_GETARG_JSONB(0);
 	int32	   *nentries = (int32 *) PG_GETARG_POINTER(1);
@@ -630,7 +630,7 @@ gin_extract_jsonb_bloom_value(PG_FUNCTION_ARGS)
 }
 
 Datum
-gin_extract_jsonb_query_bloom_value(PG_FUNCTION_ARGS)
+gin_extract_jsonb_query_value_path(PG_FUNCTION_ARGS)
 {
 	Jsonb	   *jb;
 	int32	   *nentries = (int32 *) PG_GETARG_POINTER(1);
@@ -698,7 +698,7 @@ gin_extract_jsonb_query_bloom_value(PG_FUNCTION_ARGS)
 }
 
 Datum
-gin_consistent_jsonb_bloom_value(PG_FUNCTION_ARGS)
+gin_consistent_jsonb_value_path(PG_FUNCTION_ARGS)
 {
 	bool	   *check = (bool *) PG_GETARG_POINTER(0);
 	StrategyNumber strategy = PG_GETARG_UINT16(1);
@@ -740,7 +740,7 @@ gin_consistent_jsonb_bloom_value(PG_FUNCTION_ARGS)
 }
 
 Datum
-gin_triconsistent_jsonb_bloom_value(PG_FUNCTION_ARGS)
+gin_triconsistent_jsonb_value_path(PG_FUNCTION_ARGS)
 {
 	GinTernaryValue   *check = (GinTernaryValue *) PG_GETARG_POINTER(0);
 	StrategyNumber strategy = PG_GETARG_UINT16(1);
@@ -906,7 +906,7 @@ make_hash_entry_handler(ExtractedNode *node, Pointer extra)
 }
 
 Datum
-gin_compare_jsonb_hash_value(PG_FUNCTION_ARGS)
+gin_compare_jsonb_path_value(PG_FUNCTION_ARGS)
 {
 	GINKey	   *arg1 = (GINKey *)PG_GETARG_VARLENA_P(0);
 	GINKey	   *arg2 = (GINKey *)PG_GETARG_VARLENA_P(1);
@@ -926,7 +926,7 @@ gin_compare_jsonb_hash_value(PG_FUNCTION_ARGS)
 }
 
 Datum
-gin_compare_partial_jsonb_hash_value(PG_FUNCTION_ARGS)
+gin_compare_partial_jsonb_path_value(PG_FUNCTION_ARGS)
 {
 	GINKey	   *partial_key = (GINKey *)PG_GETARG_VARLENA_P(0);
 	GINKey	   *key = (GINKey *)PG_GETARG_VARLENA_P(1);
@@ -1058,7 +1058,7 @@ gin_extract_jsonb_hash_value_internal(Jsonb *jb, int32 *nentries)
 }
 
 Datum
-gin_extract_jsonb_hash_value(PG_FUNCTION_ARGS)
+gin_extract_jsonb_path_value(PG_FUNCTION_ARGS)
 {
 	Jsonb	   *jb = PG_GETARG_JSONB(0);
 	int32	   *nentries = (int32 *) PG_GETARG_POINTER(1);
@@ -1067,7 +1067,7 @@ gin_extract_jsonb_hash_value(PG_FUNCTION_ARGS)
 }
 
 Datum
-gin_extract_jsonb_query_hash_value(PG_FUNCTION_ARGS)
+gin_extract_jsonb_query_path_value(PG_FUNCTION_ARGS)
 {
 	Jsonb	   *jb;
 	int32	   *nentries = (int32 *) PG_GETARG_POINTER(1);
@@ -1120,7 +1120,7 @@ gin_extract_jsonb_query_hash_value(PG_FUNCTION_ARGS)
 }
 
 Datum
-gin_consistent_jsonb_hash_value(PG_FUNCTION_ARGS)
+gin_consistent_jsonb_path_value(PG_FUNCTION_ARGS)
 {
 	bool	   *check = (bool *) PG_GETARG_POINTER(0);
 	StrategyNumber strategy = PG_GETARG_UINT16(1);
@@ -1161,7 +1161,7 @@ gin_consistent_jsonb_hash_value(PG_FUNCTION_ARGS)
 }
 
 Datum
-gin_triconsistent_jsonb_hash_value(PG_FUNCTION_ARGS)
+gin_triconsistent_jsonb_path_value(PG_FUNCTION_ARGS)
 {
 	GinTernaryValue *check = (GinTernaryValue *) PG_GETARG_POINTER(0);
 	StrategyNumber strategy = PG_GETARG_UINT16(1);
