@@ -195,6 +195,7 @@ struct ExtractedNode
 typedef int (*MakeEntryHandler)(ExtractedNode *node, Pointer extra);
 
 ExtractedNode *extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra);
+bool queryNeedRecheck(ExtractedNode *node);
 bool execRecursive(ExtractedNode *node, bool *check);
 bool execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check);
 
