@@ -223,7 +223,7 @@ select count(*) from test_jsquery where v @@ 'customer_id = null';
 select count(*) from test_jsquery where v @@ 'review_votes = true';
 select count(*) from test_jsquery where v @@ 'product_group = false';
 
-create index t_idx on test_jsquery using gin (v jsonb_bloom_value_ops);
+create index t_idx on test_jsquery using gin (v jsonb_value_path_ops);
 set enable_seqscan = off;
 
 explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
@@ -248,7 +248,7 @@ select count(*) from test_jsquery where v @@ 'product_group = false';
 
 drop index t_idx;
 
-create index t_idx on test_jsquery using gin (v jsonb_hash_value_ops);
+create index t_idx on test_jsquery using gin (v jsonb_path_value_ops);
 set enable_seqscan = off;
 
 explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
