@@ -183,27 +183,56 @@ yyerror(const char *message)
 	}
 }
 
+typedef struct keyword
+{
+	int16	len;
+	bool	lowercase;
+	int		val;
+	char	*keyword;
+} keyword;
+
+static keyword keywords[] = {
+	{ 2, false,	IN_P,		"in" },
+	{ 4, true,	NULL_P,		"null"},
+	{ 4, true,	TRUE_P,		"true"},
+	{ 5, true,	FALSE_P,	"false"}
+};
+
 static int
 checkSpecialVal()
 {
-	int res = STRING_P;
+	int 		res = STRING_P;
+	int			diff;
+	keyword		*StopLow = keywords,
+				*StopHigh = keywords + lengthof(keywords),
+				*StopMiddle;
 
-	if (scanstring.len == 2)
+	if (scanstring.len > keywords[lengthof(keywords) - 1].len)
+		return res;
+
+	while(StopLow < StopHigh)
 	{
-		if (pg_strncasecmp("in", scanstring.val, scanstring.len) == 0)
-			return IN_P;
-	}
-	else if (scanstring.len == 4)
-	{
-		if (strncmp("null", scanstring.val, scanstring.len) == 0)
-			res = NULL_P;
-		else if (strncmp("true", scanstring.val, scanstring.len) == 0)
-			res = TRUE_P;
-	}
-	else if (scanstring.len == 5)
-	{
-		if (strncmp("false", scanstring.val, scanstring.len) == 0)
-			res = FALSE_P;
+		StopMiddle = StopLow + (StopHigh - StopLow) / 2;
+
+		if (StopMiddle->len == scanstring.len)
+			diff = pg_strncasecmp(StopMiddle->keyword, scanstring.val, scanstring.len); 
+		else
+			diff = StopMiddle->len - scanstring.len;
+
+		if (diff < 0)
+			StopLow = StopMiddle + 1;
+		else if (diff > 0)
+			StopHigh = StopMiddle;
+		else
+		{
+			if (StopMiddle->lowercase)
+				diff = strncmp(StopMiddle->keyword, scanstring.val, scanstring.len);
+
+			if (diff == 0)
+				res = StopMiddle->val;
+
+			break;
+		}
 	}
 
 	return res;
