@@ -191,11 +191,22 @@ typedef struct keyword
 	char	*keyword;
 } keyword;
 
+/*
+ * Array of key words should be sorted by length and then
+ * alphabetical order
+ */
+
 static keyword keywords[] = {
-	{ 2, false,	IN_P,		"in" },
+	{ 2, false,	IN_P,		"in"},
+	{ 2, false,	IS_P,		"is"},
 	{ 4, true,	NULL_P,		"null"},
 	{ 4, true,	TRUE_P,		"true"},
-	{ 5, true,	FALSE_P,	"false"}
+	{ 5, false,	ARRAY_P,	"array"},
+	{ 5, true,	FALSE_P,	"false"},
+	{ 6, false,	NUMBER_P,	"number"},
+	{ 6, false,	OBJECT_P,	"object"},
+	{ 6, false,	TEXT_P,		"string"},
+	{ 7, false,	BOOLEAN_P,	"boolean"},
 };
 
 static int
@@ -212,7 +223,7 @@ checkSpecialVal()
 
 	while(StopLow < StopHigh)
 	{
-		StopMiddle = StopLow + (StopHigh - StopLow) / 2;
+		StopMiddle = StopLow + ((StopHigh - StopLow) >> 1);
 
 		if (StopMiddle->len == scanstring.len)
 			diff = pg_strncasecmp(StopMiddle->keyword, scanstring.val, scanstring.len); 

@@ -958,6 +958,73 @@ ERROR:  bad jsquery representation
 LINE 1: select 'a\r = x"\\abcd"'::jsquery AS err;
                ^
 DETAIL:  syntax error, unexpected STRING_P, expecting $end at or near """
+--IS
+select  'as IS boolean | as is ARRAY | as is ObJect | as is Number | as is string'::jsquery;
+                                          jsquery                                           
+--------------------------------------------------------------------------------------------
+ (((("as" IS BOOLEAN | "as" IS ARRAY) | "as" IS OBJECT) | "as" IS NUMBER) | "as" IS STRING)
+(1 row)
+
+select '{"as": "xxx"}' @@ 'as IS string'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"as": "xxx"}' @@ 'as IS boolean | as is ARRAY | as is ObJect | as is Number'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"as": 5}' @@ 'as is Number'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"as": true}' @@ 'as is boolean'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"as": false}' @@ 'as is boolean'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"as": "false"}' @@ 'as is boolean'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
+select '["xxx"]' @@ '$ IS array'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"as": false}' @@ '$ IS object'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '"xxx"' @@ '$ IS string'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '"xxx"' @@ '$ IS number'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
 ---table and index
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 0;
  count 

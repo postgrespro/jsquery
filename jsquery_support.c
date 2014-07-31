@@ -79,6 +79,7 @@ jsqInitByBuffer(JsQueryItem *v, char *base, int32 pos)
 			/* follow next */
 		case jqiNumeric:
 		case jqiBool:
+		case jqiIs:
 			v->value.data = base + pos;
 			break;
 		case jqiArray:
@@ -184,6 +185,14 @@ jsqGetNumeric(JsQueryItem *v)
 	Assert(v->type == jqiNumeric);
 
 	return (Numeric)v->value.data;
+}
+
+int32
+jsqGetIsType(JsQueryItem *v)
+{
+	Assert(v->type = jqiIs);
+
+	return  (int32)*v->value.data;
 }
 
 char*

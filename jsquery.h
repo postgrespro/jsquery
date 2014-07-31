@@ -51,7 +51,8 @@ typedef enum JsQueryItemType {
 		jqiAnyKey = '%',
 		jqiKey = 'K',
 		jqiCurrent = '$',
-		jqiIn = 'I'
+		jqiIn = 'I',
+		jqiIs = 'i'
 } JsQueryItemType;
 
 /*
@@ -87,8 +88,6 @@ typedef struct JsQueryItem {
 			int32	*arrayPtr;
 		} array;
 	};
-
-
 } JsQueryItem;
 
 extern void jsqInit(JsQueryItem *v, JsQuery *js);
@@ -99,6 +98,7 @@ extern void jsqGetLeftArg(JsQueryItem *v, JsQueryItem *a);
 extern void jsqGetRightArg(JsQueryItem *v, JsQueryItem *a);
 extern Numeric	jsqGetNumeric(JsQueryItem *v);
 extern bool		jsqGetBool(JsQueryItem *v);
+extern int32	jsqGetIsType(JsQueryItem *v);
 extern char * jsqGetString(JsQueryItem *v, int32 *len);
 extern void jsqIterateInit(JsQueryItem *v);
 extern bool jsqIterateArray(JsQueryItem *v, JsQueryItem *e);
@@ -122,6 +122,7 @@ struct JsQueryParseItem {
 		} args;
 
 		JsQueryParseItem	*arg;
+		int8		isType; /* jbv* values */
 
 		Numeric		numeric;
 		bool		boolean;

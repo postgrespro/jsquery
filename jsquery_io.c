@@ -50,6 +50,9 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item)
 		case jqiBool:
 			appendBinaryStringInfo(buf, (char*)&item->boolean, sizeof(item->boolean));
 			break;
+		case jqiIs:
+			appendBinaryStringInfo(buf, (char*)&item->isType, sizeof(item->isType));
+			break;
 		case jqiArray:
 			{
 				int32	i, arrayStart;
@@ -203,12 +206,36 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 			appendStringInfoString(buf,
 									DatumGetCString(DirectFunctionCall1(numeric_out,
 										PointerGetDatum(jsqGetNumeric(v)))));
-		break;
+			break;
 		case jqiBool:
 			if (jsqGetBool(v))
 				appendBinaryStringInfo(buf, "true", 4);
 			else
 				appendBinaryStringInfo(buf, "false", 5);
+			break;
+		case jqiIs:
+			appendBinaryStringInfo(buf, " IS ", 4);
+			switch(jsqGetIsType(v))
+			{
+				case jbvString:
+					appendBinaryStringInfo(buf, "STRING", 6);
+					break;
+				case jbvNumeric:
+					appendBinaryStringInfo(buf, "NUMBER", 6);
+					break;
+				case jbvBool:
+					appendBinaryStringInfo(buf, "BOOLEAN", 7);
+					break;
+				case jbvArray:
+					appendBinaryStringInfo(buf, "ARRAY", 5);
+					break;
+				case jbvObject:
+					appendBinaryStringInfo(buf, "OBJECT", 6);
+					break;
+				default:
+					elog(ERROR, "Unknown type for IS: %d", jsqGetIsType(v));
+					break;
+			}
 			break;
 		case jqiArray:
 			if (printBracketes)

@@ -193,6 +193,20 @@ select 'a\r = "\abcdx"'::jsquery AS err;
 select 'a\r = "\\abcdx"'::jsquery;
 select 'a\r = x"\\abcd"'::jsquery AS err;
 
+--IS
+
+select  'as IS boolean | as is ARRAY | as is ObJect | as is Number | as is string'::jsquery;
+select '{"as": "xxx"}' @@ 'as IS string'::jsquery;
+select '{"as": "xxx"}' @@ 'as IS boolean | as is ARRAY | as is ObJect | as is Number'::jsquery;
+select '{"as": 5}' @@ 'as is Number'::jsquery;
+select '{"as": true}' @@ 'as is boolean'::jsquery;
+select '{"as": false}' @@ 'as is boolean'::jsquery;
+select '{"as": "false"}' @@ 'as is boolean'::jsquery;
+select '["xxx"]' @@ '$ IS array'::jsquery;
+select '{"as": false}' @@ '$ IS object'::jsquery;
+select '"xxx"' @@ '$ IS string'::jsquery;
+select '"xxx"' @@ '$ IS number'::jsquery;
+
 ---table and index
 
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 0;

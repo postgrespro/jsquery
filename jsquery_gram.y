@@ -153,6 +153,16 @@ makeItemUnary(int type, JsQueryParseItem* a)
 }
 
 static JsQueryParseItem*
+makeItemIs(int isType)
+{
+	JsQueryParseItem  *v = makeItemType(jqiIs);
+
+	v->isType = isType;
+
+	return v;
+}
+
+static JsQueryParseItem*
 makeItemList(List *list) {
 	JsQueryParseItem	*head, *end;
 	ListCell	*cell;
@@ -183,21 +193,23 @@ makeItemList(List *list) {
 
 %union {
 	string 			str;
-	Numeric			numeric;
 	List			*elems; 		/* list of JsQueryParseItem */
 
 	JsQueryParseItem		*value;
 }
 
-%token	<str>			NULL_P STRING_P TRUE_P FALSE_P
-						NUMERIC_P IN_P
+%token	<str>		IN_P IS_P NULL_P TRUE_P ARRAY_P
+					FALSE_P NUMBER_P OBJECT_P TEXT_P 
+					BOOLEAN_P
 
-%type	<value>			result scalar_value 
-%type	<str>			key
+%token	<str>		STRING_P NUMERIC_P
 
-%type	<elems>			path value_list
+%type	<value>		result scalar_value 
+%type	<str>		key
 
-%type 	<value>			path_elem right_expr expr array
+%type	<elems>		path value_list
+
+%type 	<value>		path_elem right_expr expr array
 
 %left '|'
 %left '&'
@@ -216,11 +228,17 @@ array:
 	;
 
 scalar_value:
-	NULL_P							{ $$ = makeItemString(NULL); }
-	| STRING_P						{ $$ = makeItemString(&$1); }
+	STRING_P						{ $$ = makeItemString(&$1); }
 	| IN_P							{ $$ = makeItemString(&$1); }
+	| IS_P							{ $$ = makeItemString(&$1); }
+	| NULL_P						{ $$ = makeItemString(NULL); }
 	| TRUE_P						{ $$ = makeItemBool(true); }
+	| ARRAY_P						{ $$ = makeItemString(&$1); }
 	| FALSE_P						{ $$ = makeItemBool(false); }
+	| NUMBER_P						{ $$ = makeItemString(&$1); }
+	| OBJECT_P						{ $$ = makeItemString(&$1); }
+	| TEXT_P						{ $$ = makeItemString(&$1); }
+	| BOOLEAN_P						{ $$ = makeItemString(&$1); }
 	| NUMERIC_P						{ $$ = makeItemNumeric(&$1); }
 	;
 
@@ -241,6 +259,11 @@ right_expr:
 	| '@' '>' array					{ $$ = makeItemUnary(jqiContains, $3); } 
 	| '<' '@' array					{ $$ = makeItemUnary(jqiContained, $3); } 
 	| '&' '&' array					{ $$ = makeItemUnary(jqiOverlap, $3); }
+	| IS_P ARRAY_P 					{ $$ = makeItemIs(jbvArray); }
+	| IS_P NUMBER_P 				{ $$ = makeItemIs(jbvNumeric); }
+	| IS_P OBJECT_P 				{ $$ = makeItemIs(jbvObject); }
+	| IS_P TEXT_P 					{ $$ = makeItemIs(jbvString); }
+	| IS_P BOOLEAN_P 				{ $$ = makeItemIs(jbvBool); }
 	;
 
 expr:
@@ -257,11 +280,17 @@ expr:
  */
 key:
 	STRING_P						{ $$ = $1; }
-	| TRUE_P						{ $$ = $1; }
-	| FALSE_P						{ $$ = $1; }
-	| NUMERIC_P						{ $$ = $1; }
-	| NULL_P						{ $$ = $1; }
 	| IN_P							{ $$ = $1; }
+	| IS_P							{ $$ = $1; }
+	| NULL_P						{ $$ = $1; }
+	| TRUE_P						{ $$ = $1; }
+	| ARRAY_P						{ $$ = $1; }
+	| FALSE_P						{ $$ = $1; }
+	| NUMBER_P						{ $$ = $1; }
+	| OBJECT_P						{ $$ = $1; }
+	| TEXT_P						{ $$ = $1; }
+	| BOOLEAN_P						{ $$ = $1; }
+	| NUMERIC_P						{ $$ = $1; }
 	;
 
 path_elem:

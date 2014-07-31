@@ -427,6 +427,30 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb)
 			jsqGetArg(jsq, &elem);
 			res = executeExpr(&elem, jsq->type, jb);
 			break;
+		case jqiIs:
+			if (JsonbType(jb) == jbvScalar)
+			{
+				JsonbIterator	*it;
+				int32			r;
+				JsonbValue		v;
+
+				it = JsonbIteratorInit(jb->val.binary.data);
+
+				r = JsonbIteratorNext(&it, &v, true);
+				Assert(r == WJB_BEGIN_ARRAY);
+				Assert(v.val.array.rawScalar == 1);
+				Assert(v.val.array.nElems == 1);
+
+				r = JsonbIteratorNext(&it, &v, true);
+				Assert(r == WJB_ELEM);
+
+				res = (jsqGetIsType(jsq) == JsonbType(&v));
+			}
+			else
+			{
+				res = (jsqGetIsType(jsq) == JsonbType(jb));
+			}
+			break;
 		default:
 			elog(ERROR,"Wrong state: %d", jsq->type);
 	}
