@@ -126,7 +126,7 @@ unicode     \\u[0-9A-Fa-f]{4}
 									return checkSpecialVal();
 								}
 
-<xNONQUOTED,xQUOTED>\\[\"\\\/]	{ 
+<xNONQUOTED,xQUOTED>\\[\"\\]	{ 
 									addchar(false, yytext[1]); 
 								}
 
