@@ -959,7 +959,7 @@ LINE 1: select 'a\r = x"\\abcd"'::jsquery AS err;
                ^
 DETAIL:  syntax error, unexpected STRING_P, expecting $end at or near """
 --IS
-select  'as IS boolean | as is ARRAY | as is ObJect | as is Number | as is string'::jsquery;
+select  'as IS boolean | as is ARRAY | as is ObJect | as is Numeric | as is string'::jsquery;
                                           jsquery                                           
 --------------------------------------------------------------------------------------------
  (((("as" IS BOOLEAN | "as" IS ARRAY) | "as" IS OBJECT) | "as" IS NUMBER) | "as" IS STRING)
@@ -971,13 +971,13 @@ select '{"as": "xxx"}' @@ 'as IS string'::jsquery;
  t
 (1 row)
 
-select '{"as": "xxx"}' @@ 'as IS boolean | as is ARRAY | as is ObJect | as is Number'::jsquery;
+select '{"as": "xxx"}' @@ 'as IS boolean | as is ARRAY | as is ObJect | as is Numeric'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"as": 5}' @@ 'as is Number'::jsquery;
+select '{"as": 5}' @@ 'as is Numeric'::jsquery;
  ?column? 
 ----------
  t
@@ -1019,7 +1019,7 @@ select '"xxx"' @@ '$ IS string'::jsquery;
  t
 (1 row)
 
-select '"xxx"' @@ '$ IS number'::jsquery;
+select '"xxx"' @@ '$ IS numeric'::jsquery;
  ?column? 
 ----------
  f

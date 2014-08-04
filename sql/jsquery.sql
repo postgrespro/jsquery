@@ -195,17 +195,17 @@ select 'a\r = x"\\abcd"'::jsquery AS err;
 
 --IS
 
-select  'as IS boolean | as is ARRAY | as is ObJect | as is Number | as is string'::jsquery;
+select  'as IS boolean | as is ARRAY | as is ObJect | as is Numeric | as is string'::jsquery;
 select '{"as": "xxx"}' @@ 'as IS string'::jsquery;
-select '{"as": "xxx"}' @@ 'as IS boolean | as is ARRAY | as is ObJect | as is Number'::jsquery;
-select '{"as": 5}' @@ 'as is Number'::jsquery;
+select '{"as": "xxx"}' @@ 'as IS boolean | as is ARRAY | as is ObJect | as is Numeric'::jsquery;
+select '{"as": 5}' @@ 'as is Numeric'::jsquery;
 select '{"as": true}' @@ 'as is boolean'::jsquery;
 select '{"as": false}' @@ 'as is boolean'::jsquery;
 select '{"as": "false"}' @@ 'as is boolean'::jsquery;
 select '["xxx"]' @@ '$ IS array'::jsquery;
 select '{"as": false}' @@ '$ IS object'::jsquery;
 select '"xxx"' @@ '$ IS string'::jsquery;
-select '"xxx"' @@ '$ IS number'::jsquery;
+select '"xxx"' @@ '$ IS numeric'::jsquery;
 
 ---table and index
 

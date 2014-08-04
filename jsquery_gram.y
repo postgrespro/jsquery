@@ -198,9 +198,9 @@ makeItemList(List *list) {
 	JsQueryParseItem		*value;
 }
 
-%token	<str>		IN_P IS_P NULL_P TRUE_P ARRAY_P
-					FALSE_P NUMBER_P OBJECT_P TEXT_P 
-					BOOLEAN_P
+%token	<str>		IN_P IS_P NULL_P TRUE_P ARRAY_T
+					FALSE_P NUMERIC_T OBJECT_T STRING_T 
+					BOOLEAN_T
 
 %token	<str>		STRING_P NUMERIC_P
 
@@ -233,12 +233,12 @@ scalar_value:
 	| IS_P							{ $$ = makeItemString(&$1); }
 	| NULL_P						{ $$ = makeItemString(NULL); }
 	| TRUE_P						{ $$ = makeItemBool(true); }
-	| ARRAY_P						{ $$ = makeItemString(&$1); }
+	| ARRAY_T						{ $$ = makeItemString(&$1); }
 	| FALSE_P						{ $$ = makeItemBool(false); }
-	| NUMBER_P						{ $$ = makeItemString(&$1); }
-	| OBJECT_P						{ $$ = makeItemString(&$1); }
-	| TEXT_P						{ $$ = makeItemString(&$1); }
-	| BOOLEAN_P						{ $$ = makeItemString(&$1); }
+	| NUMERIC_T						{ $$ = makeItemString(&$1); }
+	| OBJECT_T						{ $$ = makeItemString(&$1); }
+	| STRING_T						{ $$ = makeItemString(&$1); }
+	| BOOLEAN_T						{ $$ = makeItemString(&$1); }
 	| NUMERIC_P						{ $$ = makeItemNumeric(&$1); }
 	;
 
@@ -259,11 +259,11 @@ right_expr:
 	| '@' '>' array					{ $$ = makeItemUnary(jqiContains, $3); } 
 	| '<' '@' array					{ $$ = makeItemUnary(jqiContained, $3); } 
 	| '&' '&' array					{ $$ = makeItemUnary(jqiOverlap, $3); }
-	| IS_P ARRAY_P 					{ $$ = makeItemIs(jbvArray); }
-	| IS_P NUMBER_P 				{ $$ = makeItemIs(jbvNumeric); }
-	| IS_P OBJECT_P 				{ $$ = makeItemIs(jbvObject); }
-	| IS_P TEXT_P 					{ $$ = makeItemIs(jbvString); }
-	| IS_P BOOLEAN_P 				{ $$ = makeItemIs(jbvBool); }
+	| IS_P ARRAY_T 					{ $$ = makeItemIs(jbvArray); }
+	| IS_P NUMERIC_T 				{ $$ = makeItemIs(jbvNumeric); }
+	| IS_P OBJECT_T 				{ $$ = makeItemIs(jbvObject); }
+	| IS_P STRING_T 				{ $$ = makeItemIs(jbvString); }
+	| IS_P BOOLEAN_T 				{ $$ = makeItemIs(jbvBool); }
 	;
 
 expr:
@@ -284,12 +284,12 @@ key:
 	| IS_P							{ $$ = $1; }
 	| NULL_P						{ $$ = $1; }
 	| TRUE_P						{ $$ = $1; }
-	| ARRAY_P						{ $$ = $1; }
+	| ARRAY_T						{ $$ = $1; }
 	| FALSE_P						{ $$ = $1; }
-	| NUMBER_P						{ $$ = $1; }
-	| OBJECT_P						{ $$ = $1; }
-	| TEXT_P						{ $$ = $1; }
-	| BOOLEAN_P						{ $$ = $1; }
+	| NUMERIC_T						{ $$ = $1; }
+	| OBJECT_T						{ $$ = $1; }
+	| STRING_T						{ $$ = $1; }
+	| BOOLEAN_T						{ $$ = $1; }
 	| NUMERIC_P						{ $$ = $1; }
 	;
 

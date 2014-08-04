@@ -201,12 +201,12 @@ static keyword keywords[] = {
 	{ 2, false,	IS_P,		"is"},
 	{ 4, true,	NULL_P,		"null"},
 	{ 4, true,	TRUE_P,		"true"},
-	{ 5, false,	ARRAY_P,	"array"},
+	{ 5, false,	ARRAY_T,	"array"},
 	{ 5, true,	FALSE_P,	"false"},
-	{ 6, false,	NUMBER_P,	"number"},
-	{ 6, false,	OBJECT_P,	"object"},
-	{ 6, false,	TEXT_P,		"string"},
-	{ 7, false,	BOOLEAN_P,	"boolean"},
+	{ 6, false,	OBJECT_T,	"object"},
+	{ 6, false,	STRING_T,	"string"},
+	{ 7, false,	BOOLEAN_T,	"boolean"},
+	{ 7, false,	NUMERIC_T,	"numeric"}
 };
 
 static int
