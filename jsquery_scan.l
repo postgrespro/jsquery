@@ -45,9 +45,10 @@ static void parseUnicode(char *s, int l);
 
 %x xQUOTED
 %x xNONQUOTED
+%x xCOMMENT
 
 special		 [\%\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\*]
-any			[^\%\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\* \t\n\r\f\\\"]
+any			[^\%\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\* \t\n\r\f\\\"\/]
 blank		[ \t\n\r\f]
 unicode     \\u[0-9A-Fa-f]{4}
 
@@ -56,6 +57,8 @@ unicode     \\u[0-9A-Fa-f]{4}
 <INITIAL>{special}				{ return *yytext; }
 
 <INITIAL>{blank}+				{ /* ignore */ }
+
+<INITIAL>\/\*					{ BEGIN xCOMMENT; }
 
 <INITIAL>[+-]?[0-9]+(\.[0-9]+)?[eE][+-]?[0-9]+  /* float */  {
 									addstring(true, yytext, yyleng);
@@ -113,6 +116,15 @@ unicode     \\u[0-9A-Fa-f]{4}
 								}
 
 
+<xNONQUOTED>\/\*				{
+									yylval->str = scanstring;
+									BEGIN xCOMMENT;
+									return checkSpecialVal();
+								}
+
+
+<xNONQUOTED,INITIAL>\/ 			{ addchar(false, '/'); }
+
 <xNONQUOTED>({special}|\")		{
 									yylval->str = scanstring;
 									yyless(0);
@@ -126,9 +138,7 @@ unicode     \\u[0-9A-Fa-f]{4}
 									return checkSpecialVal();
 								}
 
-<xNONQUOTED,xQUOTED>\\[\"\\]	{ 
-									addchar(false, yytext[1]); 
-								}
+<xNONQUOTED,xQUOTED>\\[\"\\]	{ addchar(false, yytext[1]); }
 
 <xNONQUOTED,xQUOTED>\\b 		{ addchar(false, '\b'); }
 
@@ -159,6 +169,14 @@ unicode     \\u[0-9A-Fa-f]{4}
 <xQUOTED>[^\\\"]+   			{ addstring(false, yytext, yyleng); }
 
 <INITIAL><<EOF>>				{ yyterminate(); }
+
+<xCOMMENT>\*\/					{ BEGIN INITIAL; }
+
+<xCOMMENT>[^\*]+				{ /* ignore */ }
+
+<xCOMMENT>\*					{ /* ignore */ }
+
+<xCOMMENT><<EOF>>				{ yyerror("Unexpected end of comment"); }
 
 %%
 

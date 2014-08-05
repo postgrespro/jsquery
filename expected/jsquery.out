@@ -38,13 +38,13 @@ select 'asd(zzz < 13 & x.zxc = "true")'::jsquery;
  "asd"("zzz" < 13 & "x"."zxc" = "true")
 (1 row)
 
-select 'asd(zzz < 13 | #.zxc = "true")'::jsquery;
+select 'asd(zzz < 13 | #.zxc = "true" /* test */)'::jsquery;
                jsquery                
 --------------------------------------
  "asd"("zzz" < 13 | #."zxc" = "true")
 (1 row)
 
-select 'asd(* < 13 & #.zxc = "true")'::jsquery;
+select 'asd(* < 13 & /* ttt */ #.zxc = "true")'::jsquery;
              jsquery              
 ----------------------------------
  "asd"(* < 13 & #."zxc" = "true")
@@ -56,12 +56,17 @@ select '(* < 13 & #.zxc = "true")'::jsquery;
  (* < 13 & #."zxc" = "true")
 (1 row)
 
-select '* < 13 & #.zxc = "true"'::jsquery;
+select '* < 13 & #.zxc/* t2 */ = "true"'::jsquery;
            jsquery           
 -----------------------------
  (* < 13 & #."zxc" = "true")
 (1 row)
 
+select '* < 13 & #.zxc"x" = "true"'::jsquery;
+ERROR:  bad jsquery representation
+LINE 1: select '* < 13 & #.zxc"x" = "true"'::jsquery;
+               ^
+DETAIL:  syntax error, unexpected STRING_P at or near """
 select 'a < 1'::jsquery;
  jsquery 
 ---------

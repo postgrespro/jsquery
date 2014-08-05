@@ -12,10 +12,11 @@ select 'asd(zzz < 13)'::jsquery;
 select 'asd(zzz < 13 & x = true)'::jsquery;
 select 'asd(zzz < 13 & x = "true")'::jsquery;
 select 'asd(zzz < 13 & x.zxc = "true")'::jsquery;
-select 'asd(zzz < 13 | #.zxc = "true")'::jsquery;
-select 'asd(* < 13 & #.zxc = "true")'::jsquery;
+select 'asd(zzz < 13 | #.zxc = "true" /* test */)'::jsquery;
+select 'asd(* < 13 & /* ttt */ #.zxc = "true")'::jsquery;
 select '(* < 13 & #.zxc = "true")'::jsquery;
-select '* < 13 & #.zxc = "true"'::jsquery;
+select '* < 13 & #.zxc/* t2 */ = "true"'::jsquery;
+select '* < 13 & #.zxc"x" = "true"'::jsquery;
 
 select 'a < 1'::jsquery;
 select 'a < -1'::jsquery;
