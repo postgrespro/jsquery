@@ -28,6 +28,7 @@ static int	scanbuflen;
 static void addstring(bool init, char *s, int l);
 static void addchar(bool init, char s);
 static int checkSpecialVal(void); /* examine scanstring for the special value */
+static JsQueryHint checkHint(void);
 
 static void parseUnicode(char *s, int l);
 
@@ -58,7 +59,10 @@ unicode     \\u[0-9A-Fa-f]{4}
 
 <INITIAL>{blank}+				{ /* ignore */ }
 
-<INITIAL>\/\*					{ BEGIN xCOMMENT; }
+<INITIAL>\/\*					{ 
+									addchar(true, '\0');
+									BEGIN xCOMMENT;
+								}
 
 <INITIAL>[+-]?[0-9]+(\.[0-9]+)?[eE][+-]?[0-9]+  /* float */  {
 									addstring(true, yytext, yyleng);
@@ -101,7 +105,7 @@ unicode     \\u[0-9A-Fa-f]{4}
 
 <INITIAL>\\						{
 									yyless(0);
-									addstring(true, "", 0);
+									addchar(true, '\0');
 									BEGIN xNONQUOTED;
 								}
 
@@ -118,6 +122,7 @@ unicode     \\u[0-9A-Fa-f]{4}
 
 <xNONQUOTED>\/\*				{
 									yylval->str = scanstring;
+									addchar(true, '\0');
 									BEGIN xCOMMENT;
 									return checkSpecialVal();
 								}
@@ -170,11 +175,16 @@ unicode     \\u[0-9A-Fa-f]{4}
 
 <INITIAL><<EOF>>				{ yyterminate(); }
 
-<xCOMMENT>\*\/					{ BEGIN INITIAL; }
+<xCOMMENT>\*\/					{ 
+									BEGIN INITIAL;
 
-<xCOMMENT>[^\*]+				{ /* ignore */ }
+									if ((yylval->hint = checkHint()) != jsqIndexDefault) 
+										return HINT_P;
+								}
 
-<xCOMMENT>\*					{ /* ignore */ }
+<xCOMMENT>[^\*]+				{ addstring(false, yytext, yyleng); }
+
+<xCOMMENT>\*					{ addchar(false, '*'); }
 
 <xCOMMENT><<EOF>>				{ yyerror("Unexpected end of comment"); }
 
@@ -265,6 +275,30 @@ checkSpecialVal()
 	}
 
 	return res;
+}
+
+static JsQueryHint
+checkHint()
+{
+	if (scanstring.len <= 2 || strncmp(scanstring.val, "--", 2) != 0)
+		return jsqIndexDefault;
+
+	scanstring.val += 2;
+	scanstring.len -= 2;
+
+	while(scanstring.len > 0 && isspace(*scanstring.val))
+	{
+		scanstring.val++;
+		scanstring.len--;
+	}
+
+	if (scanstring.len >= 5 && pg_strncasecmp(scanstring.val, "index", 5) == 0)
+		return jsqForceIndex;
+
+	if (scanstring.len >= 7 && pg_strncasecmp(scanstring.val, "noindex", 7) == 0)
+		return jsqNoIndex;
+
+	return jsqIndexDefault;
 }
 /*
  * Called before any actual parsing is done

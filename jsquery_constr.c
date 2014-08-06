@@ -28,7 +28,10 @@ copyJsQuery(StringInfo buf, JsQueryItem *jsq)
 
 	check_stack_depth();
 
-	appendStringInfoChar(buf, (char)jsq->type);
+	Assert((jsq->type & jsq->hint) == 0);
+	Assert((jsq->type & JSQ_HINT_MASK) == 0);
+
+	appendStringInfoChar(buf, (char)(jsq->type | jsq->hint));
 	alignStringInfoInt(buf);
 
 	next = (jsqGetNext(jsq, NULL)) ? buf->len : 0;

@@ -35,25 +35,37 @@ typedef enum JsQueryItemType {
 		jqiNumeric = jbvNumeric, 
 		jqiBool = jbvBool, 
 		jqiArray = jbvArray, 
-		jqiAnd = '&', 
-		jqiOr = '|', 
-		jqiNot = '!',
-		jqiEqual = '=',
-		jqiLess  = '<',
-		jqiGreater  = '>',
-		jqiLessOrEqual = '{',
-		jqiGreaterOrEqual = '}',
-		jqiContains = '@',
-		jqiContained = '^',
-		jqiOverlap = 'O',
-		jqiAny = '*',
-		jqiAnyArray = '#',
-		jqiAnyKey = '%',
-		jqiKey = 'K',
-		jqiCurrent = '$',
-		jqiIn = 'I',
-		jqiIs = 'i'
+		jqiAnd,
+		jqiOr,
+		jqiNot,
+		jqiEqual,
+		jqiLess,
+		jqiGreater,
+		jqiLessOrEqual,
+		jqiGreaterOrEqual,
+		jqiContains,
+		jqiContained,
+		jqiOverlap,
+		jqiAny,
+		jqiAnyArray,
+		jqiAnyKey,
+		jqiKey,
+		jqiCurrent,
+		jqiIn,
+		jqiIs
 } JsQueryItemType;
+
+/*
+ * JsQueryHint stores in the same byte as JsQueryItemType so
+ * JsQueryItemType should not use two high bits
+ */
+typedef enum JsQueryHint {
+		jsqIndexDefault = 0x00, 
+		jsqForceIndex = 0x80,
+		jsqNoIndex = 0x40
+} JsQueryHint;
+
+#define JSQ_HINT_MASK	(jsqIndexDefault | jsqForceIndex | jsqNoIndex)
 
 /*
  * Support functions to parse/construct binary value.
@@ -66,6 +78,7 @@ typedef enum JsQueryItemType {
 
 typedef struct JsQueryItem {
 	JsQueryItemType	type;
+	JsQueryHint		hint;
 	int32			nextPos;
 	char			*base;
 
@@ -113,6 +126,7 @@ typedef struct JsQueryParseItem JsQueryParseItem;
 
 struct JsQueryParseItem {
 	JsQueryItemType	type;
+	JsQueryHint	 	hint;	
 	JsQueryParseItem	*next; /* next in path */
 
 	union {

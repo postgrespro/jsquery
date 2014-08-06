@@ -30,7 +30,10 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item)
 
 	check_stack_depth();
 
-	appendStringInfoChar(buf, (char)item->type);
+	Assert((item->type & item->hint) == 0);
+	Assert((item->type & JSQ_HINT_MASK) == 0);
+
+	appendStringInfoChar(buf, (char)(item->type | item->hint));
 	alignStringInfoInt(buf);
 
 	next = (item->next) ? buf->len : 0;
@@ -153,6 +156,24 @@ jsquery_in(PG_FUNCTION_ARGS)
 }
 
 static void
+printHint(StringInfo buf, JsQueryHint hint)
+{
+	switch(hint)
+	{
+		case jsqForceIndex:
+			appendStringInfoString(buf, " /*-- index */ ");
+			break;
+		case jsqNoIndex:
+			appendStringInfoString(buf, " /*-- noindex */ ");
+			break;
+		case jsqIndexDefault:
+			break;
+		default:
+			elog(ERROR, "Unknown hint: %d", hint);
+	}
+}
+
+static void
 printOperation(StringInfo buf, JsQueryItemType type)
 {
 	switch(type)
@@ -186,9 +207,11 @@ static void
 printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes)
 {
 	JsQueryItem	elem;
-	bool			first = true;
+	bool		first = true;
 
 	check_stack_depth();
+
+	printHint(buf, v->hint);
 
 	switch(v->type)
 	{

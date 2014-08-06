@@ -1030,6 +1030,54 @@ select '"xxx"' @@ '$ IS numeric'::jsquery;
  f
 (1 row)
 
+--hint
+select 'a /*-- noindex */ = 5'::jsquery;
+         jsquery          
+--------------------------
+ "a" /*-- noindex */  = 5
+(1 row)
+
+select 'a /*-- index */ = 5'::jsquery;
+        jsquery         
+------------------------
+ "a" /*-- index */  = 5
+(1 row)
+
+select 'asd.# = 3'::jsquery & 'zzz /*-- noindex */ = true' | 'xxx.# /*-- index */ = zero';
+                                     ?column?                                      
+-----------------------------------------------------------------------------------
+ (("asd".# = 3 & "zzz" /*-- noindex */  = true) | "xxx".# /*-- index */  = "zero")
+(1 row)
+
+select 'a /*-- xxx */ = 5'::jsquery;
+ jsquery 
+---------
+ "a" = 5
+(1 row)
+
+select 'a /* index */ = 5'::jsquery;
+ jsquery 
+---------
+ "a" = 5
+(1 row)
+
+select 'a /* noindex */ = 5'::jsquery;
+ jsquery 
+---------
+ "a" = 5
+(1 row)
+
+select 'a = /*-- noindex */ 5'::jsquery;
+ERROR:  bad jsquery representation
+LINE 1: select 'a = /*-- noindex */ 5'::jsquery;
+               ^
+DETAIL:  syntax error, unexpected HINT_P at or near "*/"
+select 'a = /* noindex */ 5'::jsquery;
+ jsquery 
+---------
+ "a" = 5
+(1 row)
+
 ---table and index
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 0;
  count 

@@ -62,6 +62,7 @@ makeItemType(int type)
 	JsQueryParseItem* v = palloc(sizeof(*v));
 
 	v->type = type;
+	v->hint = jsqIndexDefault;
 	v->next = NULL;
 
 	return v;
@@ -192,10 +193,11 @@ makeItemList(List *list) {
 %error-verbose
 
 %union {
-	string 			str;
-	List			*elems; 		/* list of JsQueryParseItem */
+	string 				str;
+	List				*elems; 		/* list of JsQueryParseItem */
 
-	JsQueryParseItem		*value;
+	JsQueryParseItem	*value;
+	JsQueryHint			hint;
 }
 
 %token	<str>		IN_P IS_P NULL_P TRUE_P ARRAY_T
@@ -210,6 +212,10 @@ makeItemList(List *list) {
 %type	<elems>		path value_list
 
 %type 	<value>		path_elem right_expr expr array
+
+%token	<hint>		HINT_P
+
+%type	<hint>		opt_hint
 
 %left '|'
 %left '&'
@@ -242,6 +248,11 @@ scalar_value:
 	| NUMERIC_P						{ $$ = makeItemNumeric(&$1); }
 	;
 
+opt_hint:
+	HINT_P							{ $$ = $1; }
+	| /* EMPTY */					{ $$ = jsqIndexDefault; }
+	;
+
 value_list:
 	scalar_value 					{ $$ = lappend(NIL, $1); } 
 	| value_list ',' scalar_value	{ $$ = lappend($1, $3); } 
@@ -267,7 +278,7 @@ right_expr:
 	;
 
 expr:
-	path right_expr					{ $$ = makeItemList(lappend($1, $2)); }
+	path opt_hint right_expr		{ $3->hint = $2; $$ = makeItemList(lappend($1, $3)); }
 	| path '(' expr ')'				{ $$ = makeItemList(lappend($1, $3)); }
 	| '(' expr ')'					{ $$ = $2; }
 	| '!' expr 						{ $$ = makeItemUnary(jqiNot, $2); }

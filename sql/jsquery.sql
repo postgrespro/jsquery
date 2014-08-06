@@ -208,6 +208,17 @@ select '{"as": false}' @@ '$ IS object'::jsquery;
 select '"xxx"' @@ '$ IS string'::jsquery;
 select '"xxx"' @@ '$ IS numeric'::jsquery;
 
+--hint
+
+select 'a /*-- noindex */ = 5'::jsquery;
+select 'a /*-- index */ = 5'::jsquery;
+select 'asd.# = 3'::jsquery & 'zzz /*-- noindex */ = true' | 'xxx.# /*-- index */ = zero';
+select 'a /*-- xxx */ = 5'::jsquery;
+select 'a /* index */ = 5'::jsquery;
+select 'a /* noindex */ = 5'::jsquery;
+select 'a = /*-- noindex */ 5'::jsquery;
+select 'a = /* noindex */ 5'::jsquery;
+
 ---table and index
 
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 0;
