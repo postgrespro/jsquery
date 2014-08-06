@@ -56,7 +56,7 @@ typedef enum JsQueryItemType {
 } JsQueryItemType;
 
 /*
- * JsQueryHint stores in the same byte as JsQueryItemType so
+ * JsQueryHint is stored in the same byte as JsQueryItemType so
  * JsQueryItemType should not use two high bits
  */
 typedef enum JsQueryHint {
