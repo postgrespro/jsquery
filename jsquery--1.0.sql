@@ -281,3 +281,13 @@ CREATE OPERATOR CLASS jsonb_path_value_ops
 	FUNCTION 5  gin_compare_partial_jsonb_path_value(bytea, bytea, smallint, internal),
 	FUNCTION 6  gin_triconsistent_jsonb_path_value(internal, smallint, anyarray, integer, internal, internal, internal),
 	STORAGE bytea;
+
+CREATE OR REPLACE FUNCTION gin_debug_query_value_path(jsquery)
+	RETURNS text
+	AS 'MODULE_PATHNAME'
+	LANGUAGE C STRICT IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION gin_debug_query_path_value(jsquery)
+	RETURNS text
+	AS 'MODULE_PATHNAME'
+	LANGUAGE C STRICT IMMUTABLE;

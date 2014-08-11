@@ -177,16 +177,26 @@ typedef enum
 {
 	eScalar = 1,
 	eAnd	= jqiAnd,
-	eOr		= jqiOr,
-	eNot 	= jqiNot
+	eOr		= jqiOr
 } ExtractedNodeType;
+
+typedef enum
+{
+	sEqual = 1,
+	sRange,
+	sInequal,
+	sKey
+} SelectivityClass;
 
 typedef struct ExtractedNode ExtractedNode;
 struct ExtractedNode
 {
 	ExtractedNodeType	type;
+	JsQueryHint	 		hint;
 	PathItem		   *path;
 	bool				indirect;
+	SelectivityClass	sClass;
+	bool				forceIndex;
 	union
 	{
 		struct
@@ -199,17 +209,21 @@ struct ExtractedNode
 			bool			inequality;
 			bool			leftInclusive;
 			bool			rightInclusive;
-			JsQueryItem		*exact;
-			JsQueryItem		*leftBound;
-			JsQueryItem		*rightBound;
+			JsQueryItem	   *exact;
+			JsQueryItem	   *leftBound;
+			JsQueryItem	   *rightBound;
+			int				entryNum;
 		} bounds;
-		int	entryNum;
 	};
 };
 
 typedef int (*MakeEntryHandler)(ExtractedNode *node, Pointer extra);
+typedef bool (*CheckEntryHandler)(ExtractedNode *node, Pointer extra);
 
-ExtractedNode *extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra);
+ExtractedNode *extractJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
+								CheckEntryHandler checkHandler, Pointer extra);
+char *debugJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
+								CheckEntryHandler checkHandler, Pointer extra);
 bool queryNeedRecheck(ExtractedNode *node);
 bool execRecursive(ExtractedNode *node, bool *check);
 bool execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check);

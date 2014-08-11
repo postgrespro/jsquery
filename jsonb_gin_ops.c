@@ -84,6 +84,7 @@ PG_FUNCTION_INFO_V1(gin_extract_jsonb_value_path);
 PG_FUNCTION_INFO_V1(gin_extract_jsonb_query_value_path);
 PG_FUNCTION_INFO_V1(gin_consistent_jsonb_value_path);
 PG_FUNCTION_INFO_V1(gin_triconsistent_jsonb_value_path);
+PG_FUNCTION_INFO_V1(gin_debug_query_value_path);
 
 Datum gin_compare_jsonb_value_path(PG_FUNCTION_ARGS);
 Datum gin_compare_partial_jsonb_value_path(PG_FUNCTION_ARGS);
@@ -91,6 +92,7 @@ Datum gin_extract_jsonb_value_path(PG_FUNCTION_ARGS);
 Datum gin_extract_jsonb_query_value_path(PG_FUNCTION_ARGS);
 Datum gin_consistent_jsonb_value_path(PG_FUNCTION_ARGS);
 Datum gin_triconsistent_jsonb_value_path(PG_FUNCTION_ARGS);
+Datum gin_debug_query_value_path(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(gin_compare_jsonb_path_value);
 PG_FUNCTION_INFO_V1(gin_compare_partial_jsonb_path_value);
@@ -98,6 +100,7 @@ PG_FUNCTION_INFO_V1(gin_extract_jsonb_path_value);
 PG_FUNCTION_INFO_V1(gin_extract_jsonb_query_path_value);
 PG_FUNCTION_INFO_V1(gin_consistent_jsonb_path_value);
 PG_FUNCTION_INFO_V1(gin_triconsistent_jsonb_path_value);
+PG_FUNCTION_INFO_V1(gin_debug_query_path_value);
 
 Datum gin_compare_jsonb_path_value(PG_FUNCTION_ARGS);
 Datum gin_compare_partial_jsonb_path_value(PG_FUNCTION_ARGS);
@@ -105,6 +108,7 @@ Datum gin_extract_jsonb_path_value(PG_FUNCTION_ARGS);
 Datum gin_extract_jsonb_query_path_value(PG_FUNCTION_ARGS);
 Datum gin_consistent_jsonb_path_value(PG_FUNCTION_ARGS);
 Datum gin_triconsistent_jsonb_path_value(PG_FUNCTION_ARGS);
+Datum gin_debug_query_path_value(PG_FUNCTION_ARGS);
 
 static int
 add_entry(Entries *e, Datum key, Pointer extra, bool pmatch)
@@ -346,6 +350,12 @@ make_gin_query_key_minus_inf(uint32 hash)
 	key->hash = hash;
 	SET_VARSIZE(key, GINKEYLEN);
 	return key;
+}
+
+static bool
+check_bloom_entry_handler(ExtractedNode *node, Pointer extra)
+{
+	return true;
 }
 
 static int
@@ -631,6 +641,19 @@ gin_extract_jsonb_value_path(PG_FUNCTION_ARGS)
 }
 
 Datum
+gin_debug_query_value_path(PG_FUNCTION_ARGS)
+{
+	JsQuery	   *jq;
+	Entries		e = {0};
+	char	   *s;
+
+	jq = PG_GETARG_JSQUERY(0);
+	s = debugJsQuery(jq, make_bloom_entry_handler,
+							check_bloom_entry_handler, (Pointer)&e);
+	PG_RETURN_TEXT_P(cstring_to_text(s));
+}
+
+Datum
 gin_extract_jsonb_query_value_path(PG_FUNCTION_ARGS)
 {
 	Jsonb	   *jb;
@@ -669,7 +692,8 @@ gin_extract_jsonb_query_value_path(PG_FUNCTION_ARGS)
 
 		case JsQueryMatchStrategyNumber:
 			jq = PG_GETARG_JSQUERY(0);
-			root = extractJsQuery(jq, make_bloom_entry_handler, (Pointer)&e);
+			root = extractJsQuery(jq, make_bloom_entry_handler,
+									check_bloom_entry_handler, (Pointer)&e);
 			if (root)
 			{
 				*nentries = e.count;
@@ -838,6 +862,16 @@ get_query_path_hash(PathItem *pathItem, uint32 *hash)
 			return true;
 		}
 	}
+}
+
+static bool
+check_hash_entry_handler(ExtractedNode *node, Pointer extra)
+{
+	uint32		hash;
+	hash = 0;
+	if (!get_query_path_hash(node->path, &hash))
+		return false;
+	return true;
 }
 
 static int
@@ -1068,6 +1102,19 @@ gin_extract_jsonb_path_value(PG_FUNCTION_ARGS)
 }
 
 Datum
+gin_debug_query_path_value(PG_FUNCTION_ARGS)
+{
+	JsQuery	   *jq;
+	Entries		e = {0};
+	char	   *s;
+
+	jq = PG_GETARG_JSQUERY(0);
+	s = debugJsQuery(jq, make_hash_entry_handler,
+										check_hash_entry_handler, (Pointer)&e);
+	PG_RETURN_TEXT_P(cstring_to_text(s));
+}
+
+Datum
 gin_extract_jsonb_query_path_value(PG_FUNCTION_ARGS)
 {
 	Jsonb	   *jb;
@@ -1091,7 +1138,8 @@ gin_extract_jsonb_query_path_value(PG_FUNCTION_ARGS)
 
 		case JsQueryMatchStrategyNumber:
 			jq = PG_GETARG_JSQUERY(0);
-			root = extractJsQuery(jq, make_hash_entry_handler, (Pointer)&e);
+			root = extractJsQuery(jq, make_hash_entry_handler,
+										check_hash_entry_handler, (Pointer)&e);
 			if (root)
 			{
 				*nentries = e.count;

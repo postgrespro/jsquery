@@ -219,6 +219,36 @@ select 'a /* noindex */ = 5'::jsquery;
 select 'a = /*-- noindex */ 5'::jsquery;
 select 'a = /* noindex */ 5'::jsquery;
 
+--extract entries for index scan
+
+SELECT gin_debug_query_path_value('!!!x(y(!(a=1) & !(b=2)) | !!(c=3)) & z = 5');
+SELECT gin_debug_query_path_value('!#(x=1) & !*(y=1) & !%(z=1) ');
+SELECT gin_debug_query_path_value('#(!x=1) & *(!y=1) & %(!z=1) ');
+SELECT gin_debug_query_path_value('!#(!x=1) & !*(!y=1) & !%(!z=1) ');
+SELECT gin_debug_query_path_value('#(x = "a" & y > 0 & y < 1 & z > 0)');
+SELECT gin_debug_query_path_value('#(x = "a" & y /*-- index */ >= 0 & y < 1 & z > 0)');
+SELECT gin_debug_query_path_value('#(x /*-- noindex */ = "a" & y > 0 & y <= 1 & z /*-- index */ > 0)');
+SELECT gin_debug_query_path_value('x = 1 & (y /*-- index */ > 0 & y < 1 | z > 0)');
+SELECT gin_debug_query_path_value('%.x = 1');
+SELECT gin_debug_query_path_value('*.x = "b"');
+SELECT gin_debug_query_path_value('x && [1,2,3]');
+SELECT gin_debug_query_path_value('x @> [1,2,3]');
+SELECT gin_debug_query_path_value('x <@ [1,2,3]');
+
+SELECT gin_debug_query_value_path('!!!x(y(!(a=1) & !(b=2)) | !!(c=3)) & z = 5');
+SELECT gin_debug_query_value_path('!#(x=1) & !*(y=1) & !%(z=1) ');
+SELECT gin_debug_query_value_path('#(!x=1) & *(!y=1) & %(!z=1) ');
+SELECT gin_debug_query_value_path('!#(!x=1) & !*(!y=1) & !%(!z=1) ');
+SELECT gin_debug_query_value_path('#(x = "a" & y > 0 & y < 1 & z > 0)');
+SELECT gin_debug_query_value_path('#(x = "a" & y /*-- index */ >= 0 & y < 1 & z > 0)');
+SELECT gin_debug_query_value_path('#(x /*-- noindex */ = "a" & y > 0 & y <= 1 & z /*-- index */ > 0)');
+SELECT gin_debug_query_value_path('x = 1 & (y /*-- index */ > 0 & y < 1 | z > 0)');
+SELECT gin_debug_query_value_path('%.x = 1');
+SELECT gin_debug_query_value_path('*.x = "b"');
+SELECT gin_debug_query_value_path('x && [1,2,3]');
+SELECT gin_debug_query_value_path('x @> [1,2,3]');
+SELECT gin_debug_query_value_path('x <@ [1,2,3]');
+
 ---table and index
 
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 0;

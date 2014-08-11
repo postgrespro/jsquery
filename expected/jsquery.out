@@ -1078,6 +1078,225 @@ select 'a = /* noindex */ 5'::jsquery;
  "a" = 5
 (1 row)
 
+--extract entries for index scan
+SELECT gin_debug_query_path_value('!!!x(y(!(a=1) & !(b=2)) | !!(c=3)) & z = 5');
+ gin_debug_query_path_value 
+----------------------------
+ AND                       +
+   z = 5 , entry 0         +
+   OR                      +
+     x.y.a = 1 , entry 1   +
+     x.y.b = 2 , entry 2   +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('!#(x=1) & !*(y=1) & !%(z=1) ');
+ gin_debug_query_path_value 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('#(!x=1) & *(!y=1) & %(!z=1) ');
+ gin_debug_query_path_value 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('!#(!x=1) & !*(!y=1) & !%(!z=1) ');
+ gin_debug_query_path_value 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('#(x = "a" & y > 0 & y < 1 & z > 0)');
+ gin_debug_query_path_value 
+----------------------------
+ #.x = "a" , entry 0       +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('#(x = "a" & y /*-- index */ >= 0 & y < 1 & z > 0)');
+ gin_debug_query_path_value  
+-----------------------------
+ AND                        +
+   #.x = "a" , entry 0      +
+   #.y >= 0 , < 1 , entry 1 +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('#(x /*-- noindex */ = "a" & y > 0 & y <= 1 & z /*-- index */ > 0)');
+ gin_debug_query_path_value  
+-----------------------------
+ AND                        +
+   #.y > 0 , <= 1 , entry 0 +
+   #.z > 0 , entry 1        +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('x = 1 & (y /*-- index */ > 0 & y < 1 | z > 0)');
+ gin_debug_query_path_value 
+----------------------------
+ AND                       +
+   x = 1 , entry 0         +
+   OR                      +
+     y > 0 , < 1 , entry 1 +
+     z > 0 , entry 2       +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('%.x = 1');
+ gin_debug_query_path_value 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('*.x = "b"');
+ gin_debug_query_path_value 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('x && [1,2,3]');
+ gin_debug_query_path_value 
+----------------------------
+ OR                        +
+   x.# = 1 , entry 0       +
+   x.# = 2 , entry 1       +
+   x.# = 3 , entry 2       +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('x @> [1,2,3]');
+ gin_debug_query_path_value 
+----------------------------
+ AND                       +
+   x.# = 1 , entry 0       +
+   x.# = 2 , entry 1       +
+   x.# = 3 , entry 2       +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('x <@ [1,2,3]');
+ gin_debug_query_path_value 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('!!!x(y(!(a=1) & !(b=2)) | !!(c=3)) & z = 5');
+ gin_debug_query_value_path 
+----------------------------
+ AND                       +
+   z = 5 , entry 0         +
+   OR                      +
+     x.y.a = 1 , entry 1   +
+     x.y.b = 2 , entry 2   +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('!#(x=1) & !*(y=1) & !%(z=1) ');
+ gin_debug_query_value_path 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('#(!x=1) & *(!y=1) & %(!z=1) ');
+ gin_debug_query_value_path 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('!#(!x=1) & !*(!y=1) & !%(!z=1) ');
+ gin_debug_query_value_path 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('#(x = "a" & y > 0 & y < 1 & z > 0)');
+ gin_debug_query_value_path 
+----------------------------
+ #.x = "a" , entry 0       +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('#(x = "a" & y /*-- index */ >= 0 & y < 1 & z > 0)');
+ gin_debug_query_value_path  
+-----------------------------
+ AND                        +
+   #.x = "a" , entry 0      +
+   #.y >= 0 , < 1 , entry 1 +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('#(x /*-- noindex */ = "a" & y > 0 & y <= 1 & z /*-- index */ > 0)');
+ gin_debug_query_value_path  
+-----------------------------
+ AND                        +
+   #.y > 0 , <= 1 , entry 0 +
+   #.z > 0 , entry 1        +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('x = 1 & (y /*-- index */ > 0 & y < 1 | z > 0)');
+ gin_debug_query_value_path 
+----------------------------
+ AND                       +
+   x = 1 , entry 0         +
+   OR                      +
+     y > 0 , < 1 , entry 1 +
+     z > 0 , entry 2       +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('%.x = 1');
+ gin_debug_query_value_path 
+----------------------------
+ %.x = 1 , entry 0         +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('*.x = "b"');
+ gin_debug_query_value_path 
+----------------------------
+ *.x = "b" , entry 0       +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('x && [1,2,3]');
+ gin_debug_query_value_path 
+----------------------------
+ OR                        +
+   x.# = 1 , entry 0       +
+   x.# = 2 , entry 1       +
+   x.# = 3 , entry 2       +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('x @> [1,2,3]');
+ gin_debug_query_value_path 
+----------------------------
+ AND                       +
+   x.# = 1 , entry 0       +
+   x.# = 2 , entry 1       +
+   x.# = 3 , entry 2       +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('x <@ [1,2,3]');
+ gin_debug_query_value_path 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
 ---table and index
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 0;
  count 

@@ -21,7 +21,7 @@
 #include "miscadmin.h"
 #include "jsquery.h"
 
-static ExtractedNode *recursiveExtract(JsQueryItem *jsq, bool indirect, PathItem *path);
+static ExtractedNode *recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path);
 static int coundChildren(ExtractedNode *node, ExtractedNodeType type, bool first, bool *found);
 static void fillChildren(ExtractedNode *node, ExtractedNodeType type, bool first, ExtractedNode **items, int *i);
 static void flatternTree(ExtractedNode *node);
@@ -30,18 +30,22 @@ static int compareNodes(const void *a1, const void *a2);
 static int compareJsQueryItem(JsQueryItem *v1, JsQueryItem *v2);
 static void processGroup(ExtractedNode *node, int start, int end);
 static void simplifyRecursive(ExtractedNode *node);
+static SelectivityClass getScalarSelectivityClass(ExtractedNode *node);
 static ExtractedNode *makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra);
-static bool queryHasPositive(ExtractedNode *node);
-static bool needRecheckRecursive(ExtractedNode *node, bool not);
+static void setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler, Pointer extra);
+static void debugPath(StringInfo buf, PathItem *path);
+static void debugValue(StringInfo buf, JsQueryItem *v);
+static void debugRecursive(StringInfo buf, ExtractedNode *node, int shift);
 
 /*
  * Recursive function that turns jsquery into tree of ExtractedNode items.
  */
 static ExtractedNode *
-recursiveExtract(JsQueryItem *jsq,bool indirect, PathItem *path)
+recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 {
 	ExtractedNode 	*leftNode, *rightNode, *result;
 	PathItem		*pathItem;
+	ExtractedNodeType type;
 	JsQueryItem	elem, e;
 
 	check_stack_depth();
@@ -49,85 +53,77 @@ recursiveExtract(JsQueryItem *jsq,bool indirect, PathItem *path)
 	switch(jsq->type) {
 		case jqiAnd:
 		case jqiOr:
+			type = ((jsq->type == jqiAnd) == not) ? eOr : eAnd;
+
 			jsqGetLeftArg(jsq, &elem);
-			leftNode = recursiveExtract(&elem, false, path);
-			jsqGetLeftArg(jsq, &elem);
-			rightNode = recursiveExtract(&elem, false, path);
-			if (leftNode)
+			leftNode = recursiveExtract(&elem, not, false, path);
+			jsqGetRightArg(jsq, &elem);
+			rightNode = recursiveExtract(&elem, not, false, path);
+
+			if (!leftNode || !rightNode)
 			{
-				if (rightNode)
+				if (type == eOr || (!leftNode && !rightNode))
+					return NULL;
+				if (leftNode)
 				{
-					result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-					result->type = (jsq->type == jqiAnd) ? eAnd : eOr;
-					result->indirect = indirect;
-					result->path = path;
-					result->args.items = (ExtractedNode **)palloc(2 * sizeof(ExtractedNode *));
-					result->args.items[0] = leftNode;
-					result->args.items[1] = rightNode;
-					result->args.count = 2;
-					return result;
-				}
-				else
-				{
+					leftNode->indirect = leftNode->indirect || indirect;
 					return leftNode;
 				}
-			}
-			else
-			{
-				if (rightNode)
-					return rightNode;
 				else
-					return NULL;
+				{
+					rightNode->indirect = rightNode->indirect || indirect;
+					return rightNode;
+				}
 			}
+
+			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
+			result->type = type;
+			result->path = path;
+			result->indirect = indirect;
+			result->args.items = (ExtractedNode **)palloc(2 * sizeof(ExtractedNode *));
+			result->args.items[0] = leftNode;
+			result->args.items[1] = rightNode;
+			result->args.count = 2;
+			return result;
 		case jqiNot:
-			jsqGetLeftArg(jsq, &elem);
-			leftNode = recursiveExtract(&elem, false, path);
-			if (leftNode)
-			{
-				result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-				result->type = eNot;
-				result->path = path;
-				result->indirect = indirect;
-				result->args.items = (ExtractedNode **)palloc(sizeof(ExtractedNode *));
-				result->args.items[0] = leftNode;
-				result->args.count = 1;
-				return result;
-			}
-			else
-			{
-				return NULL;
-			}
+			jsqGetArg(jsq, &elem);
+			return recursiveExtract(&elem, !not, indirect, path);
 		case jqiKey:
 			pathItem = (PathItem *)palloc(sizeof(PathItem));
 			pathItem->type = iKey;
 			pathItem->s = jsqGetString(jsq, &pathItem->len);
 			pathItem->parent = path;
 			jsqGetNext(jsq, &elem);
-			return recursiveExtract(&elem, indirect, pathItem);
+			return recursiveExtract(&elem, not, indirect, pathItem);
 		case jqiAny:
+			if (not) return NULL;
 			pathItem = (PathItem *)palloc(sizeof(PathItem));
 			pathItem->type = iAny;
 			pathItem->parent = path;
 			jsqGetNext(jsq, &elem);
-			return recursiveExtract(&elem, indirect, pathItem);
+			return recursiveExtract(&elem, not, true, pathItem);
 		case jqiAnyArray:
+			if (not) return NULL;
 			pathItem = (PathItem *)palloc(sizeof(PathItem));
 			pathItem->type = iAnyArray;
 			pathItem->parent = path;
 			jsqGetNext(jsq, &elem);
-			return recursiveExtract(&elem, indirect, pathItem);
+			return recursiveExtract(&elem, not, true, pathItem);
 		case jqiAnyKey:
+			if (not) return NULL;
 			pathItem = (PathItem *)palloc(sizeof(PathItem));
 			pathItem->type = iAnyKey;
 			pathItem->parent = path;
 			jsqGetNext(jsq, &elem);
-			return recursiveExtract(&elem, indirect, pathItem);
+			return recursiveExtract(&elem, not, true, pathItem);
 		case jqiCurrent:
 			jsqGetNext(jsq, &elem);
-			return recursiveExtract(&elem, indirect, path);
+			return recursiveExtract(&elem, not, indirect, path);
 		case jqiEqual:
+			if (not) return NULL;
 			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
 			result->type = eScalar;
+			result->hint = jsq->hint;
 			result->path = path;
 			result->indirect = indirect;
 			result->bounds.inequality = false;
@@ -137,14 +133,15 @@ recursiveExtract(JsQueryItem *jsq,bool indirect, PathItem *path)
 		case jqiIn:
 		case jqiOverlap:
 		case jqiContains:
+			if (not) return NULL;
 			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
 			result->type = (jsq->type == jqiContains) ? eAnd : eOr;
 			jsqGetArg(jsq, &elem);
 			Assert(elem.type == jqiArray);
+			result->path = path;
 			result->indirect = indirect;
 			result->args.items = (ExtractedNode **)palloc(elem.array.nelems * sizeof(ExtractedNode *));
 			result->args.count = 0;
-			result->path = path;
 			if (jsq->type == jqiContains || jsq->type == jqiOverlap)
 			{
 				pathItem = (PathItem *)palloc(sizeof(PathItem));
@@ -160,9 +157,11 @@ recursiveExtract(JsQueryItem *jsq,bool indirect, PathItem *path)
 			{
 				ExtractedNode *item = (ExtractedNode *)palloc(sizeof(ExtractedNode));
 
-				item->indirect = false;
+				item->hint = e.hint;
 				item->type = eScalar;
 				item->path = pathItem;
+				item->indirect = true;
+				item->hint = jsq->hint;
 
 				item->bounds.inequality = false;
 				item->bounds.exact = (JsQueryItem *)palloc(sizeof(JsQueryItem));
@@ -175,10 +174,12 @@ recursiveExtract(JsQueryItem *jsq,bool indirect, PathItem *path)
 		case jqiGreater:
 		case jqiLessOrEqual:
 		case jqiGreaterOrEqual:
+			if (not) return NULL;
 			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
 			result->type = eScalar;
-			result->indirect = indirect;
+			result->hint = jsq->hint;
 			result->path = path;
+			result->indirect = indirect;
 			result->bounds.inequality = true;
 
 			if (jsq->type == jqiGreater || jsq->type == jqiGreaterOrEqual)
@@ -218,7 +219,8 @@ coundChildren(ExtractedNode *node, ExtractedNodeType type,
 	else
 	{
 		int i, total = 0;
-		*found = true;
+		if (!first)
+			*found = true;
 		for (i = 0; i < node->args.count; i++)
 			total += coundChildren(node->args.items[i], type, false, found);
 		return total;
@@ -255,7 +257,7 @@ flatternTree(ExtractedNode *node)
 	if (node->type == eAnd || node->type == eOr)
 	{
 		int count;
-		bool found;
+		bool found = false;
 
 		count = coundChildren(node, node->type, true, &found);
 
@@ -268,7 +270,7 @@ flatternTree(ExtractedNode *node)
 			node->args.count = count;
 		}
 	}
-	if (node->type == eAnd || node->type == eOr || node->type == eNot)
+	if (node->type == eAnd || node->type == eOr)
 	{
 		int i;
 		for (i = 0; i < node->args.count; i++)
@@ -342,9 +344,9 @@ compareNodes(const void *a1, const void *a2)
 		int cmp;
 		cmp = comparePathItems(n1->path, n2->path);
 		if (cmp) return cmp;
-		if (n1->entryNum < n2->entryNum)
+		if (n1->bounds.entryNum < n2->bounds.entryNum)
 			return -1;
-		else if (n1->entryNum == n2->entryNum)
+		else if (n1->bounds.entryNum == n2->bounds.entryNum)
 			return 0;
 		else
 			return 1;
@@ -402,9 +404,12 @@ static void
 processGroup(ExtractedNode *node, int start, int end)
 {
 	int 			i;
-	JsQueryItem 	*leftBound = NULL, *rightBound = NULL, *exact = NULL;
-	bool 			leftInclusive = false, rightInclusive = false;
-	ExtractedNode 	*child;
+	JsQueryItem    *leftBound = NULL,
+			       *rightBound = NULL,
+			       *exact = NULL;
+	bool 			leftInclusive = false,
+					rightInclusive = false;
+	ExtractedNode  *child;
 
 	if (end - start < 2)
 		return;
@@ -517,7 +522,7 @@ simplifyRecursive(ExtractedNode *node)
 			processGroup(node, groupStart, i);
 	}
 
-	if (node->type == eAnd || node->type == eOr || node->type == eNot)
+	if (node->type == eAnd || node->type == eOr)
 	{
 		int i;
 		for (i = 0; i < node->args.count; i++)
@@ -529,27 +534,56 @@ simplifyRecursive(ExtractedNode *node)
 }
 
 /*
+ * Get selectivity class of scalar node.
+ */
+static SelectivityClass
+getScalarSelectivityClass(ExtractedNode *node)
+{
+	Assert(node->type == eScalar);
+	if (node->bounds.inequality)
+	{
+		if (node->bounds.leftBound && node->bounds.rightBound)
+			return sRange;
+		else
+			return sInequal;
+	}
+	else
+	{
+		return sEqual;
+	}
+}
+
+/*
  * Make entries for all leaf tree nodes using user-provided handler.
  */
 static ExtractedNode *
 makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra)
 {
-	if (node->type == eAnd || node->type == eOr || node->type == eNot)
+	if (node->type == eAnd || node->type == eOr)
 	{
 		int i, j = 0;
 		ExtractedNode *child;
 		for (i = 0; i < node->args.count; i++)
 		{
 			child = node->args.items[i];
-			if (child)
-				child = makeEntries(child, handler, extra);
+			if (!child) continue;
+			if (child->sClass > node->sClass && !child->forceIndex)
+			{
+				Assert(node->type != eOr);
+				continue;
+			}
+			child = makeEntries(child, handler, extra);
 			if (child)
 			{
 				node->args.items[j] = child;
 				j++;
 			}
+			else if (node->type == eOr)
+			{
+				return NULL;
+			}
 		}
-		if (j == 1 && (node->type == eAnd || node->type == eOr))
+		if (j == 1)
 		{
 			return node->args.items[0];
 		}
@@ -566,10 +600,14 @@ makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra)
 	else
 	{
 		int entryNum;
+
+		if (node->hint == jsqNoIndex)
+			return NULL;
+
 		entryNum = handler(node, extra);
 		if (entryNum >= 0)
 		{
-			node->entryNum = entryNum;
+			node->bounds.entryNum = entryNum;
 			return node;
 		}
 		else
@@ -579,103 +617,84 @@ makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra)
 	}
 }
 
-/*
- * Returns false when query can be satisfied with no entries matching. True
- * return value guarantees than it can be evaluated using index.
- */
-static bool
-queryHasPositive(ExtractedNode *node)
+static void
+setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler,
+																Pointer extra)
 {
-	int i;
-	bool result;
-	switch(node->type)
-	{
-		case eAnd:
-			result = false;
-			for (i = 0; i < node->args.count; i++)
-			{
-				if (queryHasPositive(node->args.items[i]))
-				{
-					result = true;
-					break;
-				}
-			}
-			return result;
-		case eOr:
-			result = true;
-			for (i = 0; i < node->args.count; i++)
-			{
-				if (!queryHasPositive(node->args.items[i]))
-				{
-					result = false;
-					break;
-				}
-			}
-			return result;
-		case eNot:
-			return !queryHasPositive(node->args.items[0]);
-		case eScalar:
-			return true;
-	}
-}
+	int					i;
+	bool				first;
+	bool				skip;
+	ExtractedNode	   *child;
 
-/*
- * Checks if node evaluating with index needs recheck assuming match of
- * entries itself doesn't need recheck.
- */
-static bool
-needRecheckRecursive(ExtractedNode *node, bool not)
-{
-	int i;
 	switch(node->type)
 	{
 		case eAnd:
 		case eOr:
-			if (node->type == eAnd && !not && node->indirect)
-				return true;
-			if (node->type == eOr && not && node->indirect)
-				return true;
+			first = true;
+			skip = false;
+			node->forceIndex = false;
 			for (i = 0; i < node->args.count; i++)
 			{
-				if (needRecheckRecursive(node->args.items[i], not))
-					return true;
-			}
-			return false;
-		case eNot:
-			return !needRecheckRecursive(node->args.items[0], !not);
-		case eScalar:
-			return false;
-	}
-}
+				child = node->args.items[i];
 
-/*
- * Wrapper for "needRecheckRecursive".
- */
-bool
-queryNeedRecheck(ExtractedNode *node)
-{
-	return needRecheckRecursive(node, false);
+				if (!child)
+					continue;
+
+				if (child->type == eScalar)
+				{
+					if (child->hint == jsqNoIndex ||
+							!checkHandler(child, extra))
+					{
+						skip = true;
+						continue;
+					}
+				}
+
+				setSelectivityClass(child, checkHandler, extra);
+
+				if (child->forceIndex)
+					node->forceIndex = true;
+
+				if (first)
+				{
+					node->sClass = child->sClass;
+				}
+				else
+				{
+					if (node->type == eAnd)
+						node->sClass = Min(node->sClass, child->sClass);
+					else
+						node->sClass = Max(node->sClass, child->sClass);
+				}
+				first = false;
+			}
+			return;
+		case eScalar:
+			node->sClass = getScalarSelectivityClass(node);
+			node->forceIndex = node->hint == jsqForceIndex;
+			return;
+	}
 }
 
 /*
  * Turn jsquery into tree of entries using user-provided handler.
  */
 ExtractedNode *
-extractJsQuery(JsQuery *jq, MakeEntryHandler handler, Pointer extra)
+extractJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
+								CheckEntryHandler checkHandler, Pointer extra)
 {
 	ExtractedNode 	*root;
 	JsQueryItem		jsq;
 
 	jsqInit(&jsq, jq);
-	root = recursiveExtract(&jsq, false, NULL);
+	root = recursiveExtract(&jsq, false, false, NULL);
 	if (root)
 	{
 		flatternTree(root);
 		simplifyRecursive(root);
-		root = makeEntries(root, handler, extra);
+		setSelectivityClass(root, checkHandler, extra);
+		root = makeEntries(root, makeHandler, extra);
 	}
-	if (root && !queryHasPositive(root))
-		root = NULL;
 	return root;
 }
 
@@ -698,10 +717,8 @@ execRecursive(ExtractedNode *node, bool *check)
 				if (execRecursive(node->args.items[i], check))
 					return true;
 			return false;
-		case eNot:
-			return !execRecursive(node->args.items[0], check);
 		case eScalar:
-			return check[node->entryNum];
+			return check[node->bounds.entryNum];
 	}
 }
 
@@ -738,15 +755,141 @@ execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check)
 					res = GIN_MAYBE;
 			}
 			return res;
-		case eNot:
-			v = execRecursive(node->args.items[0], check);
-			if (v == GIN_TRUE)
-				return GIN_FALSE;
-			else if (v == GIN_FALSE)
-				return GIN_TRUE;
-			else
-				return GIN_MAYBE;
 		case eScalar:
-			return check[node->entryNum];
+			return check[node->bounds.entryNum];
 	}
+}
+
+/*
+ * Debug print of variable path.
+ */
+static void
+debugPath(StringInfo buf, PathItem *path)
+{
+	if (path->parent)
+	{
+		debugPath(buf, path->parent);
+		appendStringInfo(buf, ".");
+	}
+	switch (path->type)
+	{
+		case jqiAny:
+			appendStringInfoChar(buf, '*');
+			break;
+		case jqiAnyKey:
+			appendStringInfoChar(buf, '%');
+			break;
+		case jqiAnyArray:
+			appendStringInfoChar(buf, '#');
+			break;
+		case jqiKey:
+			appendBinaryStringInfo(buf, path->s, path->len);
+			break;
+	}
+}
+
+/*
+ * Debug print of jsquery value.
+ */
+static void
+debugValue(StringInfo buf, JsQueryItem *v)
+{
+	char   *s;
+	int		len;
+
+	switch(v->type)
+	{
+		case jqiNull:
+			appendStringInfo(buf, "null");
+			break;
+		case jqiString:
+			s = jsqGetString(v, &len);
+			appendStringInfo(buf, "\"");
+			appendBinaryStringInfo(buf, s, len);
+			appendStringInfo(buf, "\"");
+			break;
+		case jqiBool:
+			appendStringInfo(buf, jsqGetBool(v) ? "true" : "false");
+			break;
+		case jqiNumeric:
+			s = DatumGetCString(DirectFunctionCall1(numeric_out,
+					 PointerGetDatum(jsqGetNumeric(v))));
+			appendStringInfoString(buf, s);
+			break;
+		default:
+			elog(ERROR,"Wrong type");
+	}
+}
+
+/*
+ * Recursive worker of debug print of query processing.
+ */
+static void
+debugRecursive(StringInfo buf, ExtractedNode *node, int shift)
+{
+	int i;
+
+	appendStringInfoSpaces(buf, shift * 2);
+
+	switch(node->type)
+	{
+		case eAnd:
+		case eOr:
+			appendStringInfo(buf, (node->type == eAnd) ? "AND\n" : "OR\n");
+			for (i = 0; i < node->args.count; i++)
+				debugRecursive(buf, node->args.items[i], shift + 1);
+			return;
+		case eScalar:
+			debugPath(buf, node->path);
+
+			if (node->bounds.inequality)
+			{
+				if (node->bounds.leftBound)
+				{
+					if (node->bounds.leftInclusive)
+						appendStringInfo(buf, " >= ");
+					else
+						appendStringInfo(buf, " > ");
+					debugValue(buf, node->bounds.leftBound);
+					appendStringInfo(buf, " ,");
+				}
+				if (node->bounds.rightBound)
+				{
+					if (node->bounds.rightInclusive)
+						appendStringInfo(buf, " <= ");
+					else
+						appendStringInfo(buf, " < ");
+					debugValue(buf, node->bounds.rightBound);
+					appendStringInfo(buf, " ,");
+				}
+			}
+			else
+			{
+				appendStringInfo(buf, " = ");
+				debugValue(buf, node->bounds.exact);
+				appendStringInfo(buf, " ,");
+			}
+			appendStringInfo(buf, " entry %d \n", node->bounds.entryNum);
+			return;
+	}
+}
+
+/*
+ * Debug print of query processing.
+ */
+char *
+debugJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
+								CheckEntryHandler checkHandler, Pointer extra)
+{
+	ExtractedNode  *root;
+	StringInfoData	buf;
+
+	root = extractJsQuery(jq, makeHandler, checkHandler, extra);
+	if (!root)
+		return "NULL\n";
+
+	initStringInfo(&buf);
+	debugRecursive(&buf, root, 0);
+	appendStringInfoChar(&buf, '\0');
+	return buf.data;
 }
