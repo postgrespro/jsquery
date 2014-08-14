@@ -121,29 +121,35 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			return recursiveExtract(&elem, not, indirect, path);
 		case jqiEqual:
 			if (not) return NULL;
-			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-			result->type = eScalar;
-			result->hint = jsq->hint;
-			result->path = path;
-			result->indirect = indirect;
-			result->bounds.inequality = false;
-			result->bounds.exact = (JsQueryItem *)palloc(sizeof(JsQueryItem));
-			jsqGetArg(jsq, result->bounds.exact);
-			return result;
+			jsqGetArg(jsq, &e);
+			if (e.type != jqiArray)
+			{
+				result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
+				result->type = eScalar;
+				result->hint = jsq->hint;
+				result->path = path;
+				result->indirect = indirect;
+				result->bounds.inequality = false;
+				result->bounds.exact = (JsQueryItem *)palloc(sizeof(JsQueryItem));
+				*result->bounds.exact = e;
+				return result;
+			}
+			/* jqiEqual with jqiArray follows */
 		case jqiIn:
 		case jqiOverlap:
 		case jqiContains:
 		case jqiContained:
 			if (not) return NULL;
 			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-			result->type = (jsq->type == jqiContains) ? eAnd : eOr;
+			result->type = (jsq->type == jqiContains || jsq->type == jqiEqual) ? eAnd : eOr;
 			jsqGetArg(jsq, &elem);
 			Assert(elem.type == jqiArray);
 			result->path = path;
 			result->indirect = indirect;
 			result->args.items = (ExtractedNode **)palloc(elem.array.nelems * sizeof(ExtractedNode *));
 			result->args.count = 0;
-			if (jsq->type == jqiContains || jsq->type == jqiOverlap || jsq->type == jqiContained)
+			if (jsq->type == jqiContains || jsq->type == jqiOverlap || jsq->type == jqiContained ||
+				jsq->type == jqiEqual)
 			{
 				pathItem = (PathItem *)palloc(sizeof(PathItem));
 				pathItem->type = iAnyArray;

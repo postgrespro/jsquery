@@ -248,6 +248,7 @@ SELECT gin_debug_query_value_path('*.x = "b"');
 SELECT gin_debug_query_value_path('x && [1,2,3]');
 SELECT gin_debug_query_value_path('x @> [1,2,3]');
 SELECT gin_debug_query_value_path('x <@ [1,2,3]');
+SELECT gin_debug_query_value_path('x = [1,2,3]');
 
 ---table and index
 
@@ -282,6 +283,7 @@ select count(*) from test_jsquery where v @@ 'product_group = false';
 select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
 select v from test_jsquery where v @@ 'array && [2,3]' order by v;
 select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
+select v from test_jsquery where v @@ 'array = [2,3]' order by v;
 
 create index t_idx on test_jsquery using gin (v jsonb_value_path_ops);
 set enable_seqscan = off;
@@ -309,10 +311,12 @@ select count(*) from test_jsquery where v @@ 'product_group = false';
 explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
 explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]' order by v;
 explain (costs off) select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
+explain (costs off) select v from test_jsquery where v @@ 'array = [2,3]' order by v;
 
 select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
 select v from test_jsquery where v @@ 'array && [2,3]' order by v;
 select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
+select v from test_jsquery where v @@ 'array = [2,3]' order by v;
 
 drop index t_idx;
 
@@ -342,9 +346,11 @@ select count(*) from test_jsquery where v @@ 'product_group = false';
 explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
 explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]' order by v;
 explain (costs off) select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
+explain (costs off) select v from test_jsquery where v @@ 'array = [2,3]' order by v;
 
 select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
 select v from test_jsquery where v @@ 'array && [2,3]' order by v;
 select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
+select v from test_jsquery where v @@ 'array = [2,3]' order by v;
 
 RESET enable_seqscan;
