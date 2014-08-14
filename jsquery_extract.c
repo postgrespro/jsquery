@@ -133,6 +133,7 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 		case jqiIn:
 		case jqiOverlap:
 		case jqiContains:
+		case jqiContained:
 			if (not) return NULL;
 			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
 			result->type = (jsq->type == jqiContains) ? eAnd : eOr;
@@ -142,7 +143,7 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			result->indirect = indirect;
 			result->args.items = (ExtractedNode **)palloc(elem.array.nelems * sizeof(ExtractedNode *));
 			result->args.count = 0;
-			if (jsq->type == jqiContains || jsq->type == jqiOverlap)
+			if (jsq->type == jqiContains || jsq->type == jqiOverlap || jsq->type == jqiContained)
 			{
 				pathItem = (PathItem *)palloc(sizeof(PathItem));
 				pathItem->type = iAnyArray;
@@ -197,8 +198,6 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 				jsqGetArg(jsq, result->bounds.rightBound);
 			}
 			return result;
-		case jqiContained:
-			return NULL;
 		default:
 			elog(ERROR,"Wrong state: %d", jsq->type);
 	}

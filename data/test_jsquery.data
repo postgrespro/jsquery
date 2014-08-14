@@ -999,3 +999,9 @@
 {"product_id": "B00005ALM0", "customer_id": "ABH4G7TVI6G2T", "review_date": {"$date": 1013644800000}, "review_votes": 8, "product_group": "DVD", "product_title": "The Violent Years/Girl Gang", "review_rating": 5, "product_category": "Action & Adventure", "product_sales_rank": 15399, "product_subcategory": "General", "similar_product_ids": ["B00005ALLZ", "B0002235LM", "B00005LP6F", "B0002NRRT2", "B0000CG8H0"], "review_helpful_votes": 6}
 {"product_id": "B00005B6KQ", "customer_id": "ABH4G7TVI6G2T", "review_date": {"$date": 1013644800000}, "review_votes": 8, "product_group": "DVD", "product_title": "The Notorious Daughter of Fanny Hill / The Head Mistress", "review_rating": 5, "product_category": "Science Fiction & Fantasy", "product_sales_rank": 20963, "product_subcategory": "General", "similar_product_ids": ["B0002W4TL2", "B00005MM5O", "B0002NRRQ0", "B0002EJ7JE", "B00005R1NR"], "review_helpful_votes": 7}
 {"product_id": "B00005B6KQ", "customer_id": null, "review_date": {"$date": 1013644800000}, "review_votes": true, "product_group": false, "product_title": "The Notorious Daughter of Fanny Hill / The Head Mistress", "review_rating": 5, "product_category": "Science Fiction & Fantasy", "product_sales_rank": 20963, "product_subcategory": "General", "similar_product_ids": ["B0002W4TL2", "B00005MM5O", "B0002NRRQ0", "B0002EJ7JE", "B00005R1NR"], "review_helpful_votes": 7}
+{"array": [1,2,3]}
+{"array": [2,3,4]}
+{"array": [3,4,5]}
+{"array": [2,3]}
+{"array": [2]}
+{"array": [4,5]}

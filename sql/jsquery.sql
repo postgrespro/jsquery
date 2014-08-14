@@ -279,6 +279,10 @@ select count(*) from test_jsquery where v @@ 'customer_id = null';
 select count(*) from test_jsquery where v @@ 'review_votes = true';
 select count(*) from test_jsquery where v @@ 'product_group = false';
 
+select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
+select v from test_jsquery where v @@ 'array && [2,3]' order by v;
+select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
+
 create index t_idx on test_jsquery using gin (v jsonb_value_path_ops);
 set enable_seqscan = off;
 
@@ -301,6 +305,14 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
 select count(*) from test_jsquery where v @@ 'customer_id = null';
 select count(*) from test_jsquery where v @@ 'review_votes = true';
 select count(*) from test_jsquery where v @@ 'product_group = false';
+
+explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
+explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]' order by v;
+explain (costs off) select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
+
+select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
+select v from test_jsquery where v @@ 'array && [2,3]' order by v;
+select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
 
 drop index t_idx;
 
@@ -326,5 +338,13 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
 select count(*) from test_jsquery where v @@ 'customer_id = null';
 select count(*) from test_jsquery where v @@ 'review_votes = true';
 select count(*) from test_jsquery where v @@ 'product_group = false';
+
+explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
+explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]' order by v;
+explain (costs off) select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
+
+select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
+select v from test_jsquery where v @@ 'array && [2,3]' order by v;
+select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
 
 RESET enable_seqscan;
