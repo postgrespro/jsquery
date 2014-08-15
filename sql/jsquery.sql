@@ -160,6 +160,11 @@ select '[1,2,3]'::jsonb @@ '# = 2';
 select '[1,2,3]'::jsonb @@ '#.$ = 2';
 select '[1,2,3]'::jsonb @@ '#($ = 2)';
 
+select '[3,4]'::jsonb @@ '#($ > 2 & $ < 5)';
+select '[3,4]'::jsonb @@ '# > 2 & # < 5';
+select '[1,6]'::jsonb @@ '#($ > 2 & $ < 5)';
+select '[1,6]'::jsonb @@ '# > 2 & # < 5';
+
 select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%.b=3';
 select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ 'a.%=3';
 select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%.%="hey"';
