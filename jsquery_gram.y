@@ -13,8 +13,6 @@
  */
 
 %{
-#define YYPARSE_PARAM result  /* need this to pass a pointer (void *) to yyparse */
-
 #include "postgres.h"
 
 #include "fmgr.h"
@@ -53,8 +51,7 @@ typedef struct string {
 
 /* flex 2.5.4 doesn't bother with a decl for this */
 int jsquery_yylex(YYSTYPE * yylval_param);
-int jsquery_yyparse(void *result);
-void jsquery_yyerror(const char *message);
+void jsquery_yyerror(JsQueryParseItem **result, const char *message);
 
 static JsQueryParseItem*
 makeItemType(int type)
@@ -191,6 +188,7 @@ makeItemList(List *list) {
 %expect 0
 %name-prefix="jsquery_yy"
 %error-verbose
+%parse-param {JsQueryParseItem **result}
 
 %union {
 	string 				str;
@@ -225,8 +223,8 @@ makeItemList(List *list) {
 %%
 
 result: 
-	expr							{ *((JsQueryParseItem**)result) = $1; } 
-	| /* EMPTY */					{ *((JsQueryParseItem**)result) = NULL; }
+	expr							{ *result = $1; } 
+	| /* EMPTY */					{ *result = NULL; }
 	;
 
 array:
