@@ -1185,9 +1185,10 @@ SELECT gin_debug_query_path_value('x <@ [1,2,3]');
  gin_debug_query_path_value 
 ----------------------------
  OR                        +
-   x.# = 1 , entry 0       +
-   x.# = 2 , entry 1       +
-   x.# = 3 , entry 2       +
+   x = [] , entry 0        +
+   x.# = 1 , entry 1       +
+   x.# = 2 , entry 2       +
+   x.# = 3 , entry 3       +
  
 (1 row)
 
@@ -1297,9 +1298,10 @@ SELECT gin_debug_query_value_path('x <@ [1,2,3]');
  gin_debug_query_value_path 
 ----------------------------
  OR                        +
-   x.# = 1 , entry 0       +
-   x.# = 2 , entry 1       +
-   x.# = 3 , entry 2       +
+   x = [] , entry 0        +
+   x.# = 1 , entry 1       +
+   x.# = 2 , entry 2       +
+   x.# = 3 , entry 3       +
  
 (1 row)
 

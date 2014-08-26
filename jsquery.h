@@ -175,9 +175,13 @@ struct PathItem
 
 typedef enum
 {
-	eScalar = 1,
-	eAnd	= jqiAnd,
-	eOr		= jqiOr
+	eExactValue = 1,
+	eEmptyArray,
+	eInequality,
+	eIs,
+	eAny,
+	eAnd		= jqiAnd,
+	eOr			= jqiOr,
 } ExtractedNodeType;
 
 typedef enum
@@ -185,7 +189,8 @@ typedef enum
 	sEqual = 1,
 	sRange,
 	sInequal,
-	sKey
+	sIs,
+	sAny
 } SelectivityClass;
 
 typedef struct ExtractedNode ExtractedNode;
@@ -197,6 +202,7 @@ struct ExtractedNode
 	bool				indirect;
 	SelectivityClass	sClass;
 	bool				forceIndex;
+	int					entryNum;
 	union
 	{
 		struct
@@ -206,19 +212,19 @@ struct ExtractedNode
 		} args;
 		struct
 		{
-			bool			inequality;
 			bool			leftInclusive;
 			bool			rightInclusive;
-			JsQueryItem	   *exact;
 			JsQueryItem	   *leftBound;
 			JsQueryItem	   *rightBound;
-			int				entryNum;
 		} bounds;
+		JsQueryItem		   *exactValue;
+		int32				isType;
 	};
 };
 
 typedef int (*MakeEntryHandler)(ExtractedNode *node, Pointer extra);
 typedef bool (*CheckEntryHandler)(ExtractedNode *node, Pointer extra);
+bool isLogicalNodeType(ExtractedNodeType type);
 
 ExtractedNode *extractJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
 								CheckEntryHandler checkHandler, Pointer extra);

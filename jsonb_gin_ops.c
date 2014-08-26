@@ -40,13 +40,17 @@ typedef struct
 
 #define GINKEYLEN offsetof(GINKey, data)
 
+#define	GINKeyTrue 0x80
+#define	GINKeyMinusInf 0x80
+#define	GINKeyEmptyArray 0x80
 #define GINKeyLenString (INTALIGN(offsetof(GINKey, data)) + sizeof(uint32))
 #define GINKeyLenNumeric(len) (INTALIGN(offsetof(GINKey, data)) + len)
 #define GINKeyDataString(key) (*(uint32 *)((Pointer)key + INTALIGN(offsetof(GINKey, data))))
 #define GINKeyDataNumeric(key) ((Pointer)key + INTALIGN(offsetof(GINKey, data)))
 #define GINKeyType(key) ((key)->type & 0x7F)
-#define GINKeyIsTrue(key) ((key)->type & 0x80)
-#define	GINKeyTrue 0x80
+#define GINKeyIsTrue(key) ((key)->type & GINKeyTrue)
+#define GINKeyIsMinusInf(key) ((key)->type & GINKeyMinusInf)
+#define GINKeyIsEmptyArray(key) ((key)->type & GINKeyEmptyArray)
 
 #define BLOOM_BITS 2
 #define JsonbNestedContainsStrategyNumber	13
@@ -64,16 +68,18 @@ typedef struct
 typedef struct
 {
 	ExtractedNode  *root;
+	ExtractedNode  *node;
 	uint32			hash;
-	bool			lossy;
-	bool			inequality, leftInclusive, rightInclusive;
+	bool			lossyHash;
 	GINKey		   *rightBound;
 } KeyExtra;
 
 static uint32 get_bloom_value(uint32 hash);
 static uint32 get_path_bloom(PathHashStack *stack);
 static GINKey *make_gin_key(JsonbValue *v, uint32 hash);
-static GINKey *make_gin_query_key(JsQueryItem *value, uint32 hash);
+static GINKey *make_gin_key_string(uint32 hash);
+static GINKey *make_gin_query_value_key(JsQueryItem *value, uint32 hash);
+static GINKey *make_gin_query_key(ExtractedNode *node, bool *partialMatch, uint32 hash, KeyExtra *keyExtra);
 static GINKey *make_gin_query_key_minus_inf(uint32 hash);
 static int32 compare_gin_key_value(GINKey *arg1, GINKey *arg2);
 static int add_entry(Entries *e, Datum key, Pointer extra, bool pmatch);
@@ -144,6 +150,7 @@ get_bloom_value(uint32 hash)
 	for (i = 0; i < BLOOM_BITS; i++)
 	{
 		val = hash % (32 - i) + i;
+		hash /= (32 - i);
 		vals[i] = val;
 
 		j = i;
@@ -224,7 +231,7 @@ log_gin_key(GINKey *key)
 	}
 	else if (GINKeyType(key) == jbvNumeric)
 	{
-		if (GINKeyIsTrue(key))
+		if (GINKeyIsMinusInf(key))
 		{
 			elog(NOTICE, "hash = %X, -inf", key->hash);
 		}
@@ -267,6 +274,8 @@ make_gin_key(JsonbValue *v, uint32 hash)
 	{
 		key = (GINKey *)palloc(GINKEYLEN);
 		key->type = v->type;
+		if (v->val.array.nElems == 0)
+			key->type |= GINKeyEmptyArray;
 		SET_VARSIZE(key, GINKEYLEN);
 	}
 	else if (v->type == jbvObject)
@@ -299,7 +308,20 @@ make_gin_key(JsonbValue *v, uint32 hash)
 }
 
 static GINKey *
-make_gin_query_key(JsQueryItem *value, uint32 hash)
+make_gin_key_string(uint32 hash)
+{
+	GINKey *key;
+
+	key = (GINKey *)palloc(GINKeyLenString);
+	key->type = jbvString;
+	GINKeyDataString(key) = 0;
+	SET_VARSIZE(key, GINKeyLenString);
+	key->hash = hash;
+	return key;
+}
+
+static GINKey *
+make_gin_query_value_key(JsQueryItem *value, uint32 hash)
 {
 	GINKey *key;
 	int32	len;
@@ -341,12 +363,89 @@ make_gin_query_key(JsQueryItem *value, uint32 hash)
 }
 
 static GINKey *
+make_gin_query_key(ExtractedNode *node, bool *partialMatch, uint32 hash, KeyExtra *keyExtra)
+{
+	JsonbValue	v;
+	GINKey	   *key;
+
+	switch (node->type)
+	{
+		case eExactValue:
+			key = make_gin_query_value_key(node->exactValue, hash);
+			break;
+		case eEmptyArray:
+			v.type = jbvArray;
+			v.val.array.nElems = 0;
+			key = make_gin_key(&v, hash);
+			break;
+		case eInequality:
+			*partialMatch = true;
+			if (node->bounds.leftBound)
+				key = make_gin_query_value_key(node->bounds.leftBound, hash);
+			else
+				key = make_gin_query_key_minus_inf(hash);
+			if (node->bounds.rightBound)
+				keyExtra->rightBound = make_gin_query_value_key(node->bounds.rightBound, hash);
+			else
+				keyExtra->rightBound = NULL;
+			break;
+		case eIs:
+			switch (node->isType)
+			{
+				case jbvArray:
+					*partialMatch = true;
+					v.type = jbvArray;
+					v.val.array.nElems = 1;
+					key = make_gin_key(&v, hash);
+					break;
+				case jbvObject:
+					*partialMatch = true;
+					v.type = jbvObject;
+					key = make_gin_key(&v, hash);
+					break;
+				case jbvString:
+					*partialMatch = true;
+					key = make_gin_key_string(hash);
+					break;
+				case jbvNumeric:
+					*partialMatch = true;
+					key = make_gin_query_key_minus_inf(hash);
+					break;
+				case jbvBool:
+					*partialMatch = true;
+					v.type = jbvBool;
+					v.val.boolean = false;
+					key = make_gin_key(&v, hash);
+					break;
+				case jbvNull:
+					v.type = jbvNull;
+					key = make_gin_key(&v, hash);
+					break;
+				default:
+					elog(ERROR,"Wrong type");
+					return NULL;
+			}
+			break;
+		case eAny:
+			v.type = jbvNull;
+			key = make_gin_key(&v, hash);
+			*partialMatch = true;
+			break;
+		default:
+			elog(ERROR, "Wrong type");
+			break;
+	}
+	return key;
+}
+
+
+static GINKey *
 make_gin_query_key_minus_inf(uint32 hash)
 {
 	GINKey *key;
 
 	key = (GINKey *)palloc(GINKEYLEN);
-	key->type = jbvNumeric | GINKeyTrue;
+	key->type = jbvNumeric | GINKeyMinusInf;
 	key->hash = hash;
 	SET_VARSIZE(key, GINKEYLEN);
 	return key;
@@ -363,49 +462,23 @@ make_bloom_entry_handler(ExtractedNode *node, Pointer extra)
 {
 	Entries	   *e = (Entries *)extra;
 	uint32		hash;
-	bool		lossy;
+	bool		lossy, partialMatch;
 	GINKey	   *key;
 	KeyExtra   *keyExtra;
 	int			result;
 
-	Assert(node->type == eScalar);
+	Assert(!isLogicalNodeType(node->type));
 
 	hash = get_query_path_bloom(node->path, &lossy);
 	keyExtra = (KeyExtra *)palloc(sizeof(KeyExtra));
 	keyExtra->hash = hash;
-	keyExtra->lossy = lossy;
-	keyExtra->inequality = node->bounds.inequality;
+	keyExtra->node = node;
+	keyExtra->lossyHash = lossy;
 
-	if (!node->bounds.inequality)
-	{
-		if (node->bounds.exact->type == jqiAny)
-			return -1;
-		key = make_gin_query_key(node->bounds.exact, lossy ? 0 : hash);
-	}
-	else
-	{
-		if (node->bounds.leftBound)
-		{
-			key = make_gin_query_key(node->bounds.leftBound, lossy ? 0 : hash);
-			keyExtra->leftInclusive = node->bounds.leftInclusive;
-		}
-		else
-		{
-			key = make_gin_query_key_minus_inf(lossy ? 0 : hash);
-			keyExtra->leftInclusive = false;
-		}
-		if (node->bounds.rightBound)
-		{
-			keyExtra->rightBound = make_gin_query_key(node->bounds.rightBound, lossy ? 0 : hash);
-			keyExtra->rightInclusive = node->bounds.rightInclusive;
-		}
-		else
-		{
-			keyExtra->rightBound = NULL;
-		}
-	}
+	key = make_gin_query_key(node, &partialMatch, hash, keyExtra);
+
 	result = add_entry(e, PointerGetDatum(key), (Pointer)keyExtra,
-											lossy | node->bounds.inequality);
+											lossy | partialMatch);
 	return result;
 }
 
@@ -421,9 +494,13 @@ compare_gin_key_value(GINKey *arg1, GINKey *arg2)
 		switch(GINKeyType(arg1))
 		{
 			case jbvNull:
-				return 0;
 			case jbvArray:
-				return 0;
+				if (GINKeyIsEmptyArray(arg1) == GINKeyIsEmptyArray(arg2))
+					return 0;
+				else if (GINKeyIsEmptyArray(arg1) > GINKeyIsEmptyArray(arg2))
+					return 1;
+				else
+					return -1;
 			case jbvObject:
 				return 0;
 			case jbvBool:
@@ -434,16 +511,16 @@ compare_gin_key_value(GINKey *arg1, GINKey *arg2)
 				else
 					return -1;
 			case jbvNumeric:
-				if (GINKeyIsTrue(arg1))
+				if (GINKeyIsMinusInf(arg1))
 				{
-					if (GINKeyIsTrue(arg2))
+					if (GINKeyIsMinusInf(arg2))
 						return 0;
 					else
 						return -1;
 				}
 				else
 				{
-					if (GINKeyIsTrue(arg2))
+					if (GINKeyIsMinusInf(arg2))
 						return 1;
 				}
 				return DatumGetInt32(DirectFunctionCall2(numeric_cmp,
@@ -490,44 +567,57 @@ gin_compare_partial_jsonb_value_path(PG_FUNCTION_ARGS)
 
 	if (strategy == JsQueryMatchStrategyNumber)
 	{
-		KeyExtra *extra_data = (KeyExtra *)PG_GETARG_POINTER(3);
+		KeyExtra *extra = (KeyExtra *)PG_GETARG_POINTER(3);
+		ExtractedNode *node = extra->node;
 
-		if (extra_data->inequality)
+		switch (node->type)
 		{
-			result = 0;
-			if (!extra_data->leftInclusive && compare_gin_key_value(key, partial_key) <= 0)
-			{
-				result = -1;
-			}
-			if (result == 0 && extra_data->rightBound)
-			{
-				result = compare_gin_key_value(key, extra_data->rightBound);
-				if ((extra_data->rightInclusive && result <= 0) || result < 0)
+			case eExactValue:
+			case eEmptyArray:
+				result = compare_gin_key_value(key, partial_key);
+				break;
+			case eInequality:
+				result = 0;
+				if (!node->bounds.leftInclusive &&
+						compare_gin_key_value(key, partial_key) <= 0)
+				{
+					result = -1;
+				}
+				if (result == 0 && extra->rightBound)
+				{
+					result = compare_gin_key_value(key,	extra->rightBound);
+					if ((node->bounds.rightInclusive && result <= 0)
+																|| result < 0)
+						result = 0;
+					else
+						result = 1;
+				}
+				break;
+			case eIs:
+				if (node->isType == GINKeyType(key))
 					result = 0;
 				else
-					result = 1;
-			}
-			if (result == 0)
+					result = (GINKeyType(key) > node->isType) ? 1 : -1;
+				break;
+			case eAny:
+				result = 0;
+				break;
+			default:
+				elog(ERROR, "Wrong type");
+				break;
+		}
+
+		if (result == 0)
+		{
+			if (extra->lossyHash)
 			{
-				if ((key->hash & extra_data->hash) != extra_data->hash)
+				if ((key->hash & extra->hash) != extra->hash)
 					result = -1;
 			}
-		}
-		else
-		{
-			result = compare_gin_key_value(key, partial_key);
-			if (result == 0)
+			else
 			{
-				if (extra_data->lossy)
-				{
-					if ((key->hash & extra_data->hash) != extra_data->hash)
-						result = -1;
-				}
-				else
-				{
-					if (key->hash != extra_data->hash)
-						result = -1;
-				}
+				if (key->hash != extra->hash)
+					result = -1;
 			}
 		}
 	}
@@ -884,7 +974,7 @@ make_hash_entry_handler(ExtractedNode *node, Pointer extra)
 	int			result;
 	bool		partialMatch = false;
 
-	Assert(node->type == eScalar);
+	Assert(!isLogicalNodeType(node->type));
 
 	hash = 0;
 	if (!get_query_path_hash(node->path, &hash))
@@ -892,50 +982,9 @@ make_hash_entry_handler(ExtractedNode *node, Pointer extra)
 
 	keyExtra = (KeyExtra *)palloc(sizeof(KeyExtra));
 	keyExtra->hash = hash;
-	keyExtra->lossy = false;
-	keyExtra->inequality = node->bounds.inequality;
+	keyExtra->node = node;
+	key = make_gin_query_key(node, &partialMatch, hash, keyExtra);
 
-	if (!node->bounds.inequality)
-	{
-		if (node->bounds.exact->type == jqiAny)
-		{
-			JsQueryItem value;
-
-			value.type = jqiNull;
-			value.nextPos = 0;
-			value.base = NULL;
-			key = make_gin_query_key(&value, hash);
-			partialMatch = true;
-			keyExtra->lossy = true;
-		}
-		else
-		{
-			key = make_gin_query_key(node->bounds.exact, hash);
-		}
-	}
-	else
-	{
-		partialMatch = true;
-		if (node->bounds.leftBound)
-		{
-			key = make_gin_query_key(node->bounds.leftBound, hash);
-			keyExtra->leftInclusive = node->bounds.leftInclusive;
-		}
-		else
-		{
-			key = make_gin_query_key_minus_inf(hash);
-			keyExtra->leftInclusive = false;
-		}
-		if (node->bounds.rightBound)
-		{
-			keyExtra->rightBound = make_gin_query_key(node->bounds.rightBound, hash);
-			keyExtra->rightInclusive = node->bounds.rightInclusive;
-		}
-		else
-		{
-			keyExtra->rightBound = NULL;
-		}
-	}
 	result = add_entry(e, PointerGetDatum(key), (Pointer)keyExtra, partialMatch);
 	return result;
 }
@@ -974,31 +1023,40 @@ gin_compare_partial_jsonb_path_value(PG_FUNCTION_ARGS)
 	}
 	else if (strategy == JsQueryMatchStrategyNumber)
 	{
-		KeyExtra *extra_data = (KeyExtra *)PG_GETARG_POINTER(3);
+		KeyExtra *extra = (KeyExtra *)PG_GETARG_POINTER(3);
+		ExtractedNode *node = extra->node;
 
-		if (extra_data->lossy)
+		switch (node->type)
 		{
-			result = 0;
-		}
-		else if (extra_data->inequality)
-		{
-			result = 0;
-			if (!extra_data->leftInclusive && compare_gin_key_value(key, partial_key) <= 0)
-			{
-				result = -1;
-			}
-			if (result == 0 && extra_data->rightBound)
-			{
-				result = compare_gin_key_value(key, extra_data->rightBound);
-				if ((extra_data->rightInclusive && result <= 0) || result < 0)
+			case eInequality:
+				result = 0;
+				if (!node->bounds.leftInclusive &&
+						compare_gin_key_value(key, partial_key) <= 0)
+				{
+					result = -1;
+				}
+				if (result == 0 && extra->rightBound)
+				{
+					result = compare_gin_key_value(key, extra->rightBound);
+					if ((node->bounds.rightInclusive && result <= 0)
+																|| result < 0)
+						result = 0;
+					else
+						result = 1;
+				}
+				break;
+			case eIs:
+				if (node->isType == GINKeyType(key))
 					result = 0;
 				else
-					result = 1;
-			}
-		}
-		else
-		{
-			result = compare_gin_key_value(key, partial_key);
+					result = (GINKeyType(key) > node->isType) ? 1 : -1;
+				break;
+			case eAny:
+				result = 0;
+				break;
+			default:
+				elog(ERROR, "Wrong type");
+				break;
 		}
 	}
 	else

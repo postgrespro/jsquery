@@ -122,16 +122,24 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 		case jqiEqual:
 			if (not) return NULL;
 			jsqGetArg(jsq, &e);
-			if (e.type != jqiArray)
+			if (e.type == jqiAny)
 			{
 				result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-				result->type = eScalar;
+				result->type = eAny;
 				result->hint = jsq->hint;
 				result->path = path;
 				result->indirect = indirect;
-				result->bounds.inequality = false;
-				result->bounds.exact = (JsQueryItem *)palloc(sizeof(JsQueryItem));
-				*result->bounds.exact = e;
+				return result;
+			}
+			else if (e.type != jqiArray)
+			{
+				result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
+				result->type = eExactValue;
+				result->hint = jsq->hint;
+				result->path = path;
+				result->indirect = indirect;
+				result->exactValue = (JsQueryItem *)palloc(sizeof(JsQueryItem));
+				*result->exactValue = e;
 				return result;
 			}
 			/* jqiEqual with jqiArray follows */
@@ -146,10 +154,10 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			Assert(elem.type == jqiArray);
 			result->path = path;
 			result->indirect = indirect;
-			result->args.items = (ExtractedNode **)palloc(elem.array.nelems * sizeof(ExtractedNode *));
+			result->args.items = (ExtractedNode **)palloc((elem.array.nelems + 1) * sizeof(ExtractedNode *));
 			result->args.count = 0;
-			if (jsq->type == jqiContains || jsq->type == jqiOverlap || jsq->type == jqiContained ||
-				jsq->type == jqiEqual)
+			if (jsq->type == jqiContains || jsq->type == jqiOverlap ||
+				jsq->type == jqiContained || jsq->type == jqiEqual)
 			{
 				pathItem = (PathItem *)palloc(sizeof(PathItem));
 				pathItem->type = iAnyArray;
@@ -160,19 +168,33 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 				pathItem = path;
 			}
 
+			if (jsq->type == jqiContained ||
+					(jsq->type == jqiEqual && elem.array.nelems == 0))
+			{
+				ExtractedNode *item = (ExtractedNode *)palloc(sizeof(ExtractedNode));
+
+				item->hint = e.hint;
+				item->type = eEmptyArray;
+				item->path = pathItem->parent;
+				item->indirect = false;
+				item->hint = jsq->hint;
+
+				result->args.items[result->args.count] = item;
+				result->args.count++;
+			}
+
 			while(jsqIterateArray(&elem, &e))
 			{
 				ExtractedNode *item = (ExtractedNode *)palloc(sizeof(ExtractedNode));
 
 				item->hint = e.hint;
-				item->type = eScalar;
+				item->type = eExactValue;
 				item->path = pathItem;
 				item->indirect = true;
 				item->hint = jsq->hint;
 
-				item->bounds.inequality = false;
-				item->bounds.exact = (JsQueryItem *)palloc(sizeof(JsQueryItem));
-				*item->bounds.exact = e;
+				item->exactValue = (JsQueryItem *)palloc(sizeof(JsQueryItem));
+				*item->exactValue = e;
 				result->args.items[result->args.count] = item;
 				result->args.count++;
 			}
@@ -183,11 +205,10 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 		case jqiGreaterOrEqual:
 			if (not) return NULL;
 			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-			result->type = eScalar;
+			result->type = eInequality;
 			result->hint = jsq->hint;
 			result->path = path;
 			result->indirect = indirect;
-			result->bounds.inequality = true;
 
 			if (jsq->type == jqiGreater || jsq->type == jqiGreaterOrEqual)
 			{
@@ -203,6 +224,15 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 				result->bounds.rightBound = (JsQueryItem *)palloc(sizeof(JsQueryItem));
 				jsqGetArg(jsq, result->bounds.rightBound);
 			}
+			return result;
+		case jqiIs:
+			if (not) return NULL;
+			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
+			result->type = eIs;
+			result->hint = jsq->hint;
+			result->path = path;
+			result->indirect = indirect;
+			result->isType = jsqGetIsType(jsq);
 			return result;
 		default:
 			elog(ERROR,"Wrong state: %d", jsq->type);
@@ -321,6 +351,15 @@ comparePathItems(PathItem *i1, PathItem *i2)
 	}
 }
 
+bool
+isLogicalNodeType(ExtractedNodeType type)
+{
+	if (type == eAnd || type == eOr)
+		return true;
+	else
+		return false;
+}
+
 /*
  * Compare nodes in the order where conditions to the same fields are located
  * together.
@@ -344,17 +383,11 @@ compareNodes(const void *a1, const void *a2)
 		return (n1->type < n2->type) ? -1 : 1;
 	}
 
-	if (n1->type == eScalar)
+	if (!isLogicalNodeType(n1->type))
 	{
 		int cmp;
 		cmp = comparePathItems(n1->path, n2->path);
-		if (cmp) return cmp;
-		if (n1->bounds.entryNum < n2->bounds.entryNum)
-			return -1;
-		else if (n1->bounds.entryNum == n2->bounds.entryNum)
-			return 0;
-		else
-			return 1;
+		return cmp;
 	}
 	else
 	{
@@ -395,7 +428,7 @@ compareJsQueryItem(JsQueryItem *v1, JsQueryItem *v2)
 					 PointerGetDatum(jsqGetNumeric(v1)),
 					 PointerGetDatum(jsqGetNumeric(v2))));
 		default:
-			elog(ERROR,"Wrong state");
+			elog(ERROR, "Wrong state");
 	}
 
 	return 0; /* make compiler happy */
@@ -408,13 +441,16 @@ compareJsQueryItem(JsQueryItem *v1, JsQueryItem *v2)
 static void
 processGroup(ExtractedNode *node, int start, int end)
 {
-	int 			i;
-	JsQueryItem    *leftBound = NULL,
-			       *rightBound = NULL,
-			       *exact = NULL;
-	bool 			leftInclusive = false,
-					rightInclusive = false;
-	ExtractedNode  *child;
+	int 				i;
+	JsQueryItem		   *leftBound = NULL,
+					   *rightBound = NULL,
+					   *exactValue = NULL;
+	bool 				leftInclusive = false,
+						rightInclusive = false,
+						first = true;
+	ExtractedNode	   *child;
+	ExtractedNodeType	type;
+	JsQueryItemType		isType;
 
 	if (end - start < 2)
 		return;
@@ -425,70 +461,93 @@ processGroup(ExtractedNode *node, int start, int end)
 
 		child = node->args.items[i];
 
-		if (!child->bounds.inequality)
+		if (first || child->type <= type)
 		{
-			if (child->bounds.exact->type == jqiAny)
+			type = child->type;
+			first = false;
+			Assert(!isLogicalNodeType(type));
+			switch(type)
 			{
-				continue;
-			}
-			else
-			{
-				exact = child->bounds.exact;
-				break;
-			}
-		}
+				case eAny:
+				case eEmptyArray:
+					break;
+				case eIs:
+					isType = child->isType;
+					break;
+				case eInequality:
+					if (child->bounds.leftBound)
+					{
+						if (!leftBound)
+						{
+							leftBound = child->bounds.leftBound;
+							leftInclusive = child->bounds.leftInclusive;
+						}
+						cmp = compareJsQueryItem(child->bounds.leftBound,
+																	leftBound);
+						if (cmp > 0)
+						{
+							leftBound = child->bounds.leftBound;
+							leftInclusive = child->bounds.leftInclusive;
+						}
+						if (cmp == 0 && leftInclusive)
+						{
+							leftInclusive = child->bounds.leftInclusive;
+						}
+					}
+					if (child->bounds.rightBound)
+					{
+						if (!rightBound)
+						{
+							rightBound = child->bounds.rightBound;
+							rightInclusive = child->bounds.rightInclusive;
+						}
+						cmp = compareJsQueryItem(child->bounds.rightBound,
+																	rightBound);
+						if (cmp > 0)
+						{
+							rightBound = child->bounds.rightBound;
+							rightInclusive = child->bounds.rightInclusive;
+						}
+						if (cmp == 0 && rightInclusive)
+						{
+							rightInclusive = child->bounds.rightInclusive;
+						}
+					}
+					break;
+				case eExactValue:
+					exactValue = child->exactValue;
+					break;
+				default:
+					elog(ERROR, "Wrong state");
+					break;
 
-		if (child->bounds.leftBound)
-		{
-			if (!leftBound)
-			{
-				leftBound = child->bounds.leftBound;
-				leftInclusive = child->bounds.leftInclusive;
-			}
-			cmp = compareJsQueryItem(child->bounds.leftBound, leftBound);
-			if (cmp > 0)
-			{
-				leftBound = child->bounds.leftBound;
-				leftInclusive = child->bounds.leftInclusive;
-			}
-			if (cmp == 0 && leftInclusive)
-			{
-				leftInclusive = child->bounds.leftInclusive;
-			}
-		}
-		if (child->bounds.rightBound)
-		{
-			if (!rightBound)
-			{
-				rightBound = child->bounds.rightBound;
-				rightInclusive = child->bounds.rightInclusive;
-			}
-			cmp = compareJsQueryItem(child->bounds.rightBound, rightBound);
-			if (cmp > 0)
-			{
-				rightBound = child->bounds.rightBound;
-				rightInclusive = child->bounds.rightInclusive;
-			}
-			if (cmp == 0 && rightInclusive)
-			{
-				rightInclusive = child->bounds.rightInclusive;
 			}
 		}
 	}
 
 	child = node->args.items[start];
-	if (exact)
+	child->type = type;
+
+	switch(type)
 	{
-		child->bounds.inequality = false;
-		child->bounds.exact = exact;
-	}
-	else
-	{
-		child->bounds.inequality = true;
-		child->bounds.leftBound = leftBound;
-		child->bounds.leftInclusive = leftInclusive;
-		child->bounds.rightBound = rightBound;
-		child->bounds.rightInclusive = rightInclusive;
+		case eAny:
+		case eEmptyArray:
+			break;
+		case eIs:
+			child->isType = isType;
+			break;
+		case eInequality:
+			child->bounds.leftBound = leftBound;
+			child->bounds.rightBound = rightBound;
+			child->bounds.leftInclusive = leftInclusive;
+			child->bounds.rightInclusive = rightInclusive;
+			break;
+		case eExactValue:
+			child->exactValue = exactValue;
+			break;
+		default:
+			elog(ERROR, "Wrong state");
+			break;
 	}
 
 	for (i = start + 1; i < end; i++)
@@ -513,7 +572,7 @@ simplifyRecursive(ExtractedNode *node)
 		for (i = 0; i < node->args.count; i++)
 		{
 			child = node->args.items[i];
-			if (child->indirect || child->type != eScalar)
+			if (child->indirect || isLogicalNodeType(child->type))
 				break;
 			if (!prevChild || comparePathItems(child->path, prevChild->path) != 0)
 			{
@@ -544,17 +603,24 @@ simplifyRecursive(ExtractedNode *node)
 static SelectivityClass
 getScalarSelectivityClass(ExtractedNode *node)
 {
-	Assert(node->type == eScalar);
-	if (node->bounds.inequality)
+	Assert(!isLogicalNodeType(node->type));
+	switch(node->type)
 	{
-		if (node->bounds.leftBound && node->bounds.rightBound)
-			return sRange;
-		else
-			return sInequal;
-	}
-	else
-	{
-		return sEqual;
+		case eAny:
+			return sAny;
+		case eIs:
+			return sIs;
+		case eInequality:
+			if (node->bounds.leftBound && node->bounds.rightBound)
+				return sRange;
+			else
+				return sInequal;
+		case eEmptyArray:
+		case eExactValue:
+			return sEqual;
+		default:
+			elog(ERROR, "Wrong state");
+			return sAny;
 	}
 }
 
@@ -612,7 +678,7 @@ makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra)
 		entryNum = handler(node, extra);
 		if (entryNum >= 0)
 		{
-			node->bounds.entryNum = entryNum;
+			node->entryNum = entryNum;
 			return node;
 		}
 		else
@@ -645,7 +711,7 @@ setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler,
 				if (!child)
 					continue;
 
-				if (child->type == eScalar)
+				if (!isLogicalNodeType(child->type))
 				{
 					if (child->hint == jsqNoIndex ||
 							!checkHandler(child, extra))
@@ -674,7 +740,7 @@ setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler,
 				first = false;
 			}
 			return;
-		case eScalar:
+		default:
 			node->sClass = getScalarSelectivityClass(node);
 			node->forceIndex = node->hint == jsqForceIndex;
 			return;
@@ -722,8 +788,8 @@ execRecursive(ExtractedNode *node, bool *check)
 				if (execRecursive(node->args.items[i], check))
 					return true;
 			return false;
-		case eScalar:
-			return check[node->bounds.entryNum];
+		default:
+			return check[node->entryNum];
 	}
 }
 
@@ -760,8 +826,8 @@ execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check)
 					res = GIN_MAYBE;
 			}
 			return res;
-		case eScalar:
-			return check[node->bounds.entryNum];
+		default:
+			return check[node->entryNum];
 	}
 }
 
@@ -823,8 +889,33 @@ debugValue(StringInfo buf, JsQueryItem *v)
 			break;
 		default:
 			elog(ERROR,"Wrong type");
+			break;
 	}
 }
+
+static const char *
+getTypeString(int32 type)
+{
+	switch (type)
+	{
+		case jbvArray:
+			return "array";
+		case jbvObject:
+			return "object";
+		case jbvString:
+			return "string";
+		case jbvNumeric:
+			return "numeric";
+		case jbvBool:
+			return "bool";
+		case jbvNull:
+			return "null";
+		default:
+			elog(ERROR,"Wrong type");
+			return NULL;
+	}
+}
+
 
 /*
  * Recursive worker of debug print of query processing.
@@ -836,47 +927,56 @@ debugRecursive(StringInfo buf, ExtractedNode *node, int shift)
 
 	appendStringInfoSpaces(buf, shift * 2);
 
+	if (isLogicalNodeType(node->type))
+	{
+		appendStringInfo(buf, (node->type == eAnd) ? "AND\n" : "OR\n");
+		for (i = 0; i < node->args.count; i++)
+			debugRecursive(buf, node->args.items[i], shift + 1);
+		return;
+	}
+
+	debugPath(buf, node->path);
 	switch(node->type)
 	{
-		case eAnd:
-		case eOr:
-			appendStringInfo(buf, (node->type == eAnd) ? "AND\n" : "OR\n");
-			for (i = 0; i < node->args.count; i++)
-				debugRecursive(buf, node->args.items[i], shift + 1);
-			return;
-		case eScalar:
-			debugPath(buf, node->path);
-
-			if (node->bounds.inequality)
+		case eExactValue:
+			appendStringInfo(buf, " = ");
+			debugValue(buf, node->exactValue);
+			appendStringInfo(buf, " ,");
+			break;
+		case eAny:
+			appendStringInfo(buf, " = * ,");
+			break;
+		case eEmptyArray:
+			appendStringInfo(buf, " = [] ,");
+			break;
+		case eIs:
+			appendStringInfo(buf, " IS  %s ,", getTypeString(node->type));
+			break;
+		case eInequality:
+			if (node->bounds.leftBound)
 			{
-				if (node->bounds.leftBound)
-				{
-					if (node->bounds.leftInclusive)
-						appendStringInfo(buf, " >= ");
-					else
-						appendStringInfo(buf, " > ");
-					debugValue(buf, node->bounds.leftBound);
-					appendStringInfo(buf, " ,");
-				}
-				if (node->bounds.rightBound)
-				{
-					if (node->bounds.rightInclusive)
-						appendStringInfo(buf, " <= ");
-					else
-						appendStringInfo(buf, " < ");
-					debugValue(buf, node->bounds.rightBound);
-					appendStringInfo(buf, " ,");
-				}
-			}
-			else
-			{
-				appendStringInfo(buf, " = ");
-				debugValue(buf, node->bounds.exact);
+				if (node->bounds.leftInclusive)
+					appendStringInfo(buf, " >= ");
+				else
+					appendStringInfo(buf, " > ");
+				debugValue(buf, node->bounds.leftBound);
 				appendStringInfo(buf, " ,");
 			}
-			appendStringInfo(buf, " entry %d \n", node->bounds.entryNum);
-			return;
+			if (node->bounds.rightBound)
+			{
+				if (node->bounds.rightInclusive)
+					appendStringInfo(buf, " <= ");
+				else
+					appendStringInfo(buf, " < ");
+				debugValue(buf, node->bounds.rightBound);
+				appendStringInfo(buf, " ,");
+			}
+			break;
+		default:
+			elog(ERROR,"Wrong type");
+			break;
 	}
+	appendStringInfo(buf, " entry %d \n", node->entryNum);
 }
 
 /*
