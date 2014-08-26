@@ -230,7 +230,6 @@ makeItemList(List *list) {
 %left AND_P 
 %right NOT_P 
 %nonassoc IN_P IS_P 
-%left '(' ')'
 %nonassoc XXX
 
 /* Grammar follows */
