@@ -1,2 +1,5 @@
 *.so
 *.o
+jsquery_gram.c
+jsquery_scan.c
+jsquery_gram.h
