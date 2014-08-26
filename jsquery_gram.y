@@ -229,6 +229,9 @@ makeItemList(List *list) {
 %left OR_P 
 %left AND_P 
 %right NOT_P 
+%nonassoc IN_P IS_P 
+%left '(' ')'
+%nonassoc XXX
 
 /* Grammar follows */
 %%
@@ -262,7 +265,7 @@ scalar_value:
 
 opt_hint:
 	HINT_P							{ $$ = $1; }
-	| /* EMPTY */					{ $$ = jsqIndexDefault; }
+	| /* EMPTY */		%prec XXX	{ $$ = jsqIndexDefault; }
 	;
 
 value_list:
@@ -294,6 +297,7 @@ expr:
 	| path '(' expr ')'				{ $$ = makeItemList(lappend($1, $3)); }
 	| '(' expr ')'					{ $$ = $2; }
 	| NOT_P expr 					{ $$ = makeItemUnary(jqiNot, $2); }
+	| NOT_P opt_hint right_expr		{ $3->hint = $2; $$ = makeItemList(lappend(lappend(NIL, makeItemKey(&$1)), $3)); }
 	| expr AND_P expr				{ $$ = makeItemBinary(jqiAnd, $1, $3); }
 	| expr OR_P expr				{ $$ = makeItemBinary(jqiOr, $1, $3); }
 	;
@@ -334,6 +338,7 @@ path_elem_any:
 path:
 	path_elem						{ $$ = lappend(NIL, $1); }
 	| path '.' path_elem_any		{ $$ = lappend($1, $3); }
+	| NOT_P '.' path_elem_any		{ $$ = lappend(lappend(NIL, makeItemKey(&$1)), $3); }
 	;
 
 %%

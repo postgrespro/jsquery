@@ -367,6 +367,148 @@ select 'a IN (0,null, "null", xxx, "zzz", 2)'::jsquery;
  "a" IN (0, null, "null", "xxx", "zzz", 2)
 (1 row)
 
+select  'not < 1'::jsquery;
+  jsquery  
+-----------
+ "not" < 1
+(1 row)
+
+select  'not not < 1'::jsquery;
+     jsquery     
+-----------------
+ NOT ("not" < 1)
+(1 row)
+
+select  'not( not < 1)'::jsquery;
+     jsquery     
+-----------------
+ NOT ("not" < 1)
+(1 row)
+
+select  'not.x < 1'::jsquery;
+    jsquery    
+---------------
+ "not"."x" < 1
+(1 row)
+
+select  'x.not < 1'::jsquery;
+    jsquery    
+---------------
+ "x"."not" < 1
+(1 row)
+
+select  'is < 1'::jsquery;
+ jsquery  
+----------
+ "is" < 1
+(1 row)
+
+select  'in < 1'::jsquery;
+ jsquery  
+----------
+ "in" < 1
+(1 row)
+
+select  'not is < 1'::jsquery;
+ERROR:  bad jsquery representation
+LINE 1: select  'not is < 1'::jsquery;
+                ^
+DETAIL:  syntax error, unexpected '<' at or near "<"
+select  'not in < 1'::jsquery;
+ERROR:  bad jsquery representation
+LINE 1: select  'not in < 1'::jsquery;
+                ^
+DETAIL:  syntax error, unexpected '<', expecting '(' at or near "<"
+select 'in in (1,2)'::jsquery;
+    jsquery     
+----------------
+ "in" IN (1, 2)
+(1 row)
+
+select 'is in (1,2)'::jsquery;
+    jsquery     
+----------------
+ "is" IN (1, 2)
+(1 row)
+
+select 'not in (1,2)'::jsquery;
+     jsquery     
+-----------------
+ "not" IN (1, 2)
+(1 row)
+
+select 'in is numeric'::jsquery;
+     jsquery     
+-----------------
+ "in" IS NUMERIC
+(1 row)
+
+select 'is is numeric'::jsquery;
+     jsquery     
+-----------------
+ "is" IS NUMERIC
+(1 row)
+
+select 'not is numeric'::jsquery;
+     jsquery      
+------------------
+ "not" IS NUMERIC
+(1 row)
+
+select  'not.in  < 1'::jsquery;
+    jsquery     
+----------------
+ "not"."in" < 1
+(1 row)
+
+select  'not.is  < 1'::jsquery;
+    jsquery     
+----------------
+ "not"."is" < 1
+(1 row)
+
+select  'not.not < 1'::jsquery;
+     jsquery     
+-----------------
+ "not"."not" < 1
+(1 row)
+
+select  'in.in   < 1'::jsquery;
+    jsquery    
+---------------
+ "in"."in" < 1
+(1 row)
+
+select  'in.is   < 1'::jsquery;
+    jsquery    
+---------------
+ "in"."is" < 1
+(1 row)
+
+select  'in.not  < 1'::jsquery;
+    jsquery     
+----------------
+ "in"."not" < 1
+(1 row)
+
+select  'is.in   < 1'::jsquery;
+    jsquery    
+---------------
+ "is"."in" < 1
+(1 row)
+
+select  'is.is   < 1'::jsquery;
+    jsquery    
+---------------
+ "is"."is" < 1
+(1 row)
+
+select  'is.not  < 1'::jsquery;
+    jsquery     
+----------------
+ "is"."not" < 1
+(1 row)
+
 select '{"a": {"b": null}}'::jsonb @@ 'a.b = 1';
  ?column? 
 ----------
@@ -989,9 +1131,9 @@ LINE 1: select 'a\r = x"\\abcd"'::jsquery AS err;
 DETAIL:  syntax error, unexpected STRING_P, expecting $end at or near """
 --IS
 select  'as IS boolean OR as is ARRAY OR as is ObJect OR as is Numeric OR as is string'::jsquery;
-                                            jsquery                                             
-------------------------------------------------------------------------------------------------
- (((("as" IS BOOLEAN OR "as" IS ARRAY) OR "as" IS OBJECT) OR "as" IS NUMBER) OR "as" IS STRING)
+                                             jsquery                                             
+-------------------------------------------------------------------------------------------------
+ (((("as" IS BOOLEAN OR "as" IS ARRAY) OR "as" IS OBJECT) OR "as" IS NUMERIC) OR "as" IS STRING)
 (1 row)
 
 select '{"as": "xxx"}' @@ 'as IS string'::jsquery;

@@ -70,6 +70,36 @@ select 'a < +10.1e+1'::jsquery;
 select 'a in (0,1,2)'::jsquery;
 select 'a IN (0,null, "null", xxx, "zzz", 2)'::jsquery;
 
+select  'not < 1'::jsquery;
+select  'not not < 1'::jsquery;
+select  'not( not < 1)'::jsquery;
+select  'not.x < 1'::jsquery;
+select  'x.not < 1'::jsquery;
+
+select  'is < 1'::jsquery;
+select  'in < 1'::jsquery;
+
+select  'not is < 1'::jsquery;
+select  'not in < 1'::jsquery;
+
+select 'in in (1,2)'::jsquery;
+select 'is in (1,2)'::jsquery;
+select 'not in (1,2)'::jsquery;
+
+select 'in is numeric'::jsquery;
+select 'is is numeric'::jsquery;
+select 'not is numeric'::jsquery;
+
+select  'not.in  < 1'::jsquery;
+select  'not.is  < 1'::jsquery;
+select  'not.not < 1'::jsquery;
+select  'in.in   < 1'::jsquery;
+select  'in.is   < 1'::jsquery;
+select  'in.not  < 1'::jsquery;
+select  'is.in   < 1'::jsquery;
+select  'is.is   < 1'::jsquery;
+select  'is.not  < 1'::jsquery;
+
 select '{"a": {"b": null}}'::jsonb @@ 'a.b = 1';
 select '{"a": {"b": null}}'::jsonb @@ 'a.b = null';
 select '{"a": {"b": null}}'::jsonb @@ 'a.b = false';
