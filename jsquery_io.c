@@ -244,7 +244,7 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 					appendBinaryStringInfo(buf, "STRING", 6);
 					break;
 				case jbvNumeric:
-					appendBinaryStringInfo(buf, "NUMBER", 6);
+					appendBinaryStringInfo(buf, "NUMERIC", 7);
 					break;
 				case jbvBool:
 					appendBinaryStringInfo(buf, "BOOLEAN", 7);
