@@ -85,6 +85,17 @@ makeItemString(string *s)
 }
 
 static JsQueryParseItem*
+makeItemKey(string *s)
+{
+	JsQueryParseItem *v;
+
+	v = makeItemString(s);
+	v->type = jqiKey;
+
+	return v;
+}
+
+static JsQueryParseItem*
 makeItemNumeric(string *s)
 {
 	JsQueryParseItem		*v;
@@ -192,15 +203,15 @@ makeItemList(List *list) {
 
 %union {
 	string 				str;
-	List				*elems; 		/* list of JsQueryParseItem */
+	List				*elems; /* list of JsQueryParseItem */
 
 	JsQueryParseItem	*value;
 	JsQueryHint			hint;
 }
 
-%token	<str>		IN_P IS_P NULL_P TRUE_P ARRAY_T
-					FALSE_P NUMERIC_T OBJECT_T STRING_T 
-					BOOLEAN_T
+%token	<str>		IN_P IS_P OR_P AND_P NOT_P NULL_P TRUE_P
+					ARRAY_T FALSE_P NUMERIC_T OBJECT_T
+					STRING_T BOOLEAN_T
 
 %token	<str>		STRING_P NUMERIC_P
 
@@ -209,15 +220,15 @@ makeItemList(List *list) {
 
 %type	<elems>		path value_list
 
-%type 	<value>		path_elem right_expr expr array
+%type 	<value>		path_elem path_elem_any right_expr expr array
 
 %token	<hint>		HINT_P
 
 %type	<hint>		opt_hint
 
-%left '|'
-%left '&'
-%left '!'
+%left OR_P 
+%left AND_P 
+%right NOT_P 
 
 /* Grammar follows */
 %%
@@ -235,6 +246,9 @@ scalar_value:
 	STRING_P						{ $$ = makeItemString(&$1); }
 	| IN_P							{ $$ = makeItemString(&$1); }
 	| IS_P							{ $$ = makeItemString(&$1); }
+	| OR_P							{ $$ = makeItemString(&$1); }
+	| AND_P							{ $$ = makeItemString(&$1); }
+	| NOT_P							{ $$ = makeItemString(&$1); }
 	| NULL_P						{ $$ = makeItemString(NULL); }
 	| TRUE_P						{ $$ = makeItemBool(true); }
 	| ARRAY_T						{ $$ = makeItemString(&$1); }
@@ -279,9 +293,9 @@ expr:
 	path opt_hint right_expr		{ $3->hint = $2; $$ = makeItemList(lappend($1, $3)); }
 	| path '(' expr ')'				{ $$ = makeItemList(lappend($1, $3)); }
 	| '(' expr ')'					{ $$ = $2; }
-	| '!' expr 						{ $$ = makeItemUnary(jqiNot, $2); }
-	| expr '&' expr					{ $$ = makeItemBinary(jqiAnd, $1, $3); } 
-	| expr '|' expr					{ $$ = makeItemBinary(jqiOr, $1, $3); }
+	| NOT_P expr 					{ $$ = makeItemUnary(jqiNot, $2); }
+	| expr AND_P expr				{ $$ = makeItemBinary(jqiAnd, $1, $3); }
+	| expr OR_P expr				{ $$ = makeItemBinary(jqiOr, $1, $3); }
 	;
 
 /*
@@ -291,6 +305,8 @@ key:
 	STRING_P						{ $$ = $1; }
 	| IN_P							{ $$ = $1; }
 	| IS_P							{ $$ = $1; }
+	| OR_P							{ $$ = $1; }
+	| AND_P							{ $$ = $1; }
 	| NULL_P						{ $$ = $1; }
 	| TRUE_P						{ $$ = $1; }
 	| ARRAY_T						{ $$ = $1; }
@@ -307,12 +323,17 @@ path_elem:
 	| '#'							{ $$ = makeItemType(jqiAnyArray); }
 	| '%'							{ $$ = makeItemType(jqiAnyKey); }
 	| '$'							{ $$ = makeItemType(jqiCurrent); }
-	| key							{ $$ = makeItemString(&$1); $$->type = jqiKey; }
+	| key							{ $$ = makeItemKey(&$1); }
+	;
+
+path_elem_any:
+	path_elem						{ $$ = $$; }
+	| NOT_P							{ $$ = makeItemKey(&$1); }
 	;
 
 path:
 	path_elem						{ $$ = lappend(NIL, $1); }
-	| path '.' path_elem			{ $$ = lappend($1, $3); }
+	| path '.' path_elem_any		{ $$ = lappend($1, $3); }
 	;
 
 %%

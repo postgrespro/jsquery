@@ -227,6 +227,9 @@ typedef struct keyword
 static keyword keywords[] = {
 	{ 2, false,	IN_P,		"in"},
 	{ 2, false,	IS_P,		"is"},
+	{ 2, false,	OR_P,		"or"},
+	{ 3, false,	AND_P,		"and"},
+	{ 3, false,	NOT_P,		"not"},
 	{ 4, true,	NULL_P,		"null"},
 	{ 4, true,	TRUE_P,		"true"},
 	{ 5, false,	ARRAY_T,	"array"},
