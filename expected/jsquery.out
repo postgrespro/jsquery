@@ -410,15 +410,17 @@ select  'in < 1'::jsquery;
 (1 row)
 
 select  'not is < 1'::jsquery;
-ERROR:  bad jsquery representation
-LINE 1: select  'not is < 1'::jsquery;
-                ^
-DETAIL:  syntax error, unexpected '<' at or near "<"
+    jsquery     
+----------------
+ NOT ("is" < 1)
+(1 row)
+
 select  'not in < 1'::jsquery;
-ERROR:  bad jsquery representation
-LINE 1: select  'not in < 1'::jsquery;
-                ^
-DETAIL:  syntax error, unexpected '<', expecting '(' at or near "<"
+    jsquery     
+----------------
+ NOT ("in" < 1)
+(1 row)
+
 select 'in in (1,2)'::jsquery;
     jsquery     
 ----------------

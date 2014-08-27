@@ -216,21 +216,18 @@ makeItemList(List *list) {
 %token	<str>		STRING_P NUMERIC_P
 
 %type	<value>		result scalar_value 
-%type	<str>		key
 
 %type	<elems>		path value_list
 
-%type 	<value>		path_elem path_elem_any right_expr expr array
+%type 	<value>		key key_any right_expr expr array
 
 %token	<hint>		HINT_P
-
-%type	<hint>		opt_hint
 
 %left OR_P 
 %left AND_P 
 %right NOT_P 
 %nonassoc IN_P IS_P 
-%nonassoc XXX
+%nonassoc '(' ')'
 
 /* Grammar follows */
 %%
@@ -262,11 +259,6 @@ scalar_value:
 	| NUMERIC_P						{ $$ = makeItemNumeric(&$1); }
 	;
 
-opt_hint:
-	HINT_P							{ $$ = $1; }
-	| /* EMPTY */		%prec XXX	{ $$ = jsqIndexDefault; }
-	;
-
 value_list:
 	scalar_value 					{ $$ = lappend(NIL, $1); } 
 	| value_list ',' scalar_value	{ $$ = lappend($1, $3); } 
@@ -292,11 +284,17 @@ right_expr:
 	;
 
 expr:
-	path opt_hint right_expr		{ $3->hint = $2; $$ = makeItemList(lappend($1, $3)); }
+	path right_expr					{ $$ = makeItemList(lappend($1, $2)); }
+	| path HINT_P right_expr		{ $3->hint = $2; $$ = makeItemList(lappend($1, $3)); }
+	| NOT_P expr 					{ $$ = makeItemUnary(jqiNot, $2); }
+	/*
+	 * In next two lines NOT_P is a patch actually, not a an
+	 * logical expression.
+	 */
+	| NOT_P HINT_P right_expr		{ $3->hint = $2; $$ = makeItemList(lappend(lappend(NIL, makeItemKey(&$1)), $3)); }
+	| NOT_P right_expr				{ $$ = makeItemList(lappend(lappend(NIL, makeItemKey(&$1)), $2)); }
 	| path '(' expr ')'				{ $$ = makeItemList(lappend($1, $3)); }
 	| '(' expr ')'					{ $$ = $2; }
-	| NOT_P expr 					{ $$ = makeItemUnary(jqiNot, $2); }
-	| NOT_P opt_hint right_expr		{ $3->hint = $2; $$ = makeItemList(lappend(lappend(NIL, makeItemKey(&$1)), $3)); }
 	| expr AND_P expr				{ $$ = makeItemBinary(jqiAnd, $1, $3); }
 	| expr OR_P expr				{ $$ = makeItemBinary(jqiOr, $1, $3); }
 	;
@@ -305,39 +303,38 @@ expr:
  * key is always a string, not a bool or numeric
  */
 key:
-	STRING_P						{ $$ = $1; }
-	| IN_P							{ $$ = $1; }
-	| IS_P							{ $$ = $1; }
-	| OR_P							{ $$ = $1; }
-	| AND_P							{ $$ = $1; }
-	| NULL_P						{ $$ = $1; }
-	| TRUE_P						{ $$ = $1; }
-	| ARRAY_T						{ $$ = $1; }
-	| FALSE_P						{ $$ = $1; }
-	| NUMERIC_T						{ $$ = $1; }
-	| OBJECT_T						{ $$ = $1; }
-	| STRING_T						{ $$ = $1; }
-	| BOOLEAN_T						{ $$ = $1; }
-	| NUMERIC_P						{ $$ = $1; }
-	;
-
-path_elem:
 	'*'								{ $$ = makeItemType(jqiAny); }
 	| '#'							{ $$ = makeItemType(jqiAnyArray); }
 	| '%'							{ $$ = makeItemType(jqiAnyKey); }
 	| '$'							{ $$ = makeItemType(jqiCurrent); }
-	| key							{ $$ = makeItemKey(&$1); }
+	| STRING_P						{ $$ = makeItemKey(&$1); }
+	| IN_P							{ $$ = makeItemKey(&$1); }
+	| IS_P							{ $$ = makeItemKey(&$1); }
+	| OR_P							{ $$ = makeItemKey(&$1); }
+	| AND_P							{ $$ = makeItemKey(&$1); }
+	| NULL_P						{ $$ = makeItemKey(&$1); }
+	| TRUE_P						{ $$ = makeItemKey(&$1); }
+	| ARRAY_T						{ $$ = makeItemKey(&$1); }
+	| FALSE_P						{ $$ = makeItemKey(&$1); }
+	| NUMERIC_T						{ $$ = makeItemKey(&$1); }
+	| OBJECT_T						{ $$ = makeItemKey(&$1); }
+	| STRING_T						{ $$ = makeItemKey(&$1); }
+	| BOOLEAN_T						{ $$ = makeItemKey(&$1); }
+	| NUMERIC_P						{ $$ = makeItemKey(&$1); }
 	;
 
-path_elem_any:
-	path_elem						{ $$ = $$; }
+/*
+ * NOT keyword needs separate processing 
+ */
+key_any:
+	key								{ $$ = $$; }
 	| NOT_P							{ $$ = makeItemKey(&$1); }
 	;
 
 path:
-	path_elem						{ $$ = lappend(NIL, $1); }
-	| path '.' path_elem_any		{ $$ = lappend($1, $3); }
-	| NOT_P '.' path_elem_any		{ $$ = lappend(lappend(NIL, makeItemKey(&$1)), $3); }
+	key								{ $$ = lappend(NIL, $1); }
+	| path '.' key_any				{ $$ = lappend($1, $3); }
+	| NOT_P '.' key_any				{ $$ = lappend(lappend(NIL, makeItemKey(&$1)), $3); }
 	;
 
 %%
