@@ -157,13 +157,13 @@ unicode     \\u[0-9A-Fa-f]{4}
 
 <xNONQUOTED,xQUOTED>{unicode}+	{ parseUnicode(yytext, yyleng); }
 
-<xNONQUOTED,xQUOTED>\\u 		{ yyerror("Unicode sequence is invalid"); }
+<xNONQUOTED,xQUOTED>\\u 		{ yyerror(NULL, "Unicode sequence is invalid"); }
 
-<xNONQUOTED,xQUOTED>\\. 		{ yyerror("Escape sequence is invalid"); }
+<xNONQUOTED,xQUOTED>\\. 		{ yyerror(NULL, "Escape sequence is invalid"); }
 
-<xNONQUOTED,xQUOTED>\\ 			{ yyerror("Unexpected end after backslesh"); }
+<xNONQUOTED,xQUOTED>\\ 			{ yyerror(NULL, "Unexpected end after backslesh"); }
 
-<xQUOTED><<EOF>>				{ yyerror("Unexpected end of quoted string"); }
+<xQUOTED><<EOF>>				{ yyerror(NULL, "Unexpected end of quoted string"); }
 
 <xQUOTED>\"						{
 									yylval->str = scanstring;
@@ -186,12 +186,12 @@ unicode     \\u[0-9A-Fa-f]{4}
 
 <xCOMMENT>\*					{ addchar(false, '*'); }
 
-<xCOMMENT><<EOF>>				{ yyerror("Unexpected end of comment"); }
+<xCOMMENT><<EOF>>				{ yyerror(NULL, "Unexpected end of comment"); }
 
 %%
 
 void
-yyerror(const char *message)
+yyerror(JsQueryParseItem **result, const char *message)
 {
 	if (*yytext == YY_END_OF_BUFFER_CHAR)
 	{
@@ -227,6 +227,9 @@ typedef struct keyword
 static keyword keywords[] = {
 	{ 2, false,	IN_P,		"in"},
 	{ 2, false,	IS_P,		"is"},
+	{ 2, false,	OR_P,		"or"},
+	{ 3, false,	AND_P,		"and"},
+	{ 3, false,	NOT_P,		"not"},
 	{ 4, true,	NULL_P,		"null"},
 	{ 4, true,	TRUE_P,		"true"},
 	{ 5, false,	ARRAY_T,	"array"},
@@ -384,7 +387,7 @@ parsejsquery(const char *str, int len) {
 	jsquery_scanner_init(str, len);
 
 	if (jsquery_yyparse((void*)&parseresult) != 0)
-		jsquery_yyerror("bugus input");
+		jsquery_yyerror(NULL, "bugus input");
 
 	jsquery_scanner_finish();
 

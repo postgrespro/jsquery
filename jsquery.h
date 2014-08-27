@@ -202,6 +202,7 @@ struct ExtractedNode
 	bool				indirect;
 	SelectivityClass	sClass;
 	bool				forceIndex;
+	int					number;
 	int					entryNum;
 	union
 	{

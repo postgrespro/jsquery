@@ -179,9 +179,9 @@ printOperation(StringInfo buf, JsQueryItemType type)
 	switch(type)
 	{
 		case jqiAnd:
-			appendBinaryStringInfo(buf, " & ", 3); break;
+			appendBinaryStringInfo(buf, " AND ", 5); break;
 		case jqiOr:
-			appendBinaryStringInfo(buf, " | ", 3); break;
+			appendBinaryStringInfo(buf, " OR ", 4); break;
 		case jqiEqual:
 			appendBinaryStringInfo(buf, " = ", 3); break;
 		case jqiLess:
@@ -244,7 +244,7 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 					appendBinaryStringInfo(buf, "STRING", 6);
 					break;
 				case jbvNumeric:
-					appendBinaryStringInfo(buf, "NUMBER", 6);
+					appendBinaryStringInfo(buf, "NUMERIC", 7);
 					break;
 				case jbvBool:
 					appendBinaryStringInfo(buf, "BOOLEAN", 7);
@@ -305,7 +305,7 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 			appendStringInfoChar(buf, ')');
 			break;
 		case jqiNot:
-			appendBinaryStringInfo(buf, "!(", 2);
+			appendBinaryStringInfo(buf, "NOT (", 5);
 			jsqGetArg(v, &elem);
 			printJsQueryItem(buf, &elem, false, true);
 			appendStringInfoChar(buf, ')');

@@ -379,20 +379,18 @@ compareNodes(const void *a1, const void *a2)
 	}
 
 	if (n1->type != n2->type)
-	{
 		return (n1->type < n2->type) ? -1 : 1;
-	}
 
 	if (!isLogicalNodeType(n1->type))
 	{
-		int cmp;
-		cmp = comparePathItems(n1->path, n2->path);
-		return cmp;
+		int cmp = comparePathItems(n1->path, n2->path);
+		if (cmp) return cmp;
 	}
-	else
-	{
-		return 0;
-	}
+
+	if (n1->number != n2->number)
+		return (n1->number < n2->number) ? -1 : 1;
+
+	return 0;
 }
 
 /*
@@ -449,8 +447,8 @@ processGroup(ExtractedNode *node, int start, int end)
 						rightInclusive = false,
 						first = true;
 	ExtractedNode	   *child;
-	ExtractedNodeType	type;
-	JsQueryItemType		isType;
+	ExtractedNodeType	type = eAny;
+	JsQueryItemType		isType = jbvNull;
 
 	if (end - start < 2)
 		return;
@@ -565,6 +563,9 @@ simplifyRecursive(ExtractedNode *node)
 	{
 		int 			i, groupStart = -1;
 		ExtractedNode 	*child, *prevChild = NULL;
+
+		for (i = 0; i < node->args.count; i++)
+			node->args.items[i]->number = i;
 
 		qsort(node->args.items, node->args.count,
 			  sizeof(ExtractedNode *), compareNodes);
@@ -694,7 +695,6 @@ setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler,
 {
 	int					i;
 	bool				first;
-	bool				skip;
 	ExtractedNode	   *child;
 
 	switch(node->type)
@@ -702,7 +702,6 @@ setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler,
 		case eAnd:
 		case eOr:
 			first = true;
-			skip = false;
 			node->forceIndex = false;
 			for (i = 0; i < node->args.count; i++)
 			{
@@ -715,10 +714,7 @@ setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler,
 				{
 					if (child->hint == jsqNoIndex ||
 							!checkHandler(child, extra))
-					{
-						skip = true;
 						continue;
-					}
 				}
 
 				setSelectivityClass(child, checkHandler, extra);
@@ -739,11 +735,11 @@ setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler,
 				}
 				first = false;
 			}
-			return;
+			break;
 		default:
 			node->sClass = getScalarSelectivityClass(node);
 			node->forceIndex = node->hint == jsqForceIndex;
-			return;
+			break;
 	}
 }
 

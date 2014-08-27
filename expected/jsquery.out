@@ -20,51 +20,51 @@ select 'asd(zzz < 13)'::jsquery;
  "asd"."zzz" < 13
 (1 row)
 
-select 'asd(zzz < 13 & x = true)'::jsquery;
-            jsquery             
---------------------------------
- "asd"("zzz" < 13 & "x" = true)
-(1 row)
-
-select 'asd(zzz < 13 & x = "true")'::jsquery;
+select 'asd(zzz < 13 AND x = true)'::jsquery;
              jsquery              
 ----------------------------------
- "asd"("zzz" < 13 & "x" = "true")
+ "asd"("zzz" < 13 AND "x" = true)
 (1 row)
 
-select 'asd(zzz < 13 & x.zxc = "true")'::jsquery;
-                jsquery                 
-----------------------------------------
- "asd"("zzz" < 13 & "x"."zxc" = "true")
+select 'asd(zzz < 13 AND x = "true")'::jsquery;
+              jsquery               
+------------------------------------
+ "asd"("zzz" < 13 AND "x" = "true")
 (1 row)
 
-select 'asd(zzz < 13 | #.zxc = "true" /* test */)'::jsquery;
-               jsquery                
---------------------------------------
- "asd"("zzz" < 13 | #."zxc" = "true")
+select 'asd(zzz < 13 AND x.zxc = "true")'::jsquery;
+                 jsquery                  
+------------------------------------------
+ "asd"("zzz" < 13 AND "x"."zxc" = "true")
 (1 row)
 
-select 'asd(* < 13 & /* ttt */ #.zxc = "true")'::jsquery;
-             jsquery              
-----------------------------------
- "asd"(* < 13 & #."zxc" = "true")
+select 'asd(zzz < 13 OR #.zxc = "true" /* test */)'::jsquery;
+                jsquery                
+---------------------------------------
+ "asd"("zzz" < 13 OR #."zxc" = "true")
 (1 row)
 
-select '(* < 13 & #.zxc = "true")'::jsquery;
-           jsquery           
------------------------------
- (* < 13 & #."zxc" = "true")
+select 'asd(* < 13 AND /* ttt */ #.zxc = "true")'::jsquery;
+              jsquery               
+------------------------------------
+ "asd"(* < 13 AND #."zxc" = "true")
 (1 row)
 
-select '* < 13 & #.zxc/* t2 */ = "true"'::jsquery;
-           jsquery           
------------------------------
- (* < 13 & #."zxc" = "true")
+select '(* < 13 AND #.zxc = "true")'::jsquery;
+            jsquery            
+-------------------------------
+ (* < 13 AND #."zxc" = "true")
 (1 row)
 
-select '* < 13 & #.zxc"x" = "true"'::jsquery;
+select '* < 13 AND #.zxc/* t2 */ = "true"'::jsquery;
+            jsquery            
+-------------------------------
+ (* < 13 AND #."zxc" = "true")
+(1 row)
+
+select '* < 13 AND #.zxc"x" = "true"'::jsquery;
 ERROR:  bad jsquery representation
-LINE 1: select '* < 13 & #.zxc"x" = "true"'::jsquery;
+LINE 1: select '* < 13 AND #.zxc"x" = "true"'::jsquery;
                ^
 DETAIL:  syntax error, unexpected STRING_P at or near """
 select 'a < 1'::jsquery;
@@ -367,6 +367,150 @@ select 'a IN (0,null, "null", xxx, "zzz", 2)'::jsquery;
  "a" IN (0, null, "null", "xxx", "zzz", 2)
 (1 row)
 
+select  'not < 1'::jsquery;
+  jsquery  
+-----------
+ "not" < 1
+(1 row)
+
+select  'not not < 1'::jsquery;
+     jsquery     
+-----------------
+ NOT ("not" < 1)
+(1 row)
+
+select  'not( not < 1)'::jsquery;
+     jsquery     
+-----------------
+ NOT ("not" < 1)
+(1 row)
+
+select  'not.x < 1'::jsquery;
+    jsquery    
+---------------
+ "not"."x" < 1
+(1 row)
+
+select  'x.not < 1'::jsquery;
+    jsquery    
+---------------
+ "x"."not" < 1
+(1 row)
+
+select  'is < 1'::jsquery;
+ jsquery  
+----------
+ "is" < 1
+(1 row)
+
+select  'in < 1'::jsquery;
+ jsquery  
+----------
+ "in" < 1
+(1 row)
+
+select  'not is < 1'::jsquery;
+    jsquery     
+----------------
+ NOT ("is" < 1)
+(1 row)
+
+select  'not in < 1'::jsquery;
+    jsquery     
+----------------
+ NOT ("in" < 1)
+(1 row)
+
+select 'in in (1,2)'::jsquery;
+    jsquery     
+----------------
+ "in" IN (1, 2)
+(1 row)
+
+select 'is in (1,2)'::jsquery;
+    jsquery     
+----------------
+ "is" IN (1, 2)
+(1 row)
+
+select 'not in (1,2)'::jsquery;
+     jsquery     
+-----------------
+ "not" IN (1, 2)
+(1 row)
+
+select 'in is numeric'::jsquery;
+     jsquery     
+-----------------
+ "in" IS NUMERIC
+(1 row)
+
+select 'is is numeric'::jsquery;
+     jsquery     
+-----------------
+ "is" IS NUMERIC
+(1 row)
+
+select 'not is numeric'::jsquery;
+     jsquery      
+------------------
+ "not" IS NUMERIC
+(1 row)
+
+select  'not.in  < 1'::jsquery;
+    jsquery     
+----------------
+ "not"."in" < 1
+(1 row)
+
+select  'not.is  < 1'::jsquery;
+    jsquery     
+----------------
+ "not"."is" < 1
+(1 row)
+
+select  'not.not < 1'::jsquery;
+     jsquery     
+-----------------
+ "not"."not" < 1
+(1 row)
+
+select  'in.in   < 1'::jsquery;
+    jsquery    
+---------------
+ "in"."in" < 1
+(1 row)
+
+select  'in.is   < 1'::jsquery;
+    jsquery    
+---------------
+ "in"."is" < 1
+(1 row)
+
+select  'in.not  < 1'::jsquery;
+    jsquery     
+----------------
+ "in"."not" < 1
+(1 row)
+
+select  'is.in   < 1'::jsquery;
+    jsquery    
+---------------
+ "is"."in" < 1
+(1 row)
+
+select  'is.is   < 1'::jsquery;
+    jsquery    
+---------------
+ "is"."is" < 1
+(1 row)
+
+select  'is.not  < 1'::jsquery;
+    jsquery     
+----------------
+ "is"."not" < 1
+(1 row)
+
 select '{"a": {"b": null}}'::jsonb @@ 'a.b = 1';
  ?column? 
 ----------
@@ -571,31 +715,31 @@ select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '*.a = 4';
  t
 (1 row)
 
-select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 1 | a=3)';
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 1 OR a=3)';
  ?column? 
 ----------
  t
 (1 row)
 
-select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 | a=1)';
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 OR a=1)';
  ?column? 
 ----------
  t
 (1 row)
 
-select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 & a=1)';
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 and a=1)';
  ?column? 
 ----------
  f
 (1 row)
 
-select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 & a=2)' as "false";
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 and a=2)' as "false";
  false 
 -------
  f
 (1 row)
 
-select '[{"a": 2, "b":3}, {"a": 3, "b": 1}]'::jsonb @@ '#(b = 1 & a=3)';
+select '[{"a": 2, "b":3}, {"a": 3, "b": 1}]'::jsonb @@ '#(b = 1 and a=3)';
  ?column? 
 ----------
  t
@@ -692,15 +836,15 @@ select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.# && [1,2,3]';
 (1 row)
 
 select 'asd.# = 3'::jsquery & 'zzz = true' | 'xxx.# = zero';
-                     ?column?                      
----------------------------------------------------
- (("asd".# = 3 & "zzz" = true) | "xxx".# = "zero")
+                       ?column?                       
+------------------------------------------------------
+ (("asd".# = 3 AND "zzz" = true) OR "xxx".# = "zero")
 (1 row)
 
 select !'asd.# = 3'::jsquery & 'zzz = true' | !'xxx.# = zero';
-                        ?column?                         
----------------------------------------------------------
- ((!("asd".# = 3) & "zzz" = true) | !("xxx".# = "zero"))
+                             ?column?                             
+------------------------------------------------------------------
+ ((NOT ("asd".# = 3) AND "zzz" = true) OR NOT ("xxx".# = "zero"))
 (1 row)
 
 select '{"x":[0,1,1,2]}'::jsonb @@ 'x @> [1,0]'::jsquery;
@@ -788,6 +932,30 @@ select '[1,2,3]'::jsonb @@ '#.$ = 2';
 (1 row)
 
 select '[1,2,3]'::jsonb @@ '#($ = 2)';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[3,4]'::jsonb @@ '#($ > 2 and $ < 5)';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[3,4]'::jsonb @@ '# > 2 and # < 5';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[1,6]'::jsonb @@ '#($ > 2 and $ < 5)';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '[1,6]'::jsonb @@ '# > 2 and # < 5';
  ?column? 
 ----------
  t
@@ -964,10 +1132,10 @@ LINE 1: select 'a\r = x"\\abcd"'::jsquery AS err;
                ^
 DETAIL:  syntax error, unexpected STRING_P, expecting $end at or near """
 --IS
-select  'as IS boolean | as is ARRAY | as is ObJect | as is Numeric | as is string'::jsquery;
-                                          jsquery                                           
---------------------------------------------------------------------------------------------
- (((("as" IS BOOLEAN | "as" IS ARRAY) | "as" IS OBJECT) | "as" IS NUMBER) | "as" IS STRING)
+select  'as IS boolean OR as is ARRAY OR as is ObJect OR as is Numeric OR as is string'::jsquery;
+                                             jsquery                                             
+-------------------------------------------------------------------------------------------------
+ (((("as" IS BOOLEAN OR "as" IS ARRAY) OR "as" IS OBJECT) OR "as" IS NUMERIC) OR "as" IS STRING)
 (1 row)
 
 select '{"as": "xxx"}' @@ 'as IS string'::jsquery;
@@ -976,7 +1144,7 @@ select '{"as": "xxx"}' @@ 'as IS string'::jsquery;
  t
 (1 row)
 
-select '{"as": "xxx"}' @@ 'as IS boolean | as is ARRAY | as is ObJect | as is Numeric'::jsquery;
+select '{"as": "xxx"}' @@ 'as IS boolean OR as is ARRAY OR as is ObJect OR as is Numeric'::jsquery;
  ?column? 
 ----------
  f
@@ -1044,9 +1212,9 @@ select 'a /*-- index */ = 5'::jsquery;
 (1 row)
 
 select 'asd.# = 3'::jsquery & 'zzz /*-- noindex */ = true' | 'xxx.# /*-- index */ = zero';
-                                     ?column?                                      
------------------------------------------------------------------------------------
- (("asd".# = 3 & "zzz" /*-- noindex */  = true) | "xxx".# /*-- index */  = "zero")
+                                       ?column?                                       
+--------------------------------------------------------------------------------------
+ (("asd".# = 3 AND "zzz" /*-- noindex */  = true) OR "xxx".# /*-- index */  = "zero")
 (1 row)
 
 select 'a /*-- xxx */ = 5'::jsquery;
@@ -1079,7 +1247,7 @@ select 'a = /* noindex */ 5'::jsquery;
 (1 row)
 
 --extract entries for index scan
-SELECT gin_debug_query_path_value('!!!x(y(!(a=1) & !(b=2)) | !!(c=3)) & z = 5');
+SELECT gin_debug_query_path_value('NOT NOT NOT x(y(NOT (a=1) and NOT (b=2)) OR NOT NOT (c=3)) and z = 5');
  gin_debug_query_path_value 
 ----------------------------
  AND                       +
@@ -1090,35 +1258,35 @@ SELECT gin_debug_query_path_value('!!!x(y(!(a=1) & !(b=2)) | !!(c=3)) & z = 5');
  
 (1 row)
 
-SELECT gin_debug_query_path_value('!#(x=1) & !*(y=1) & !%(z=1) ');
+SELECT gin_debug_query_path_value('NOT #(x=1) and NOT *(y=1) and NOT %(z=1) ');
  gin_debug_query_path_value 
 ----------------------------
  NULL                      +
  
 (1 row)
 
-SELECT gin_debug_query_path_value('#(!x=1) & *(!y=1) & %(!z=1) ');
+SELECT gin_debug_query_path_value('#(NOT x=1) and *(NOT y=1) and %(NOT z=1) ');
  gin_debug_query_path_value 
 ----------------------------
  NULL                      +
  
 (1 row)
 
-SELECT gin_debug_query_path_value('!#(!x=1) & !*(!y=1) & !%(!z=1) ');
+SELECT gin_debug_query_path_value('NOT #(NOT x=1) and NOT *(NOT y=1) and NOT %(NOT z=1) ');
  gin_debug_query_path_value 
 ----------------------------
  NULL                      +
  
 (1 row)
 
-SELECT gin_debug_query_path_value('#(x = "a" & y > 0 & y < 1 & z > 0)');
+SELECT gin_debug_query_path_value('#(x = "a" and y > 0 and y < 1 and z > 0)');
  gin_debug_query_path_value 
 ----------------------------
  #.x = "a" , entry 0       +
  
 (1 row)
 
-SELECT gin_debug_query_path_value('#(x = "a" & y /*-- index */ >= 0 & y < 1 & z > 0)');
+SELECT gin_debug_query_path_value('#(x = "a" and y /*-- index */ >= 0 and y < 1 and z > 0)');
  gin_debug_query_path_value  
 -----------------------------
  AND                        +
@@ -1127,7 +1295,7 @@ SELECT gin_debug_query_path_value('#(x = "a" & y /*-- index */ >= 0 & y < 1 & z 
  
 (1 row)
 
-SELECT gin_debug_query_path_value('#(x /*-- noindex */ = "a" & y > 0 & y <= 1 & z /*-- index */ > 0)');
+SELECT gin_debug_query_path_value('#(x /*-- noindex */ = "a" and y > 0 and y <= 1 and z /*-- index */ > 0)');
  gin_debug_query_path_value  
 -----------------------------
  AND                        +
@@ -1136,7 +1304,7 @@ SELECT gin_debug_query_path_value('#(x /*-- noindex */ = "a" & y > 0 & y <= 1 & 
  
 (1 row)
 
-SELECT gin_debug_query_path_value('x = 1 & (y /*-- index */ > 0 & y < 1 | z > 0)');
+SELECT gin_debug_query_path_value('x = 1 and (y /*-- index */ > 0 and y < 1 OR z > 0)');
  gin_debug_query_path_value 
 ----------------------------
  AND                       +
@@ -1192,7 +1360,7 @@ SELECT gin_debug_query_path_value('x <@ [1,2,3]');
  
 (1 row)
 
-SELECT gin_debug_query_value_path('!!!x(y(!(a=1) & !(b=2)) | !!(c=3)) & z = 5');
+SELECT gin_debug_query_value_path('NOT NOT NOT x(y(NOT (a=1) and NOT (b=2)) OR NOT NOT (c=3)) and z = 5');
  gin_debug_query_value_path 
 ----------------------------
  AND                       +
@@ -1203,35 +1371,35 @@ SELECT gin_debug_query_value_path('!!!x(y(!(a=1) & !(b=2)) | !!(c=3)) & z = 5');
  
 (1 row)
 
-SELECT gin_debug_query_value_path('!#(x=1) & !*(y=1) & !%(z=1) ');
+SELECT gin_debug_query_value_path('NOT #(x=1) and NOT *(y=1) and NOT %(z=1) ');
  gin_debug_query_value_path 
 ----------------------------
  NULL                      +
  
 (1 row)
 
-SELECT gin_debug_query_value_path('#(!x=1) & *(!y=1) & %(!z=1) ');
+SELECT gin_debug_query_value_path('#(NOT x=1) and *(NOT y=1) and %(NOT z=1) ');
  gin_debug_query_value_path 
 ----------------------------
  NULL                      +
  
 (1 row)
 
-SELECT gin_debug_query_value_path('!#(!x=1) & !*(!y=1) & !%(!z=1) ');
+SELECT gin_debug_query_value_path('NOT #(NOT x=1) and NOT *(NOT y=1) and NOT %(NOT z=1) ');
  gin_debug_query_value_path 
 ----------------------------
  NULL                      +
  
 (1 row)
 
-SELECT gin_debug_query_value_path('#(x = "a" & y > 0 & y < 1 & z > 0)');
+SELECT gin_debug_query_value_path('#(x = "a" and y > 0 and y < 1 and z > 0)');
  gin_debug_query_value_path 
 ----------------------------
  #.x = "a" , entry 0       +
  
 (1 row)
 
-SELECT gin_debug_query_value_path('#(x = "a" & y /*-- index */ >= 0 & y < 1 & z > 0)');
+SELECT gin_debug_query_value_path('#(x = "a" and y /*-- index */ >= 0 and y < 1 and z > 0)');
  gin_debug_query_value_path  
 -----------------------------
  AND                        +
@@ -1240,7 +1408,7 @@ SELECT gin_debug_query_value_path('#(x = "a" & y /*-- index */ >= 0 & y < 1 & z 
  
 (1 row)
 
-SELECT gin_debug_query_value_path('#(x /*-- noindex */ = "a" & y > 0 & y <= 1 & z /*-- index */ > 0)');
+SELECT gin_debug_query_value_path('#(x /*-- noindex */ = "a" and y > 0 and y <= 1 and z /*-- index */ > 0)');
  gin_debug_query_value_path  
 -----------------------------
  AND                        +
@@ -1249,7 +1417,7 @@ SELECT gin_debug_query_value_path('#(x /*-- noindex */ = "a" & y > 0 & y <= 1 & 
  
 (1 row)
 
-SELECT gin_debug_query_value_path('x = 1 & (y /*-- index */ > 0 & y < 1 | z > 0)');
+SELECT gin_debug_query_value_path('x = 1 and (y /*-- index */ > 0 and y < 1 OR z > 0)');
  gin_debug_query_value_path 
 ----------------------------
  AND                       +
@@ -1402,13 +1570,13 @@ select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16' AND
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 & review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 and review_helpful_votes < 20';
  count 
 -------
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 & $ < 20)';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 and $ < 20)';
  count 
 -------
      8
@@ -1432,7 +1600,7 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180
      7
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] and product_sales_rank > 300000';
  count 
 -------
      4
@@ -1542,13 +1710,13 @@ select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16' AND
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 & review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 and review_helpful_votes < 20';
  count 
 -------
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 & $ < 20)';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 and $ < 20)';
  count 
 -------
      8
@@ -1572,7 +1740,7 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180
      7
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] and product_sales_rank > 300000';
  count 
 -------
      4
@@ -1727,13 +1895,13 @@ select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16' AND
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 & review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 and review_helpful_votes < 20';
  count 
 -------
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 & $ < 20)';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 and $ < 20)';
  count 
 -------
      8
@@ -1757,7 +1925,7 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180
      7
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] & product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] and product_sales_rank > 300000';
  count 
 -------
      4
