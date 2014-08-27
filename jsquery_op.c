@@ -101,7 +101,7 @@ checkScalarEquality(JsQueryItem *jsq,  JsonbValue *jb)
 	if (jb->type == jbvBinary)
 		return false;
 
-	if (jb->type != jsq->type /* see enums */)
+	if ((int)jb->type != (int)jsq->type /* see enums */)
 		return false;
 
 	switch(jsq->type)

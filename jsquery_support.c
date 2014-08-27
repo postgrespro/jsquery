@@ -51,13 +51,10 @@ jsqInit(JsQueryItem *v, JsQuery *js)
 void
 jsqInitByBuffer(JsQueryItem *v, char *base, int32 pos)
 {
-	int xxx;
-
 	v->base = base;
 
 	read_byte(v->type, base, pos);
 
-	xxx = v->type;
 	v->hint = v->type & JSQ_HINT_MASK;
 	v->type &= ~JSQ_HINT_MASK;
 
