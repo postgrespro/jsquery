@@ -20,7 +20,7 @@
 
 #include "jsquery.h"
 
-	/*
+/*
  * Bison doesn't allocate anything that needs to live across parser calls,
  * so we can easily have it use palloc instead of malloc.  This prevents
  * memory leaks if we error out during parsing.  Note this only works with
@@ -288,7 +288,7 @@ expr:
 	| path HINT_P right_expr		{ $3->hint = $2; $$ = makeItemList(lappend($1, $3)); }
 	| NOT_P expr 					{ $$ = makeItemUnary(jqiNot, $2); }
 	/*
-	 * In next two lines NOT_P is a patch actually, not a an
+	 * In next two lines NOT_P is a path actually, not a an
 	 * logical expression.
 	 */
 	| NOT_P HINT_P right_expr		{ $3->hint = $2; $$ = makeItemList(lappend(lappend(NIL, makeItemKey(&$1)), $3)); }
