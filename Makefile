@@ -16,7 +16,6 @@ ifdef USE_PGXS
 PG_CONFIG = pg_config
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
-CC=gcc47
 else
 subdir = contrib/jsquery
 top_builddir = ../..
