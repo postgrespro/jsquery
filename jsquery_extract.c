@@ -628,7 +628,6 @@ setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler,
 {
 	int					i;
 	bool				first;
-	bool				skip;
 	ExtractedNode	   *child;
 
 	switch(node->type)
@@ -636,7 +635,6 @@ setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler,
 		case eAnd:
 		case eOr:
 			first = true;
-			skip = false;
 			node->forceIndex = false;
 			for (i = 0; i < node->args.count; i++)
 			{
@@ -649,10 +647,7 @@ setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler,
 				{
 					if (child->hint == jsqNoIndex ||
 							!checkHandler(child, extra))
-					{
-						skip = true;
 						continue;
-					}
 				}
 
 				setSelectivityClass(child, checkHandler, extra);
@@ -673,11 +668,13 @@ setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler,
 				}
 				first = false;
 			}
-			return;
+			break;
 		case eScalar:
 			node->sClass = getScalarSelectivityClass(node);
 			node->forceIndex = node->hint == jsqForceIndex;
-			return;
+			break;
+		default:
+			elog(ERROR,"Wrong node type");
 	}
 }
 
@@ -724,6 +721,8 @@ execRecursive(ExtractedNode *node, bool *check)
 			return false;
 		case eScalar:
 			return check[node->bounds.entryNum];
+		default:
+			elog(ERROR,"Wrong node type");
 	}
 }
 
@@ -762,6 +761,8 @@ execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check)
 			return res;
 		case eScalar:
 			return check[node->bounds.entryNum];
+		default:
+			elog(ERROR,"Wrong node type");
 	}
 }
 
