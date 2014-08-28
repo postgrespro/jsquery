@@ -567,8 +567,8 @@ simplifyRecursive(ExtractedNode *node)
 		for (i = 0; i < node->args.count; i++)
 			node->args.items[i]->number = i;
 
-		qsort(node->args.items, node->args.count,
-			  sizeof(ExtractedNode *), compareNodes);
+		pg_qsort(node->args.items, node->args.count,
+				 sizeof(ExtractedNode *), compareNodes);
 
 		for (i = 0; i < node->args.count; i++)
 		{
