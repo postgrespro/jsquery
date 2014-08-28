@@ -1360,6 +1360,48 @@ SELECT gin_debug_query_path_value('x <@ [1,2,3]');
  
 (1 row)
 
+SELECT gin_debug_query_path_value('x = *');
+ gin_debug_query_path_value 
+----------------------------
+ x = * , entry 0           +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('x is boolean');
+ gin_debug_query_path_value 
+----------------------------
+ x IS boolean , entry 0    +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('x is string');
+ gin_debug_query_path_value 
+----------------------------
+ x IS string , entry 0     +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('x is numeric');
+ gin_debug_query_path_value 
+----------------------------
+ x IS numeric , entry 0    +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('x is array');
+ gin_debug_query_path_value 
+----------------------------
+ x IS array , entry 0      +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('x is object');
+ gin_debug_query_path_value 
+----------------------------
+ x IS object , entry 0     +
+ 
+(1 row)
+
 SELECT gin_debug_query_value_path('NOT NOT NOT x(y(NOT (a=1) and NOT (b=2)) OR NOT NOT (c=3)) and z = 5');
  gin_debug_query_value_path 
 ----------------------------
@@ -1480,6 +1522,48 @@ SELECT gin_debug_query_value_path('x = [1,2,3]');
    x.# = 1 , entry 0       +
    x.# = 2 , entry 1       +
    x.# = 3 , entry 2       +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('x = *');
+ gin_debug_query_value_path 
+----------------------------
+ x = * , entry 0           +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('x is boolean');
+ gin_debug_query_value_path 
+----------------------------
+ x IS boolean , entry 0    +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('x is string');
+ gin_debug_query_value_path 
+----------------------------
+ x IS string , entry 0     +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('x is numeric');
+ gin_debug_query_value_path 
+----------------------------
+ x IS numeric , entry 0    +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('x is array');
+ gin_debug_query_value_path 
+----------------------------
+ x IS array , entry 0      +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('x is object');
+ gin_debug_query_value_path 
+----------------------------
+ x IS object , entry 0     +
  
 (1 row)
 
@@ -1606,6 +1690,18 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
      4
 (1 row)
 
+select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]';
+ count 
+-------
+    54
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids @> ["B000002H2H", "B000002H6C"]';
+ count 
+-------
+     3
+(1 row)
+
 select count(*) from test_jsquery where v @@ 'customer_id = null';
  count 
 -------
@@ -1622,6 +1718,42 @@ select count(*) from test_jsquery where v @@ 'product_group = false';
  count 
 -------
      1
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't = *';
+ count 
+-------
+    10
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is boolean';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is string';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is numeric';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is array';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is object';
+ count 
+-------
+     2
 (1 row)
 
 select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
@@ -1746,6 +1878,18 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
      4
 (1 row)
 
+select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]';
+ count 
+-------
+    54
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids @> ["B000002H2H", "B000002H6C"]';
+ count 
+-------
+     3
+(1 row)
+
 select count(*) from test_jsquery where v @@ 'customer_id = null';
  count 
 -------
@@ -1762,6 +1906,42 @@ select count(*) from test_jsquery where v @@ 'product_group = false';
  count 
 -------
      1
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't = *';
+ count 
+-------
+    10
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is boolean';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is string';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is numeric';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is array';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is object';
+ count 
+-------
+     2
 (1 row)
 
 explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
@@ -1931,6 +2111,18 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
      4
 (1 row)
 
+select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]';
+ count 
+-------
+    54
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids @> ["B000002H2H", "B000002H6C"]';
+ count 
+-------
+     3
+(1 row)
+
 select count(*) from test_jsquery where v @@ 'customer_id = null';
  count 
 -------
@@ -1947,6 +2139,42 @@ select count(*) from test_jsquery where v @@ 'product_group = false';
  count 
 -------
      1
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't = *';
+ count 
+-------
+    10
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is boolean';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is string';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is numeric';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is array';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is object';
+ count 
+-------
+     2
 (1 row)
 
 explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;

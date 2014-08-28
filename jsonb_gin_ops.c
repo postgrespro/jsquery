@@ -680,7 +680,11 @@ gin_extract_jsonb_bloom_value_internal(Jsonb *jb, int32 *nentries, uint32 **bloo
 
 		switch (r)
 		{
+			case WJB_BEGIN_ARRAY:
+				entries[i++] = PointerGetDatum(make_gin_key(&v, get_path_bloom(stack)));
+				break;
 			case WJB_BEGIN_OBJECT:
+				entries[i++] = PointerGetDatum(make_gin_key(&v, get_path_bloom(stack)));
 				tmp = stack;
 				stack = (PathHashStack *) palloc(sizeof(PathHashStack));
 				stack->parent = tmp;
@@ -709,7 +713,6 @@ gin_extract_jsonb_bloom_value_internal(Jsonb *jb, int32 *nentries, uint32 **bloo
 				stack = tmp;
 				break;
 			case WJB_END_ARRAY:
-			case WJB_BEGIN_ARRAY:
 				break;
 			default:
 				elog(ERROR, "invalid JsonbIteratorNext rc: %d", r);

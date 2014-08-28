@@ -903,7 +903,7 @@ getTypeString(int32 type)
 		case jbvNumeric:
 			return "numeric";
 		case jbvBool:
-			return "bool";
+			return "boolean";
 		case jbvNull:
 			return "null";
 		default:
@@ -946,7 +946,7 @@ debugRecursive(StringInfo buf, ExtractedNode *node, int shift)
 			appendStringInfo(buf, " = [] ,");
 			break;
 		case eIs:
-			appendStringInfo(buf, " IS  %s ,", getTypeString(node->type));
+			appendStringInfo(buf, " IS %s ,", getTypeString(node->isType));
 			break;
 		case eInequality:
 			if (node->bounds.leftBound)

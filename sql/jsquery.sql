@@ -269,6 +269,12 @@ SELECT gin_debug_query_path_value('*.x = "b"');
 SELECT gin_debug_query_path_value('x && [1,2,3]');
 SELECT gin_debug_query_path_value('x @> [1,2,3]');
 SELECT gin_debug_query_path_value('x <@ [1,2,3]');
+SELECT gin_debug_query_path_value('x = *');
+SELECT gin_debug_query_path_value('x is boolean');
+SELECT gin_debug_query_path_value('x is string');
+SELECT gin_debug_query_path_value('x is numeric');
+SELECT gin_debug_query_path_value('x is array');
+SELECT gin_debug_query_path_value('x is object');
 
 SELECT gin_debug_query_value_path('NOT NOT NOT x(y(NOT (a=1) and NOT (b=2)) OR NOT NOT (c=3)) and z = 5');
 SELECT gin_debug_query_value_path('NOT #(x=1) and NOT *(y=1) and NOT %(z=1) ');
@@ -284,6 +290,12 @@ SELECT gin_debug_query_value_path('x && [1,2,3]');
 SELECT gin_debug_query_value_path('x @> [1,2,3]');
 SELECT gin_debug_query_value_path('x <@ [1,2,3]');
 SELECT gin_debug_query_value_path('x = [1,2,3]');
+SELECT gin_debug_query_value_path('x = *');
+SELECT gin_debug_query_value_path('x is boolean');
+SELECT gin_debug_query_value_path('x is string');
+SELECT gin_debug_query_value_path('x is numeric');
+SELECT gin_debug_query_value_path('x is array');
+SELECT gin_debug_query_value_path('x is object');
 
 ---table and index
 
@@ -311,9 +323,17 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
 select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] and product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids @> ["B000002H2H", "B000002H6C"]';
 select count(*) from test_jsquery where v @@ 'customer_id = null';
 select count(*) from test_jsquery where v @@ 'review_votes = true';
 select count(*) from test_jsquery where v @@ 'product_group = false';
+select count(*) from test_jsquery where v @@ 't = *';
+select count(*) from test_jsquery where v @@ 't is boolean';
+select count(*) from test_jsquery where v @@ 't is string';
+select count(*) from test_jsquery where v @@ 't is numeric';
+select count(*) from test_jsquery where v @@ 't is array';
+select count(*) from test_jsquery where v @@ 't is object';
 
 select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
 select v from test_jsquery where v @@ 'array && [2,3]' order by v;
@@ -339,9 +359,17 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
 select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] and product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids @> ["B000002H2H", "B000002H6C"]';
 select count(*) from test_jsquery where v @@ 'customer_id = null';
 select count(*) from test_jsquery where v @@ 'review_votes = true';
 select count(*) from test_jsquery where v @@ 'product_group = false';
+select count(*) from test_jsquery where v @@ 't = *';
+select count(*) from test_jsquery where v @@ 't is boolean';
+select count(*) from test_jsquery where v @@ 't is string';
+select count(*) from test_jsquery where v @@ 't is numeric';
+select count(*) from test_jsquery where v @@ 't is array';
+select count(*) from test_jsquery where v @@ 't is object';
 
 explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
 explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]' order by v;
@@ -374,9 +402,17 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids && ["044018029
 select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
 select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] and product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids @> ["B000002H2H", "B000002H6C"]';
 select count(*) from test_jsquery where v @@ 'customer_id = null';
 select count(*) from test_jsquery where v @@ 'review_votes = true';
 select count(*) from test_jsquery where v @@ 'product_group = false';
+select count(*) from test_jsquery where v @@ 't = *';
+select count(*) from test_jsquery where v @@ 't is boolean';
+select count(*) from test_jsquery where v @@ 't is string';
+select count(*) from test_jsquery where v @@ 't is numeric';
+select count(*) from test_jsquery where v @@ 't is array';
+select count(*) from test_jsquery where v @@ 't is object';
 
 explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
 explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]' order by v;
