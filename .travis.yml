@@ -1,0 +1,8 @@
+before_script:
+  - sudo su $USER -c ".travis/install"
+
+script: sudo su $USER -c ".travis/test"
+
+addons:
+  postgresql: "9.3"
+
