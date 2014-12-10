@@ -63,30 +63,26 @@ Requirements:
 
 * PostgreSQL >= 9.4
 
-### Using pgxn.org ?
-
-http://pgxn.org/
-
 ### Build from sources
 
 ```sh
 git clone https://github.com/akorotkov/jsquery.git $SOURCE_DIR/contrib
 cd $SOURCE_DIR/contrib/jsquery && make && make install && make installcheck
 
+# or not from pg sources
+
+git clone https://github.com/akorotkov/jsquery.git
+cd jsquery && make USE_PGXS=1 && make install USE_PGXS=1
+
 ```
 
 ### Using docker
 
-```
-docker run --name=myjsquery -p 5432:5555 -i -t jsquery/jsquery
-
-psql -p 5555
-```
+TODO
 
 ## Roadmap
 
-* TODO1
-* TODO2
+* Implement jsquery as extension of SQL syntax
 
 ## Contribution
 
@@ -97,6 +93,16 @@ You can contribute by:
 * documentation
 * pull requests
 
+## Authors
+
+* Oleg Bartunov
+* Teodor Sigaev
+* Alexand Korotkov
+
+## Regards
+
+Development is sponsored by [Wargaming.net]
+
 ## License
 
-MIT?
+GPL
