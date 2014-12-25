@@ -8,6 +8,8 @@ EXTENSION = jsquery
 DATA = jsquery--1.0.sql
 
 REGRESS = jsquery
+# We need a UTF8 database
+ENCODING = UTF8
 
 EXTRA_CLEAN = y.tab.c y.tab.h \
 				jsquery_gram.c jsquery_scan.c jsquery_gram.h
