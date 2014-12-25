@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/niquola/jsquery.svg)](https://travis-ci.org/niquola/jsquery)
 
+
 `Jsquery` is PostgreSQL extension,
 which provides advanced query language for jsonb documents.
 
@@ -14,6 +15,7 @@ Features:
 * schema support (constraints on keys, values)
 * indexes support
 * hinting support
+
 
 Jsquery implemented as datatype `jsquery` and operator `@@`.
 
@@ -51,9 +53,7 @@ select 'a1."12222" < 111'::jsquery;
 
 ## Documentation
 
-* [Getting Started](doc/intro.md)
-* [Syntax](doc/syntax.md)
-* [Operators](doc/operators.md)
+* [Syntax](doc/intro.md)
 * [Indexes](doc/indexes.md)
 * [Optimizer](doc/optimiser.md)
 
