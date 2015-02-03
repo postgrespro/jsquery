@@ -1035,17 +1035,15 @@ select 'a\r = "\n\""'::jsquery;
 (1 row)
 
 select 'a\r = "\u0000"'::jsquery;
-     jsquery      
-------------------
- "a\r" = "\u0000"
-(1 row)
-
+ERROR:  unsupported Unicode escape sequence
+LINE 1: select 'a\r = "\u0000"'::jsquery;
+               ^
+DETAIL:  \u0000 cannot be converted to text.
 select 'a\r = \u0000'::jsquery;
-     jsquery      
-------------------
- "a\r" = "\u0000"
-(1 row)
-
+ERROR:  unsupported Unicode escape sequence
+LINE 1: select 'a\r = \u0000'::jsquery;
+               ^
+DETAIL:  \u0000 cannot be converted to text.
 select 'a\r = "\abcd"'::jsquery AS err;
 ERROR:  bad jsquery representation
 LINE 1: select 'a\r = "\abcd"'::jsquery AS err;
@@ -1058,17 +1056,15 @@ select 'a\r = "\\abcd"'::jsquery;
 (1 row)
 
 select 'a\r = "x\u0000"'::jsquery;
-      jsquery      
--------------------
- "a\r" = "x\u0000"
-(1 row)
-
+ERROR:  unsupported Unicode escape sequence
+LINE 1: select 'a\r = "x\u0000"'::jsquery;
+               ^
+DETAIL:  \u0000 cannot be converted to text.
 select 'a\r = x\u0000'::jsquery;
-      jsquery      
--------------------
- "a\r" = "x\u0000"
-(1 row)
-
+ERROR:  unsupported Unicode escape sequence
+LINE 1: select 'a\r = x\u0000'::jsquery;
+               ^
+DETAIL:  \u0000 cannot be converted to text.
 select 'a\r = "x\abcd"'::jsquery AS err;
 ERROR:  bad jsquery representation
 LINE 1: select 'a\r = "x\abcd"'::jsquery AS err;
@@ -1081,17 +1077,15 @@ select 'a\r = "x\\abcd"'::jsquery;
 (1 row)
 
 select 'a\r = "x\u0000x"'::jsquery;
-      jsquery       
---------------------
- "a\r" = "x\u0000x"
-(1 row)
-
+ERROR:  unsupported Unicode escape sequence
+LINE 1: select 'a\r = "x\u0000x"'::jsquery;
+               ^
+DETAIL:  \u0000 cannot be converted to text.
 select 'a\r = x\u0000x'::jsquery;
-      jsquery       
---------------------
- "a\r" = "x\u0000x"
-(1 row)
-
+ERROR:  unsupported Unicode escape sequence
+LINE 1: select 'a\r = x\u0000x'::jsquery;
+               ^
+DETAIL:  \u0000 cannot be converted to text.
 select 'a\r = "x\abcdx"'::jsquery AS err;
 ERROR:  bad jsquery representation
 LINE 1: select 'a\r = "x\abcdx"'::jsquery AS err;
@@ -1104,17 +1098,15 @@ select 'a\r = "x\\abcdx"'::jsquery;
 (1 row)
 
 select 'a\r = "\u0000x"'::jsquery;
-      jsquery      
--------------------
- "a\r" = "\u0000x"
-(1 row)
-
+ERROR:  unsupported Unicode escape sequence
+LINE 1: select 'a\r = "\u0000x"'::jsquery;
+               ^
+DETAIL:  \u0000 cannot be converted to text.
 select 'a\r = \u0000x'::jsquery;
-      jsquery      
--------------------
- "a\r" = "\u0000x"
-(1 row)
-
+ERROR:  unsupported Unicode escape sequence
+LINE 1: select 'a\r = \u0000x'::jsquery;
+               ^
+DETAIL:  \u0000 cannot be converted to text.
 select 'a\r = "\abcdx"'::jsquery AS err;
 ERROR:  bad jsquery representation
 LINE 1: select 'a\r = "\abcdx"'::jsquery AS err;

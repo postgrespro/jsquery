@@ -458,14 +458,16 @@ parseUnicode(char *s, int l)
 		 * For UTF8, replace the escape sequence by the actual
 		 * utf8 character in lex->strval. Do this also for other
 		 * encodings if the escape designates an ASCII character,
-		 * otherwise raise an error. We don't ever unescape a
-		 * \u0000, since that would result in an impermissible nul
-		 * byte.
+		 * otherwise raise an error.
 		 */
 
 		if (ch == 0)
 		{
-			addstring(false, "\\u0000", 6);
+			/* We can't allow this, since our TEXT type doesn't */
+			ereport(ERROR,
+					(errcode(ERRCODE_UNTRANSLATABLE_CHARACTER),
+					 errmsg("unsupported Unicode escape sequence"),
+					  errdetail("\\u0000 cannot be converted to text.")));
 		}
 		else if (GetDatabaseEncoding() == PG_UTF8)
 		{
