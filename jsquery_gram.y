@@ -306,6 +306,9 @@ key:
 	'*'								{ $$ = makeItemType(jqiAny); }
 	| '#'							{ $$ = makeItemType(jqiAnyArray); }
 	| '%'							{ $$ = makeItemType(jqiAnyKey); }
+	| '*' ':'						{ $$ = makeItemType(jqiAll); }
+	| '#' ':'						{ $$ = makeItemType(jqiAllArray); }
+	| '%' ':'						{ $$ = makeItemType(jqiAllKey); }
 	| '$'							{ $$ = makeItemType(jqiCurrent); }
 	| STRING_P						{ $$ = makeItemKey(&$1); }
 	| IN_P							{ $$ = makeItemKey(&$1); }

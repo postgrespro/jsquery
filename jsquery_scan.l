@@ -48,8 +48,8 @@ static void parseUnicode(char *s, int l);
 %x xNONQUOTED
 %x xCOMMENT
 
-special		 [\%\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\*]
-any			[^\%\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\* \t\n\r\f\\\"\/]
+special		 [\%\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\*:]
+any			[^\%\$\.\[\]\(\)\|\&\!\=\<\>\@\#\,\* \t\n\r\f\\\"\/:]
 blank		[ \t\n\r\f]
 unicode     \\u[0-9A-Fa-f]{4}
 

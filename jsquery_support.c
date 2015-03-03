@@ -71,10 +71,13 @@ jsqInitByBuffer(JsQueryItem *v, char *base, int32 pos)
 	switch(v->type)
 	{
 		case jqiNull:
-		case jqiAny:
 		case jqiCurrent:
+		case jqiAny:
 		case jqiAnyArray:
 		case jqiAnyKey:
+		case jqiAll:
+		case jqiAllArray:
+		case jqiAllKey:
 			break;
 		case jqiKey:
 		case jqiString:
@@ -142,6 +145,9 @@ jsqGetNext(JsQueryItem *v, JsQueryItem *a)
 			v->type == jqiAny ||
 			v->type == jqiAnyArray ||
 			v->type == jqiAnyKey ||
+			v->type == jqiAll ||
+			v->type == jqiAllArray ||
+			v->type == jqiAllKey ||
 			v->type == jqiCurrent
 		);
 

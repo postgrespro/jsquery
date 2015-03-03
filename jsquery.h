@@ -30,11 +30,11 @@ typedef struct
 #define PG_RETURN_JSQUERY(p)	PG_RETURN_POINTER(p)
 
 typedef enum JsQueryItemType {
-		jqiNull = jbvNull, 
-		jqiString = jbvString, 
-		jqiNumeric = jbvNumeric, 
-		jqiBool = jbvBool, 
-		jqiArray = jbvArray, 
+		jqiNull = jbvNull,
+		jqiString = jbvString,
+		jqiNumeric = jbvNumeric,
+		jqiBool = jbvBool,
+		jqiArray = jbvArray,
 		jqiAnd,
 		jqiOr,
 		jqiNot,
@@ -49,6 +49,9 @@ typedef enum JsQueryItemType {
 		jqiAny,
 		jqiAnyArray,
 		jqiAnyKey,
+		jqiAll,
+		jqiAllArray,
+		jqiAllKey,
 		jqiKey,
 		jqiCurrent,
 		jqiIn,
@@ -60,7 +63,7 @@ typedef enum JsQueryItemType {
  * JsQueryItemType should not use two high bits
  */
 typedef enum JsQueryHint {
-		jsqIndexDefault = 0x00, 
+		jsqIndexDefault = 0x00,
 		jsqForceIndex = 0x80,
 		jsqNoIndex = 0x40
 } JsQueryHint;
@@ -70,10 +73,10 @@ typedef enum JsQueryHint {
 /*
  * Support functions to parse/construct binary value.
  * Unlike many other representation of expression the first/main
- * node is not an operation but left operand of expression. That 
+ * node is not an operation but left operand of expression. That
  * allows to implement cheep follow-path descending in jsonb
- * structure and then execute operator with right operand which 
- * is always a constant. 
+ * structure and then execute operator with right operand which
+ * is always a constant.
  */
 
 typedef struct JsQueryItem {
@@ -86,7 +89,7 @@ typedef struct JsQueryItem {
 		struct {
 			char		*data;  /* for bool, numeric and string/key */
 			int			datalen; /* filled only for string/key */
-		} value; 
+		} value;
 
 		struct {
 			int32	left;
@@ -126,7 +129,7 @@ typedef struct JsQueryParseItem JsQueryParseItem;
 
 struct JsQueryParseItem {
 	JsQueryItemType	type;
-	JsQueryHint	 	hint;	
+	JsQueryHint	 	hint;
 	JsQueryParseItem	*next; /* next in path */
 
 	union {

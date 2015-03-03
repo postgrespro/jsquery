@@ -254,6 +254,34 @@ select 'a /* noindex */ = 5'::jsquery;
 select 'a = /*-- noindex */ 5'::jsquery;
 select 'a = /* noindex */ 5'::jsquery;
 
+--ALL
+select 'a.*: = 4';
+select '%: = 4';
+select '#:.i = 4';
+select '[]' @@ '#: ($ > 1 and $ < 5)'::jsquery;
+select '[2,3,4]' @@ '#: ($ > 1 and $ < 5)'::jsquery;
+select '[2,3,5]' @@ '#: ($ > 1 and $ < 5)'::jsquery;
+select '[2,3,5]' @@ '# ($ > 1 and $ < 5)'::jsquery;
+select '[2,3,"x"]' @@ '#: ($ > 1 and $ < 5)'::jsquery;
+select '{}' @@ '%: ($ > 1 and $ < 5)'::jsquery;
+select '{"a":2,"b":3,"c":4}' @@ '%: ($ > 1 and $ < 5)'::jsquery;
+select '{"a":2,"b":3,"c":5}' @@ '%: ($ > 1 and $ < 5)'::jsquery;
+select '{"a":2,"b":3,"c":5}' @@ '% ($ > 1 and $ < 5)'::jsquery;
+select '{"a":2,"b":3,"c":"x"}' @@ '%: ($ > 1 and $ < 5)'::jsquery;
+select '{"a":2,"b":3,"c":4}' @@ '*: ($ > 1 and $ < 5)'::jsquery;
+select '{"a":2,"b":3,"c":5}' @@ '*: ($ > 1 and $ < 5)'::jsquery;
+select '{"a":2,"b":3,"c":4}' @@ '*: ($ is object OR ($> 1 and $ < 5))'::jsquery;
+select '{"a":2,"b":3,"c":5}' @@ '*: ($ is object OR ($> 1 and $ < 5))'::jsquery;
+select '{"b":{"ba":3, "bb":4}}' @@ '*: ($ is object OR ($ > 1 and $ < 5))'::jsquery;
+select '{"b":{"ba":3, "bb":5}}' @@ '*: ($ is object OR ($> 1 and $ < 5))'::jsquery;
+select '{"a":{"aa":1, "ab":2}, "b":{"ba":3, "bb":4}}' @@ '*: ($ is object OR ($ > 0 and $ < 5))'::jsquery;
+select '{"a":{"aa":1, "ab":2}, "b":{"ba":3, "bb":5}}' @@ '*: ($ is object OR ($> 0 and $ < 5))'::jsquery;
+select '{"a":{"aa":1, "ab":2}, "b":{"ba":3, "bb":5}}' @@ '* ($ > 0 and $ < 5)'::jsquery;
+select '{"a":{"aa":1, "ab":2}, "b":{"ba":3, "bb":5}}' @@ '*: ($ is object OR $ is numeric)'::jsquery;
+select '{"a":{"aa":1, "ab":2}, "b":[5,6]}' @@ '*: ($ is object OR $ is numeric)'::jsquery;
+select '{"a":{"aa":1, "ab":2}, "b":[5,6]}' @@ '*: ($ is object OR $ is array OR $ is numeric)'::jsquery;
+select '{"a":{"aa":1, "ab":2}, "b":[5,6, {"c":8}]}' @@ '*: ($ is object OR $ is array OR $ is numeric)'::jsquery;
+
 --extract entries for index scan
 
 SELECT gin_debug_query_path_value('NOT NOT NOT x(y(NOT (a=1) and NOT (b=2)) OR NOT NOT (c=3)) and z = 5');

@@ -116,6 +116,9 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item)
 		case jqiAny:
 		case jqiAnyArray:
 		case jqiAnyKey:
+		case jqiAll:
+		case jqiAllArray:
+		case jqiAllKey:
 			break;
 		default:
 			elog(ERROR, "Unknown type: %d", item->type);
@@ -310,15 +313,15 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 			printJsQueryItem(buf, &elem, false, true);
 			appendStringInfoChar(buf, ')');
 			break;
-		case jqiAny:
-			if (inKey)
-				appendStringInfoChar(buf, '.');
-			appendStringInfoChar(buf, '*');
-			break;
 		case jqiCurrent:
 			if (inKey)
 				appendStringInfoChar(buf, '.');
 			appendStringInfoChar(buf, '$');
+			break;
+		case jqiAny:
+			if (inKey)
+				appendStringInfoChar(buf, '.');
+			appendStringInfoChar(buf, '*');
 			break;
 		case jqiAnyArray:
 			if (inKey)
@@ -329,6 +332,24 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 			if (inKey)
 				appendStringInfoChar(buf, '.');
 			appendStringInfoChar(buf, '%');
+			break;
+		case jqiAll:
+			if (inKey)
+				appendStringInfoChar(buf, '.');
+			appendStringInfoChar(buf, '*');
+			appendStringInfoChar(buf, ':');
+			break;
+		case jqiAllArray:
+			if (inKey)
+				appendStringInfoChar(buf, '.');
+			appendStringInfoChar(buf, '#');
+			appendStringInfoChar(buf, ':');
+			break;
+		case jqiAllKey:
+			if (inKey)
+				appendStringInfoChar(buf, '.');
+			appendStringInfoChar(buf, '%');
+			appendStringInfoChar(buf, ':');
 			break;
 		default:
 			elog(ERROR, "Unknown JsQueryItem type: %d", v->type);
