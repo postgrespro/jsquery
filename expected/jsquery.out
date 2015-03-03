@@ -1239,28 +1239,28 @@ select 'a = /* noindex */ 5'::jsquery;
 (1 row)
 
 --ALL
-select 'a.*: = 4';
- ?column? 
-----------
- a.*: = 4
+select 'a.*: = 4'::jsquery;
+  jsquery   
+------------
+ "a".*: = 4
 (1 row)
 
-select '%: = 4';
- ?column? 
-----------
+select '%: = 4'::jsquery;
+ jsquery 
+---------
  %: = 4
 (1 row)
 
-select '#:.i = 4';
- ?column? 
-----------
- #:.i = 4
+select '#:.i = 4'::jsquery;
+  jsquery   
+------------
+ #:."i" = 4
 (1 row)
 
 select '[]' @@ '#: ($ > 1 and $ < 5)'::jsquery;
  ?column? 
 ----------
- f
+ t
 (1 row)
 
 select '[2,3,4]' @@ '#: ($ > 1 and $ < 5)'::jsquery;
@@ -1288,6 +1288,24 @@ select '[2,3,"x"]' @@ '#: ($ > 1 and $ < 5)'::jsquery;
 (1 row)
 
 select '{}' @@ '%: ($ > 1 and $ < 5)'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{}' @@ '*: ($ is object)'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '"a"' @@ '*: is string'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '1' @@ '*: is string'::jsquery;
  ?column? 
 ----------
  f

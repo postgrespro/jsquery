@@ -255,15 +255,18 @@ select 'a = /*-- noindex */ 5'::jsquery;
 select 'a = /* noindex */ 5'::jsquery;
 
 --ALL
-select 'a.*: = 4';
-select '%: = 4';
-select '#:.i = 4';
+select 'a.*: = 4'::jsquery;
+select '%: = 4'::jsquery;
+select '#:.i = 4'::jsquery;
 select '[]' @@ '#: ($ > 1 and $ < 5)'::jsquery;
 select '[2,3,4]' @@ '#: ($ > 1 and $ < 5)'::jsquery;
 select '[2,3,5]' @@ '#: ($ > 1 and $ < 5)'::jsquery;
 select '[2,3,5]' @@ '# ($ > 1 and $ < 5)'::jsquery;
 select '[2,3,"x"]' @@ '#: ($ > 1 and $ < 5)'::jsquery;
 select '{}' @@ '%: ($ > 1 and $ < 5)'::jsquery;
+select '{}' @@ '*: ($ is object)'::jsquery;
+select '"a"' @@ '*: is string'::jsquery;
+select '1' @@ '*: is string'::jsquery;
 select '{"a":2,"b":3,"c":4}' @@ '%: ($ > 1 and $ < 5)'::jsquery;
 select '{"a":2,"b":3,"c":5}' @@ '%: ($ > 1 and $ < 5)'::jsquery;
 select '{"a":2,"b":3,"c":5}' @@ '% ($ > 1 and $ < 5)'::jsquery;

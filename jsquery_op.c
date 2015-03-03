@@ -92,7 +92,7 @@ recursiveAny(JsQueryItem *jsq, JsonbValue *jb)
 static bool
 recursiveAll(JsQueryItem *jsq, JsonbValue *jb)
 {
-	bool			res = false;
+	bool			res = true;
 	JsonbIterator	*it;
 	int32			r;
 	JsonbValue		v;
@@ -436,6 +436,9 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb)
 				jsqGetNext(jsq, &elem);
 				it = JsonbIteratorInit(jb->val.binary.data);
 
+				if (jsq->type == jqiAllArray)
+					res = true;
+
 				while((r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 				{
 					if (r == WJB_ELEM)
@@ -451,7 +454,6 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb)
 						{
 							if (res == false)
 								break;
-							res = true; /* if not executed at least one time  */
 						}
 					}
 				}
@@ -468,6 +470,9 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb)
 				jsqGetNext(jsq, &elem);
 				it = JsonbIteratorInit(jb->val.binary.data);
 
+				if (jsq->type == jqiAllKey)
+					res = true;
+
 				while((r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 				{
 					if (r == WJB_VALUE)
@@ -483,7 +488,6 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb)
 						{
 							if (res == false)
 								break;
-							res = true; /* if not executed at least one time  */
 						}
 					}
 				}
