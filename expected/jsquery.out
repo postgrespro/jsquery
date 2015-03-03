@@ -1581,6 +1581,27 @@ SELECT gin_debug_query_path_value('x is object');
  
 (1 row)
 
+SELECT gin_debug_query_path_value('#:(x=1) AND %:(y=1) AND *:(z=1)');
+ gin_debug_query_path_value 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('#:(NOT x=1) AND %:(NOT y=1) AND *:(NOT z=1)');
+ gin_debug_query_path_value 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('NOT #:(NOT x=1) AND NOT %:(NOT y=1) AND NOT *:(NOT z=1)');
+ gin_debug_query_path_value 
+----------------------------
+ #.x = 1 , entry 0         +
+ 
+(1 row)
+
 SELECT gin_debug_query_value_path('NOT NOT NOT x(y(NOT (a=1) and NOT (b=2)) OR NOT NOT (c=3)) and z = 5');
  gin_debug_query_value_path 
 ----------------------------
@@ -1743,6 +1764,30 @@ SELECT gin_debug_query_value_path('x is object');
  gin_debug_query_value_path 
 ----------------------------
  x IS object , entry 0     +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('#:(x=1) AND %:(y=1) AND *:(z=1)');
+ gin_debug_query_value_path 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('#:(NOT x=1) AND %:(NOT y=1) AND *:(NOT z=1)');
+ gin_debug_query_value_path 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('NOT #:(NOT x=1) AND NOT %:(NOT y=1) AND NOT *:(NOT z=1)');
+ gin_debug_query_value_path 
+----------------------------
+ AND                       +
+   #.x = 1 , entry 0       +
+   %.y = 1 , entry 1       +
+   *.z = 1 , entry 2       +
  
 (1 row)
 
@@ -1935,6 +1980,24 @@ select count(*) from test_jsquery where v @@ 't is object';
      2
 (1 row)
 
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric';
+ count 
+-------
+    51
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string';
+ count 
+-------
+  1001
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")';
+ count 
+-------
+    23
+(1 row)
+
 select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
          v         
 -------------------
@@ -2121,6 +2184,24 @@ select count(*) from test_jsquery where v @@ 't is object';
  count 
 -------
      2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric';
+ count 
+-------
+    51
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string';
+ count 
+-------
+  1001
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")';
+ count 
+-------
+     7
 (1 row)
 
 explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
@@ -2354,6 +2435,24 @@ select count(*) from test_jsquery where v @@ 't is object';
  count 
 -------
      2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric';
+ count 
+-------
+    51
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string';
+ count 
+-------
+  1001
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")';
+ count 
+-------
+     7
 (1 row)
 
 explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;

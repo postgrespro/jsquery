@@ -96,21 +96,27 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			jsqGetNext(jsq, &elem);
 			return recursiveExtract(&elem, not, indirect, pathItem);
 		case jqiAny:
-			if (not) return NULL;
+		case jqiAll:
+			if ((not && jsq->type == jqiAny) || (!not && jsq->type == jqiAll))
+				return NULL;
 			pathItem = (PathItem *)palloc(sizeof(PathItem));
 			pathItem->type = iAny;
 			pathItem->parent = path;
 			jsqGetNext(jsq, &elem);
 			return recursiveExtract(&elem, not, true, pathItem);
 		case jqiAnyArray:
-			if (not) return NULL;
+		case jqiAllArray:
+			if ((not && jsq->type == jqiAnyArray) || (!not && jsq->type == jqiAllArray))
+				return NULL;
 			pathItem = (PathItem *)palloc(sizeof(PathItem));
 			pathItem->type = iAnyArray;
 			pathItem->parent = path;
 			jsqGetNext(jsq, &elem);
 			return recursiveExtract(&elem, not, true, pathItem);
 		case jqiAnyKey:
-			if (not) return NULL;
+		case jqiAllKey:
+			if ((not && jsq->type == jqiAnyKey) || (!not && jsq->type == jqiAllKey))
+				return NULL;
 			pathItem = (PathItem *)palloc(sizeof(PathItem));
 			pathItem->type = iAnyKey;
 			pathItem->parent = path;
