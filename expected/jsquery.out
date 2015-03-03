@@ -1395,6 +1395,18 @@ select '{"a":{"aa":1, "ab":2}, "b":[5,6, {"c":8}]}' @@ '*: ($ is object OR $ is 
  t
 (1 row)
 
+select '{"a":{"aa":1, "ab":2}, "b":[5,6, {"c":"x"}]}' @@ '*: ($ is object OR $ is array OR $ is numeric)'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a":{"aa":1, "ab":2}, "b":[5,6, {"c":null}]}' @@ '*: ($ is object OR $ is array OR $ is numeric)'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
 --extract entries for index scan
 SELECT gin_debug_query_path_value('NOT NOT NOT x(y(NOT (a=1) and NOT (b=2)) OR NOT NOT (c=3)) and z = 5');
  gin_debug_query_path_value 

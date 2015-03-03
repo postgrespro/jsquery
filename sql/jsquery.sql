@@ -281,6 +281,8 @@ select '{"a":{"aa":1, "ab":2}, "b":{"ba":3, "bb":5}}' @@ '*: ($ is object OR $ i
 select '{"a":{"aa":1, "ab":2}, "b":[5,6]}' @@ '*: ($ is object OR $ is numeric)'::jsquery;
 select '{"a":{"aa":1, "ab":2}, "b":[5,6]}' @@ '*: ($ is object OR $ is array OR $ is numeric)'::jsquery;
 select '{"a":{"aa":1, "ab":2}, "b":[5,6, {"c":8}]}' @@ '*: ($ is object OR $ is array OR $ is numeric)'::jsquery;
+select '{"a":{"aa":1, "ab":2}, "b":[5,6, {"c":"x"}]}' @@ '*: ($ is object OR $ is array OR $ is numeric)'::jsquery;
+select '{"a":{"aa":1, "ab":2}, "b":[5,6, {"c":null}]}' @@ '*: ($ is object OR $ is array OR $ is numeric)'::jsquery;
 
 --extract entries for index scan
 
