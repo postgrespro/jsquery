@@ -16,7 +16,15 @@
 
 #include "miscadmin.h"
 #include "utils/builtins.h"
+#if PG_VERSION_NUM >= 90500
+#include "common/pg_crc.h"
+#define COMP_CRC32	COMP_CRC32C
+#define	INIT_CRC32	INIT_CRC32C
+#define	FIN_CRC32	FIN_CRC32C
+#define	INIT_CRC32	INIT_CRC32C
+#else
 #include "utils/pg_crc.h"
+#endif
 
 #include "jsquery.h"
 
