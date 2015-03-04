@@ -1238,6 +1238,153 @@ select 'a = /* noindex */ 5'::jsquery;
  "a" = 5
 (1 row)
 
+--LENGTH
+select 'a.@# = 4'::jsquery;
+  jsquery   
+------------
+ "a".@# = 4
+(1 row)
+
+select 'a.@#.$ = 4'::jsquery as noerror;
+   noerror    
+--------------
+ "a".@#.$ = 4
+(1 row)
+
+select 'a.@#.a = 4'::jsquery as error;
+ERROR:  Array length should be last in path
+LINE 1: select 'a.@#.a = 4'::jsquery as error;
+               ^
+select 'a.@#.* = 4'::jsquery as error;
+ERROR:  Array length should be last in path
+LINE 1: select 'a.@#.* = 4'::jsquery as error;
+               ^
+select 'a.@#.% = 4'::jsquery as error;
+ERROR:  Array length should be last in path
+LINE 1: select 'a.@#.% = 4'::jsquery as error;
+               ^
+select 'a.@#.# = 4'::jsquery as error;
+ERROR:  Array length should be last in path
+LINE 1: select 'a.@#.# = 4'::jsquery as error;
+               ^
+select 'a.@#.*: = 4'::jsquery as error;
+ERROR:  Array length should be last in path
+LINE 1: select 'a.@#.*: = 4'::jsquery as error;
+               ^
+select 'a.@#.%: = 4'::jsquery as error;
+ERROR:  Array length should be last in path
+LINE 1: select 'a.@#.%: = 4'::jsquery as error;
+               ^
+select 'a.@#.#: = 4'::jsquery as error;
+ERROR:  Array length should be last in path
+LINE 1: select 'a.@#.#: = 4'::jsquery as error;
+               ^
+select 'a.@# (a = 5 or b = 6)'::jsquery as error;
+ERROR:  Array length should be last in path
+LINE 1: select 'a.@# (a = 5 or b = 6)'::jsquery as error;
+               ^
+select '[]' @@ '@# = 0'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[]' @@ '@# < 2'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[]' @@ '@# > 1'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
+select '[1]' @@ '@# = 0'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
+select '[1]' @@ '@# < 2'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[1]' @@ '@# > 1'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
+select '[1,2]' @@ '@# = 0'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
+select '[1,2]' @@ '@# < 2'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
+select '[1,2]' @@ '@# > 1'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[1,2]' @@ '@# in (1, 2)'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[1,2]' @@ '@# in (1, 3)'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a":[1,2]}' @@ '@# in (2, 4)'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a":[1,2]}' @@ 'a.@# in (2, 4)'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a":[1,2]}' @@ '%.@# in (2, 4)'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a":[1,2]}' @@ '*.@# in (2, 4)'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a":[1,2]}' @@ '*.@# ($ = 4 or $ = 2)'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a":[1,2]}' @@ '@#  = 1'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
 --ALL
 select 'a.*: = 4'::jsquery;
   jsquery   
@@ -1444,6 +1591,18 @@ select '{"a":{"aa":1}, "b":{"aa":1, "bb":2}, "aa":16}' @@ '*: (not $ is object o
 (1 row)
 
 select '{"a":{"aa":1}, "b":{"aa":1, "bb":2}}' @@ '*: (not $ is object or $.aa is numeric or % is object)'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '[]' @@ '(@# > 0 and #: = 16)'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
+select '[16]' @@ '(@# > 0 and #: = 16)'::jsquery;
  ?column? 
 ----------
  t

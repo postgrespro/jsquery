@@ -254,6 +254,35 @@ select 'a /* noindex */ = 5'::jsquery;
 select 'a = /*-- noindex */ 5'::jsquery;
 select 'a = /* noindex */ 5'::jsquery;
 
+--LENGTH
+select 'a.@# = 4'::jsquery;
+select 'a.@#.$ = 4'::jsquery as noerror;
+select 'a.@#.a = 4'::jsquery as error;
+select 'a.@#.* = 4'::jsquery as error;
+select 'a.@#.% = 4'::jsquery as error;
+select 'a.@#.# = 4'::jsquery as error;
+select 'a.@#.*: = 4'::jsquery as error;
+select 'a.@#.%: = 4'::jsquery as error;
+select 'a.@#.#: = 4'::jsquery as error;
+select 'a.@# (a = 5 or b = 6)'::jsquery as error;
+select '[]' @@ '@# = 0'::jsquery;
+select '[]' @@ '@# < 2'::jsquery;
+select '[]' @@ '@# > 1'::jsquery;
+select '[1]' @@ '@# = 0'::jsquery;
+select '[1]' @@ '@# < 2'::jsquery;
+select '[1]' @@ '@# > 1'::jsquery;
+select '[1,2]' @@ '@# = 0'::jsquery;
+select '[1,2]' @@ '@# < 2'::jsquery;
+select '[1,2]' @@ '@# > 1'::jsquery;
+select '[1,2]' @@ '@# in (1, 2)'::jsquery;
+select '[1,2]' @@ '@# in (1, 3)'::jsquery;
+select '{"a":[1,2]}' @@ '@# in (2, 4)'::jsquery;
+select '{"a":[1,2]}' @@ 'a.@# in (2, 4)'::jsquery;
+select '{"a":[1,2]}' @@ '%.@# in (2, 4)'::jsquery;
+select '{"a":[1,2]}' @@ '*.@# in (2, 4)'::jsquery;
+select '{"a":[1,2]}' @@ '*.@# ($ = 4 or $ = 2)'::jsquery;
+select '{"a":[1,2]}' @@ '@#  = 1'::jsquery;
+
 --ALL
 select 'a.*: = 4'::jsquery;
 select '%: = 4'::jsquery;
@@ -290,6 +319,9 @@ select '{"a":{"aa":1}, "b":{"aa":1, "bb":2}}' @@ '%:.aa is numeric'::jsquery;
 select '{"a":{"aa":1}, "b":{"aa":true, "bb":2}}' @@ '%:.aa is numeric'::jsquery;
 select '{"a":{"aa":1}, "b":{"aa":1, "bb":2}, "aa":16}' @@ '*: (not $ is object or $.aa is numeric)'::jsquery;
 select '{"a":{"aa":1}, "b":{"aa":1, "bb":2}}' @@ '*: (not $ is object or $.aa is numeric or % is object)'::jsquery;
+
+select '[]' @@ '(@# > 0 and #: = 16)'::jsquery;
+select '[16]' @@ '(@# > 0 and #: = 16)'::jsquery;
 
 --extract entries for index scan
 

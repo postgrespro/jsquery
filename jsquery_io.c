@@ -23,7 +23,7 @@
 PG_MODULE_MAGIC;
 
 static int
-flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item)
+flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item, bool onlyCurrentInPath)
 {
 	int32	pos = buf->len - VARHDRSZ; /* position from begining of jsquery data */
 	int32	chld, next;
@@ -42,6 +42,8 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item)
 	switch(item->type)
 	{
 		case jqiKey:
+			if (onlyCurrentInPath)
+				elog(ERROR,"Array length should be last in path");
 		case jqiString:
 			appendBinaryStringInfo(buf, (char*)&item->string.len, sizeof(item->string.len));
 			appendBinaryStringInfo(buf, item->string.val, item->string.len);
@@ -69,7 +71,7 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item)
 
 				for(i=0; i<item->array.nelems; i++)
 				{
-					chld = flattenJsQueryParseItem(buf, item->array.elems[i]);
+					chld = flattenJsQueryParseItem(buf, item->array.elems[i], onlyCurrentInPath);
 					*(int32*)(buf->data + arrayStart + i * sizeof(i)) = chld;
 				}
 
@@ -85,9 +87,9 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item)
 				right = buf->len;
 				appendBinaryStringInfo(buf, (char*)&right /* fake value */, sizeof(right));
 
-				chld = flattenJsQueryParseItem(buf, item->args.left);
+				chld = flattenJsQueryParseItem(buf, item->args.left, onlyCurrentInPath);
 				*(int32*)(buf->data + left) = chld;
-				chld = flattenJsQueryParseItem(buf, item->args.right);
+				chld = flattenJsQueryParseItem(buf, item->args.right, onlyCurrentInPath);
 				*(int32*)(buf->data + right) = chld;
 			}
 			break;
@@ -107,25 +109,30 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item)
 				arg = buf->len;
 				appendBinaryStringInfo(buf, (char*)&arg /* fake value */, sizeof(arg));
 
-				chld = flattenJsQueryParseItem(buf, item->arg);
+				chld = flattenJsQueryParseItem(buf, item->arg, onlyCurrentInPath);
 				*(int32*)(buf->data + arg) = chld;
 			}
 			break;
-		case jqiNull:
-		case jqiCurrent:
 		case jqiAny:
 		case jqiAnyArray:
 		case jqiAnyKey:
 		case jqiAll:
 		case jqiAllArray:
 		case jqiAllKey:
+			if (onlyCurrentInPath)
+				elog(ERROR,"Array length should be last in path");
+		case jqiCurrent:
+		case jqiNull:
+			break;
+		case jqiLength:
+			onlyCurrentInPath = true;
 			break;
 		default:
 			elog(ERROR, "Unknown type: %d", item->type);
 	}
 
 	if (item->next)
-		*(int32*)(buf->data + next) = flattenJsQueryParseItem(buf, item->next);
+		*(int32*)(buf->data + next) = flattenJsQueryParseItem(buf, item->next, onlyCurrentInPath);
 
 	return  pos;
 }
@@ -137,8 +144,8 @@ jsquery_in(PG_FUNCTION_ARGS)
 	char				*in = PG_GETARG_CSTRING(0);
 	int32				len = strlen(in);
 	JsQueryParseItem	*jsquery = parsejsquery(in, len);
-	JsQuery			*res;
-	StringInfoData	buf;
+	JsQuery				*res;
+	StringInfoData		buf;
 
 	initStringInfo(&buf);
 	enlargeStringInfo(&buf, 4 * len /* estimation */); 
@@ -147,7 +154,7 @@ jsquery_in(PG_FUNCTION_ARGS)
 
 	if (jsquery != NULL)
 	{
-		flattenJsQueryParseItem(&buf, jsquery);
+		flattenJsQueryParseItem(&buf, jsquery, false);
 
 		res = (JsQuery*)buf.data;
 		SET_VARSIZE(res, buf.len);
@@ -317,6 +324,12 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 			if (inKey)
 				appendStringInfoChar(buf, '.');
 			appendStringInfoChar(buf, '$');
+			break;
+		case jqiLength:
+			if (inKey)
+				appendStringInfoChar(buf, '.');
+			appendStringInfoChar(buf, '@');
+			appendStringInfoChar(buf, '#');
 			break;
 		case jqiAny:
 			if (inKey)

@@ -310,6 +310,7 @@ key:
 	| '#' ':'						{ $$ = makeItemType(jqiAllArray); }
 	| '%' ':'						{ $$ = makeItemType(jqiAllKey); }
 	| '$'							{ $$ = makeItemType(jqiCurrent); }
+	| '@' '#'						{ $$ = makeItemType(jqiLength); }
 	| STRING_P						{ $$ = makeItemKey(&$1); }
 	| IN_P							{ $$ = makeItemKey(&$1); }
 	| IS_P							{ $$ = makeItemKey(&$1); }

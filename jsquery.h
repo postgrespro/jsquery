@@ -54,6 +54,7 @@ typedef enum JsQueryItemType {
 		jqiAllKey,
 		jqiKey,
 		jqiCurrent,
+		jqiLength,
 		jqiIn,
 		jqiIs
 } JsQueryItemType;

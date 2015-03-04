@@ -72,6 +72,7 @@ jsqInitByBuffer(JsQueryItem *v, char *base, int32 pos)
 	{
 		case jqiNull:
 		case jqiCurrent:
+		case jqiLength:
 		case jqiAny:
 		case jqiAnyArray:
 		case jqiAnyKey:
@@ -148,7 +149,8 @@ jsqGetNext(JsQueryItem *v, JsQueryItem *a)
 			v->type == jqiAll ||
 			v->type == jqiAllArray ||
 			v->type == jqiAllKey ||
-			v->type == jqiCurrent
+			v->type == jqiCurrent ||
+			v->type == jqiLength
 		);
 
 		if (a)
