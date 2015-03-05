@@ -50,7 +50,8 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 
 	check_stack_depth();
 
-	switch(jsq->type) {
+	switch(jsq->type)
+	{
 		case jqiAnd:
 		case jqiOr:
 			type = ((jsq->type == jqiAnd) == not) ? eOr : eAnd;
@@ -240,9 +241,12 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			result->indirect = indirect;
 			result->isType = jsqGetIsType(jsq);
 			return result;
+		case jqiLength:
+			return NULL;
 		default:
 			elog(ERROR,"Wrong state: %d", jsq->type);
 	}
+
 	return NULL;
 }
 

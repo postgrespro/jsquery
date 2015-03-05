@@ -371,6 +371,8 @@ SELECT gin_debug_query_value_path('x is object');
 SELECT gin_debug_query_value_path('#:(x=1) AND %:(y=1) AND *:(z=1)');
 SELECT gin_debug_query_value_path('#:(NOT x=1) AND %:(NOT y=1) AND *:(NOT z=1)');
 SELECT gin_debug_query_value_path('NOT #:(NOT x=1) AND NOT %:(NOT y=1) AND NOT *:(NOT z=1)');
+SELECT gin_debug_query_value_path('(@# > 0 and #: = 16)');
+SELECT gin_debug_query_value_path('*.@# ($ = 4 or $ = 2)');
 
 ---table and index
 

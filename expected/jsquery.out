@@ -1974,6 +1974,20 @@ SELECT gin_debug_query_value_path('NOT #:(NOT x=1) AND NOT %:(NOT y=1) AND NOT *
  
 (1 row)
 
+SELECT gin_debug_query_value_path('(@# > 0 and #: = 16)');
+ gin_debug_query_value_path 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('*.@# ($ = 4 or $ = 2)');
+ gin_debug_query_value_path 
+----------------------------
+ NULL                      +
+ 
+(1 row)
+
 ---table and index
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 0;
  count 
