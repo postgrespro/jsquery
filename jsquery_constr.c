@@ -125,10 +125,14 @@ copyJsQuery(StringInfo buf, JsQueryItem *jsq)
 			}
 			break;
 		case jqiNull:
-		case jqiAny:
 		case jqiCurrent:
+		case jqiLength:
+		case jqiAny:
 		case jqiAnyArray:
 		case jqiAnyKey:
+		case jqiAll:
+		case jqiAllArray:
+		case jqiAllKey:
 			break;
 		default:
 			elog(ERROR, "Unknown type: %d", jsq->type);
