@@ -452,13 +452,13 @@ make_gin_query_key_minus_inf(uint32 hash)
 }
 
 static bool
-check_bloom_entry_handler(ExtractedNode *node, Pointer extra)
+check_value_path_entry_handler(ExtractedNode *node, Pointer extra)
 {
 	return true;
 }
 
 static int
-make_bloom_entry_handler(ExtractedNode *node, Pointer extra)
+make_value_path_entry_handler(ExtractedNode *node, Pointer extra)
 {
 	Entries	   *e = (Entries *)extra;
 	uint32		hash;
@@ -641,7 +641,7 @@ gin_compare_partial_jsonb_value_path(PG_FUNCTION_ARGS)
 }
 
 static Datum *
-gin_extract_jsonb_bloom_value_internal(Jsonb *jb, int32 *nentries, uint32 **bloom)
+gin_extract_jsonb_value_path_internal(Jsonb *jb, int32 *nentries, uint32 **bloom)
 {
 	int			total = 2 * JB_ROOT_COUNT(jb);
 	JsonbIterator *it;
@@ -730,7 +730,7 @@ gin_extract_jsonb_value_path(PG_FUNCTION_ARGS)
 	Jsonb	   *jb = PG_GETARG_JSONB(0);
 	int32	   *nentries = (int32 *) PG_GETARG_POINTER(1);
 
-	PG_RETURN_POINTER(gin_extract_jsonb_bloom_value_internal(jb, nentries, NULL));
+	PG_RETURN_POINTER(gin_extract_jsonb_value_path_internal(jb, nentries, NULL));
 }
 
 Datum
@@ -741,8 +741,8 @@ gin_debug_query_value_path(PG_FUNCTION_ARGS)
 	char	   *s;
 
 	jq = PG_GETARG_JSQUERY(0);
-	s = debugJsQuery(jq, make_bloom_entry_handler,
-							check_bloom_entry_handler, (Pointer)&e);
+	s = debugJsQuery(jq, make_value_path_entry_handler,
+							check_value_path_entry_handler, (Pointer)&e);
 	PG_RETURN_TEXT_P(cstring_to_text(s));
 }
 
@@ -766,12 +766,12 @@ gin_extract_jsonb_query_value_path(PG_FUNCTION_ARGS)
 	{
 		case JsonbContainsStrategyNumber:
 			jb = PG_GETARG_JSONB(0);
-			entries = gin_extract_jsonb_bloom_value_internal(jb, nentries, NULL);
+			entries = gin_extract_jsonb_value_path_internal(jb, nentries, NULL);
 			break;
 
 		case JsonbNestedContainsStrategyNumber:
 			jb = PG_GETARG_JSONB(0);
-			entries = gin_extract_jsonb_bloom_value_internal(jb, nentries, &bloom);
+			entries = gin_extract_jsonb_value_path_internal(jb, nentries, &bloom);
 
 			n = *nentries;
 			*pmatch = (bool *) palloc(sizeof(bool) * n);
@@ -785,8 +785,8 @@ gin_extract_jsonb_query_value_path(PG_FUNCTION_ARGS)
 
 		case JsQueryMatchStrategyNumber:
 			jq = PG_GETARG_JSQUERY(0);
-			root = extractJsQuery(jq, make_bloom_entry_handler,
-									check_bloom_entry_handler, (Pointer)&e);
+			root = extractJsQuery(jq, make_value_path_entry_handler,
+									check_value_path_entry_handler, (Pointer)&e);
 			if (root)
 			{
 				*nentries = e.count;
@@ -958,7 +958,7 @@ get_query_path_hash(PathItem *pathItem, uint32 *hash)
 }
 
 static bool
-check_hash_entry_handler(ExtractedNode *node, Pointer extra)
+check_path_value_entry_handler(ExtractedNode *node, Pointer extra)
 {
 	uint32		hash;
 	hash = 0;
@@ -968,7 +968,7 @@ check_hash_entry_handler(ExtractedNode *node, Pointer extra)
 }
 
 static int
-make_hash_entry_handler(ExtractedNode *node, Pointer extra)
+make_path_value_entry_handler(ExtractedNode *node, Pointer extra)
 {
 	Entries	   *e = (Entries *)extra;
 	uint32		hash;
@@ -1073,7 +1073,7 @@ gin_compare_partial_jsonb_path_value(PG_FUNCTION_ARGS)
 }
 
 static Datum *
-gin_extract_jsonb_hash_value_internal(Jsonb *jb, int32 *nentries)
+gin_extract_jsonb_path_value_internal(Jsonb *jb, int32 *nentries)
 {
 	int			total = 2 * JB_ROOT_COUNT(jb);
 	JsonbIterator *it;
@@ -1159,7 +1159,7 @@ gin_extract_jsonb_path_value(PG_FUNCTION_ARGS)
 	Jsonb	   *jb = PG_GETARG_JSONB(0);
 	int32	   *nentries = (int32 *) PG_GETARG_POINTER(1);
 
-	PG_RETURN_POINTER(gin_extract_jsonb_hash_value_internal(jb, nentries));
+	PG_RETURN_POINTER(gin_extract_jsonb_path_value_internal(jb, nentries));
 }
 
 Datum
@@ -1170,8 +1170,8 @@ gin_debug_query_path_value(PG_FUNCTION_ARGS)
 	char	   *s;
 
 	jq = PG_GETARG_JSQUERY(0);
-	s = debugJsQuery(jq, make_hash_entry_handler,
-										check_hash_entry_handler, (Pointer)&e);
+	s = debugJsQuery(jq, make_path_value_entry_handler,
+										check_path_value_entry_handler, (Pointer)&e);
 	PG_RETURN_TEXT_P(cstring_to_text(s));
 }
 
@@ -1194,13 +1194,13 @@ gin_extract_jsonb_query_path_value(PG_FUNCTION_ARGS)
 	{
 		case JsonbContainsStrategyNumber:
 			jb = PG_GETARG_JSONB(0);
-			entries = gin_extract_jsonb_hash_value_internal(jb, nentries);
+			entries = gin_extract_jsonb_path_value_internal(jb, nentries);
 			break;
 
 		case JsQueryMatchStrategyNumber:
 			jq = PG_GETARG_JSQUERY(0);
-			root = extractJsQuery(jq, make_hash_entry_handler,
-										check_hash_entry_handler, (Pointer)&e);
+			root = extractJsQuery(jq, make_path_value_entry_handler,
+										check_path_value_entry_handler, (Pointer)&e);
 			if (root)
 			{
 				*nentries = e.count;

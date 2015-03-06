@@ -127,7 +127,8 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			jsqGetNext(jsq, &elem);
 			return recursiveExtract(&elem, not, indirect, path);
 		case jqiEqual:
-			if (not) return NULL;
+			if (not)
+				return NULL;
 			jsqGetArg(jsq, &e);
 			if (e.type == jqiAny)
 			{
@@ -154,7 +155,8 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 		case jqiOverlap:
 		case jqiContains:
 		case jqiContained:
-			if (not) return NULL;
+			if (not)
+				return NULL;
 			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
 			result->type = (jsq->type == jqiContains || jsq->type == jqiEqual) ? eAnd : eOr;
 			jsqGetArg(jsq, &elem);
@@ -210,7 +212,8 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 		case jqiGreater:
 		case jqiLessOrEqual:
 		case jqiGreaterOrEqual:
-			if (not) return NULL;
+			if (not)
+				return NULL;
 			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
 			result->type = eInequality;
 			result->hint = jsq->hint;
@@ -233,7 +236,8 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			}
 			return result;
 		case jqiIs:
-			if (not) return NULL;
+			if (not)
+				return NULL;
 			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
 			result->type = eIs;
 			result->hint = jsq->hint;
