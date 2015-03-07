@@ -1,0 +1,75 @@
+result ::= ( expr | null)
+
+array ::= '[' value_list ']'
+
+scalar_value ::= (
+               STRING_P
+               | IN_P
+               | IS_P
+               | OR_P
+               | AND_P
+               | NOT_P
+               | NULL_P
+               | TRUE_P
+               | ARRAY_T
+               | FALSE_P
+               | NUMERIC_T
+               | OBJECT_T
+               | STRING_T
+               | BOOLEAN_T
+               | NUMERIC_P )
+
+value_list ::= (scalar_value | value_list ',' scalar_value)
+
+right_expr ::= (
+               '='right_exprscalar_value
+               | IN_P '(' value_list ')'
+               | '=' array
+               | '=' '*'
+               | '<' NUMERIC_P
+               | '>' NUMERIC_P
+               | '<' '=' NUMERIC_P
+               | '>' '=' NUMERIC_P
+               | '@' '>' array
+               | '<' '@' array
+               | '&' '&' array
+               | IS_P ARRAY_T
+               | IS_P NUMERIC_T
+               | IS_P OBJECT_T
+               | IS_P STRING_T
+               | IS_P BOOLEAN_T )
+
+expr ::= (
+        path right_expr
+        | path HINT_P right_expr
+        | NOT_P expr
+        | NOT_P HINT_P right_expr
+        | NOT_P right_expr
+        | path '(' expr ')'
+        | '(' expr ')'
+        | expr AND_P expr
+        | expr OR_P expr)
+
+key ::= (
+        '*'
+        | '#'
+        | '%'
+        | '$'
+        | STRING_P
+        | IN_P
+        | IS_P
+        | OR_P
+        | AND_P
+        | NULL_P
+        | TRUE_P
+        | ARRAY_T
+        | FALSE_P
+        | NUMERIC_T
+        | OBJECT_T
+        | STRING_T
+        | BOOLEAN_T
+        | NUMERIC_P )
+
+key_any ::= ( key | NOT_P)
+
+path ::= ( key | path '.' key_any | NOT_P '.' key_any )
