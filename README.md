@@ -13,7 +13,7 @@ to search in nested objects and arrays, more comparison operators with
 indexes support. We hope, that jsquery will be eventually a part of
 PostgreSQL.
 
-Jsquery is released as tsquery data type (similar to tsquery) and @@
+Jsquery is released as jsquery data type (similar to tsquery) and @@
 match operator for jsonb.
 
 Authors
