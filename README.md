@@ -187,6 +187,25 @@ examples.
 
 Same rules apply when you search inside objects and branchy structures.
 
+Type checking operators and "every" placeholders are useful for document
+schema validation. JsQuery matchig operator `@@` is immutable and can be used
+in CHECK constraint. See following example.
+
+```sql
+CREATE TABLE js (
+    id serial,
+    data jsonb,
+    CHECK (data @@ '
+        name IS STRING AND
+        similar_ids.#: IS NUMERIC AND
+        points.#:(x IS NUMERIC AND y IS NUMERIC)'::jsquery));
+```
+
+In this example check constraint validates that in "data" jsonb column:
+value of "name" key is string, value of "similar_ids" key is array of numerics,
+value of "points" key is array of objects which contain numeric values in
+"x" and "y" keys.
+
 See our
 [pgconf.eu presentation](http://www.sai.msu.su/~megera/postgres/talks/pgconfeu-2014-jsquery.pdf)
 for more examples.
