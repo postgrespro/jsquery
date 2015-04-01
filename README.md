@@ -216,8 +216,8 @@ GIN indexes
 JsQuery extension contains two operator classes (opclasses) for GIN which
 provide different kinds of query optimization.
 
- * jsonb\_value\_path\_ops
  * jsonb\_path\_value\_ops
+ * jsonb\_value\_path\_ops
 
 In each of two GIN opclasses jsonb documents are decomposed into entries. Each
 entry is associated with particular value and it's path. Difference between
@@ -243,9 +243,9 @@ key "a" is presented three times. In the large branchy documents with long
 keys size of naive entries representation becomes unreasonable. Both opclasses
 address this issue but in a slightly different way.
 
-### jsonb\_value\_path\_ops
+### jsonb\_path\_value\_ops
 
-jsonb\_value\_path\_ops represents entry as pair of path hash and value.
+jsonb\_path\_value\_ops represents entry as pair of path hash and value.
 Following pseudocode illustrates it.
 
     (hash(path_item_1.path_item_2. ... .path_item_n); value)
@@ -256,9 +256,9 @@ is hashed and it is higher part of entry we need to know the full path to
 the value in order to use it for search. However, once path is specified
 we can use both exact and range searches very efficiently.
 
-### jsonb\_path\_value\_ops
+### jsonb\_value\_path\_ops
 
-jsonb\_path\_value\_ops represents entry as pair of value and bloom filter
+jsonb\_value\_path\_ops represents entry as pair of value and bloom filter
 of path.
 
     (value; bloom(path_item_1) | bloom(path_item_2) | ... | bloom(path_item_n))
