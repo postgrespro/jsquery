@@ -279,8 +279,8 @@ Unfortunately, opclasses aren't allowed to do any custom output to the
 EXPLAIN. That's why JsQuery provides following functions which allows to see
 how particular opclass optimizes given query.
 
- * gin\_debug\_query\_value\_path(jsquery) – for jsonb\_value\_path\_ops
  * gin\_debug\_query\_path\_value(jsquery) – for jsonb\_path\_value\_ops
+ * gin\_debug\_query\_value\_path(jsquery) – for jsonb\_value\_path\_ops
 
 Result of these functions is a textual representation of query tree which
 leafs are GIN search entries. Following examples show different results of
