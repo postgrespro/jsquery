@@ -47,6 +47,8 @@ Before build and install you should ensure following:
  * PostgreSQL version is 9.4 or higher.
  * You have development package of PostgreSQL installed or you built
    PostgreSQL from source.
+ * You have flex and bison installed on your system. JsQuery was tested on
+   flex 2.5.37-2.5.39, bison 2.7.12.
  * Your PATH variable is configured so that pg\_config command available.
     
 Typical installation procedure may look like this:
