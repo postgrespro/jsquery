@@ -16,14 +16,15 @@
 
 #include "miscadmin.h"
 #include "utils/builtins.h"
-#if PG_VERSION_NUM >= 90500
-#include "common/pg_crc.h"
-#define COMP_CRC32	COMP_CRC32C
-#define	INIT_CRC32	INIT_CRC32C
-#define	FIN_CRC32	FIN_CRC32C
-#define	INIT_CRC32	INIT_CRC32C
-#else
 #include "utils/pg_crc.h"
+#if PG_VERSION_NUM >= 90500
+/*
+ * We have to keep same checksum algorithm as in pre-9.5 in order to be
+ * pg_upgradeable.
+ */
+#define	INIT_CRC32	INIT_LEGACY_CRC32
+#define	FIN_CRC32	FIN_LEGACY_CRC32
+#define	COMP_CRC32	COMP_LEGACY_CRC32
 #endif
 
 #include "jsquery.h"
