@@ -131,8 +131,8 @@ add_entry(Entries *e, Datum key, Pointer extra, bool pmatch)
 	{
 		e->total *= 2;
 		e->entries = (Datum *)repalloc(e->entries, e->total * sizeof(Datum));
-		e->extra_data = (Pointer *)repalloc(e->entries, e->total * sizeof(Pointer));
-		e->partial_match = (bool *)repalloc(e->entries, e->total * sizeof(bool));
+		e->extra_data = (Pointer *)repalloc(e->extra_data, e->total * sizeof(Pointer));
+		e->partial_match = (bool *)repalloc(e->partial_match, e->total * sizeof(bool));
 	}
 	entryNum = e->count;
 	e->count++;
