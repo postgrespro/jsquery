@@ -147,22 +147,20 @@ jsquery_in(PG_FUNCTION_ARGS)
 	JsQuery				*res;
 	StringInfoData		buf;
 
+	if (jsquery == NULL)
+        PG_RETURN_NULL();
+
 	initStringInfo(&buf);
 	enlargeStringInfo(&buf, 4 * len /* estimation */); 
 
 	appendStringInfoSpaces(&buf, VARHDRSZ);
 
-	if (jsquery != NULL)
-	{
-		flattenJsQueryParseItem(&buf, jsquery, false);
+    flattenJsQueryParseItem(&buf, jsquery, false);
 
-		res = (JsQuery*)buf.data;
-		SET_VARSIZE(res, buf.len);
+    res = (JsQuery*)buf.data;
+    SET_VARSIZE(res, buf.len);
 
-		PG_RETURN_JSQUERY(res);
-	}
-
-	PG_RETURN_NULL();
+    PG_RETURN_JSQUERY(res);
 }
 
 static void
