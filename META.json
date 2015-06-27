@@ -1,0 +1,53 @@
+{
+   "name": "JsQuery",
+   "abstract": "JSON Query Language with GIN indexing support",
+   "description": "JsQuery provides additional functionality for JSONB, such as a simple and effective way to search in nested objects and arrays, and more comparison operators with index support.  It does this by implementing a specialized search syntax, the @@ operator, and the jsquery type for search strings.",
+   "version": "1.0.0",
+   "maintainer": [
+      "Teodor Sigaev <teodor@sigaev.ru>",
+      "Alexander Korotkov <aekorotkov@gmail.com>",
+      "Oleg Bartunov <oleg@sai.msu.su>"
+   ],
+   "license": {
+      "PostgreSQL": "http://www.postgresql.org/about/licence"
+   },
+   "prereqs": {
+      "runtime": {
+         "requires": {
+            "PostgreSQL": "9.4.0"
+         },
+         "recommends": {
+            "PostgreSQL": "9.4.0"
+         }
+      }
+   },
+   "provides": {
+     "jsquery": {
+       "file": "sql/jsquery.sql",
+       "docfile": "README.md",
+       "version": "1.0",
+       "abstract": "JSON query language with GIN indexing support"
+     },
+   },
+   "resources": {
+      "homepage": "https://github.com/postgrespro/jsquery",
+      "bugtracker": {
+         "web": "https://github.com/postgrespro/jsquery/issues"
+      },
+      "repository": {
+        "url":  "https://github.com/postgrespro/jsquery.git",
+        "web":  "https://github.com/postgrespro/jsquery",
+        "type": "git"
+      }
+   },
+   "generated_by": "Josh Berkus",
+   "meta-spec": {
+      "version": "1.0.0",
+      "url": "http://pgxn.org/meta/spec.txt"
+   },
+   "tags": [
+        "JSON",
+        "index",
+        "search"
+   ]
+}
