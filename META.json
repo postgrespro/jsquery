@@ -25,9 +25,9 @@
      "jsquery": {
        "file": "sql/jsquery.sql",
        "docfile": "README.md",
-       "version": "1.0",
+       "version": "1.0.0",
        "abstract": "JSON query language with GIN indexing support"
-     },
+     }
    },
    "resources": {
       "homepage": "https://github.com/postgrespro/jsquery",
