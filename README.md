@@ -28,7 +28,7 @@ Availability
 
 JsQuery is realized as an extension and not available in default PostgreSQL
 installation. It is available from
-[github](https://github.com/akorotkov/jsquery)
+[github](https://github.com/postgrespro/jsquery)
 under the same license as
 [PostgreSQL](http://www.postgresql.org/about/licence/)
 and supports PostgreSQL 9.4+.
@@ -53,7 +53,7 @@ Before build and install you should ensure following:
     
 Typical installation procedure may look like this:
     
-    $ git clone https://github.com/akorotkov/jsquery.git
+    $ git clone https://github.com/postgrespro/jsquery.git
     $ cd jsquery
     $ make USE_PGXS=1
     $ sudo make USE_PGXS=1 install
