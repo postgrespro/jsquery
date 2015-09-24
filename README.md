@@ -128,7 +128,7 @@ Prefix expressions are expressions given in the form path (subexpression).
 In this case path selects JSON values to be checked using given subexpression.
 Check results are aggregated in the same way as in simple expressions.
 
- * `#(a = 1 AND b = 2)` – exists element of array which a key is 1 and b key is 1
+ * `#(a = 1 AND b = 2)` – exists element of array which a key is 1 and b key is 2
  * `%($ >= 10 AND $ <= 20)` – exists object key which values is between 10 and 20
 
 Path also could contain following special placeholders with "every" semantics:
