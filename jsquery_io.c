@@ -315,7 +315,7 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 			appendStringInfoChar(buf, ')');
 			break;
 		case jqiNot:
-			appendBinaryStringInfo(buf, "NOT (", 5);
+			appendBinaryStringInfo(buf, "(NOT ", 5);
 			jsqGetArg(v, &elem);
 			printJsQueryItem(buf, &elem, false, true);
 			appendStringInfoChar(buf, ')');

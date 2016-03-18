@@ -75,6 +75,7 @@ select  'not not < 1'::jsquery;
 select  'not( not < 1)'::jsquery;
 select  'not.x < 1'::jsquery;
 select  'x.not < 1'::jsquery;
+select  'a.%(not x > 0 and not (y < 0 or z = 0))'::jsquery;
 
 select  'is < 1'::jsquery;
 select  'in < 1'::jsquery;

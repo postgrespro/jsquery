@@ -376,13 +376,13 @@ select  'not < 1'::jsquery;
 select  'not not < 1'::jsquery;
      jsquery     
 -----------------
- NOT ("not" < 1)
+ (NOT "not" < 1)
 (1 row)
 
 select  'not( not < 1)'::jsquery;
      jsquery     
 -----------------
- NOT ("not" < 1)
+ (NOT "not" < 1)
 (1 row)
 
 select  'not.x < 1'::jsquery;
@@ -395,6 +395,12 @@ select  'x.not < 1'::jsquery;
     jsquery    
 ---------------
  "x"."not" < 1
+(1 row)
+
+select  'a.%(not x > 0 and not (y < 0 or z = 0))'::jsquery;
+                       jsquery                       
+-----------------------------------------------------
+ "a".%((NOT "x" > 0) AND (NOT ("y" < 0 OR "z" = 0)))
 (1 row)
 
 select  'is < 1'::jsquery;
@@ -412,13 +418,13 @@ select  'in < 1'::jsquery;
 select  'not is < 1'::jsquery;
     jsquery     
 ----------------
- NOT ("is" < 1)
+ (NOT "is" < 1)
 (1 row)
 
 select  'not in < 1'::jsquery;
     jsquery     
 ----------------
- NOT ("in" < 1)
+ (NOT "in" < 1)
 (1 row)
 
 select 'in in (1,2)'::jsquery;
@@ -844,7 +850,7 @@ select 'asd.# = 3'::jsquery & 'zzz = true' | 'xxx.# = zero';
 select !'asd.# = 3'::jsquery & 'zzz = true' | !'xxx.# = zero';
                              ?column?                             
 ------------------------------------------------------------------
- ((NOT ("asd".# = 3) AND "zzz" = true) OR NOT ("xxx".# = "zero"))
+ (((NOT "asd".# = 3) AND "zzz" = true) OR (NOT "xxx".# = "zero"))
 (1 row)
 
 select '{"x":[0,1,1,2]}'::jsonb @@ 'x @> [1,0]'::jsquery;
