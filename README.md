@@ -1,5 +1,5 @@
-JsQuery – json query language with GIN indexing support
-=======================================================
+JsQuery – json query language with GIN index support
+====================================================
 
 Introduction
 ------------
