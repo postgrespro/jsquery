@@ -84,28 +84,27 @@ Simple expression is specified as `path binary_operator value` or
    than 5;
  * `similar_product_ids.# = "0684824396"` – array "similar\_product\_ids"
    contains string "0684824396".
- * `*.color = "red"` – there is object somewhere which key "color" has value
-   "red".
+ * `*.color = "red"` – there is object somewhere which key "color" has value "red".
  * `foo = *` – key "foo" exists in object.
 
-Path selects set of JSON values to be checked using given operators. In
-the simplest case path is just an key name. In general path is key names and
-placeholders combined by dot signs. Path can use following placeholders:
+Path selects a set of JSON values to be checked using given operators. In
+the simplest case path is just a key name. In general path is key names and
+placeholders combined by dot signs. Path can use the following placeholders:
 
- * `#` – any index of array;
- * `#N` – N-th index of array;
- * `%` – any key of object;
+ * `#` – any index of an array;
+ * `#N` – N-th index of an array;
+ * `%` – any key of an object;
  * `*` – any sequence of array indexes and object keys;
- * `@#` – length of array or object, could be only used as last component of
-    path;
- * `$` – the whole JSON document as single value, could be only the whole path.
+ * `@#` – length of array or object, may only be used as the last component of
+    a path;
+ * `$` – the whole JSON document as single value, may only be the whole path.
 
 Expression is true when operator is true against at least one value selected
 by path.
 
 Key names could be given either with or without double quotes. Key names
-without double quotes shouldn't contain spaces, start with number or concur
-with jsquery keyword.
+without double quotes may not contain spaces, start with a number or match
+a jsquery keyword.
 
 The supported binary operators are:
 
@@ -121,78 +120,77 @@ The supported unary operators are:
  * Check for type operators: `IS ARRAY`, `IS NUMERIC`, `IS OBJECT`, `IS STRING`
    and `IS BOOLEAN`.
 
-Expressions could be complex. Complex expression is a set of expressions
+Expressions can be complex. Complex expression is a set of expressions
 combined by logical operators (`AND`, `OR`, `NOT`) and grouped using braces.
 
-Examples of complex expressions are given below.
+Examples of complex expressions:
 
  * `a = 1 AND (b = 2 OR c = 3) AND NOT d = 1`
  * `x.% = true OR x.# = true`
 
-Prefix expressions are expressions given in the form path (subexpression).
-In this case path selects JSON values to be checked using given subexpression.
+Prefix expressions are expressions given in the form `path (subexpression)`.
+In this case path selects JSON values to be checked using the given subexpression.
 Check results are aggregated in the same way as in simple expressions.
 
  * `#(a = 1 AND b = 2)` – exists element of array which a key is 1 and b key is 2
  * `%($ >= 10 AND $ <= 20)` – exists object key which values is between 10 and 20
 
-Path also could contain following special placeholders with "every" semantics:
+Path can also contain the following special placeholders with "every" semantics:
 
- * `#:` – every indexes of array;
- * `%:` – every key of object;
+ * `#:` – every index of an array;
+ * `%:` – every key of an object;
  * `*:` – every sequence of array indexes and object keys.
 
 Consider following example.
 
     %.#:($ >= 0 AND $ <= 1)
 
-This example could be read as following: there is at least one key which value
-is array of numerics between 0 and 1.
+This example could be read as following: there is at least one key whose value
+is an array of numerics between 0 and 1.
 
-We can rewrite this example in the following form with extra braces.
+We can rewrite this example in the following form with extra braces:
 
     %(#:($ >= 0 AND $ <= 1))
 
-The first placeholder `%` checks that expression in braces is true for at least
-one value in object. The second placeholder `#:` checks value to be array and
-all its elements satisfy expressions in braces.
+The first placeholder `%` checks that the expression in braces is true for at least
+one value in the object. The second placeholder `#:` checks if the value is an array
+and that all its elements satisfy the expressions in braces.
 
-We can rewrite this example without `#:` placeholder as follows.
+We can rewrite this example without the `#:` placeholder as follows:
 
     %(NOT #(NOT ($ >= 0 AND $ <= 1)) AND $ IS ARRAY)
 
-In this example we transform assertion that every element of array satisfy some
-condition to assertion that there is no one element which doesn't satisfy the
-same condition.
+In this example we transform the assertion that every element of array satisfy some
+condition to an assertion that there are no elements which don't satisfy the same
+condition.
 
-Some examples of using paths are given below.
+Some examples of using paths:
 
  * `numbers.#: IS NUMERIC` – every element of "numbers" array is numeric.
  * `*:($ IS OBJECT OR $ IS BOOLEAN)` – JSON is a structure of nested objects
    with booleans as leaf values.
- * `#:.%:($ >= 0 AND $ <= 1)` – each element of array is object containing
+ * `#:.%:($ >= 0 AND $ <= 1)` – each element of array is an object containing
    only numeric values between 0 and 1.
- * `documents.#:.% = *` – "documents" is array of objects containing at least
+ * `documents.#:.% = *` – "documents" is an array of objects containing at least
    one key.
  * `%.#: ($ IS STRING)` – JSON object contains at least one array of strings.
- * `#.% = true` – at least one array element is objects which contains at least
+ * `#.% = true` – at least one array element is an object which contains at least
    one "true" value.
 
-Usage of path operators and braces need some explanation. When same path
-operators are used multiple times they may refer different values while you can
-refer same value multiple time by using braces and `$` operator. See following
-examples.
+The use of path operators and braces need some further explanation. When the same path
+operators are used multiple times, they may refer to different values. If you want them
+to always refer to the same value, you must use braces and the `$` operator. For example:
 
- * `# < 10 AND # > 20` – exists element less than 10 and exists another element
-   greater than 20.
- * `#($ < 10 AND $ > 20)` – exists element which both less than 10 and greater
-   than 20 (impossible).
- * `#($ >= 10 AND $ <= 20)` – exists element between 10 and 20.
- * `# >= 10 AND # <= 20` – exists element great or equal to 10 and exists
-   another element less or equal to 20. Query can be satisfied by array with
-   no elements between 10 and 20, for instance [0,30].
+ * `# < 10 AND # > 20` – an element less than 10 exists, and another element
+   greater than 20 exists.
+ * `#($ < 10 AND $ > 20)` – an element which is both less than 10 and greater
+   than 20 exists (impossible).
+ * `#($ >= 10 AND $ <= 20)` – an element between 10 and 20 exists.
+ * `# >= 10 AND # <= 20` – an element greater or equal to 10 exists, and another
+   element less or equal to 20 exists. Please note that this query also can be
+   satisfied by an array with no elements between 10 and 20, for instance [0,30].
 
-Same rules apply when you search inside objects and branchy structures.
+Same rules apply when searching inside objects and branch structures.
 
 Type checking operators and "every" placeholders are useful for document
 schema validation. JsQuery matchig operator `@@` is immutable and can be used
@@ -208,9 +206,9 @@ CREATE TABLE js (
         points.#:(x IS NUMERIC AND y IS NUMERIC)'::jsquery));
 ```
 
-In this example check constraint validates that in "data" jsonb column:
-value of "name" key is string, value of "similar_ids" key is array of numerics,
-value of "points" key is array of objects which contain numeric values in
+In this example the check constraint validates that in the "data" jsonb column
+the value of the "name" key is a string, the value of the "similar_ids" key is an array of numerics,
+and the value of the "points" key is an array of objects which contain numeric values in
 "x" and "y" keys.
 
 See our
@@ -227,11 +225,11 @@ provide different kinds of query optimization.
  * jsonb\_value\_path\_ops
 
 In each of two GIN opclasses jsonb documents are decomposed into entries. Each
-entry is associated with particular value and it's path. Difference between
+entry is associated with a particular value and its path. The difference between
 opclasses is in the entry representation, comparison and usage for search
 optimization.
 
-For example, jsonb document
+For example, the jsonb document
 `{"a": [{"b": "xyz", "c": true}, 10], "d": {"e": [7, false]}}`
 would be decomposed into following entries:
 
@@ -241,57 +239,57 @@ would be decomposed into following entries:
  * "d"."e".#.7
  * "d"."e".#.false
 
-Since JsQuery doesn't support search in particular array index, we consider
+Since JsQuery doesn't support searching in a particular array index, we consider
 all array elements to be equivalent. Thus, each array element is marked with
-same `#` sign in the path.
+the same `#` sign in its path.
 
 Major problem in the entries representation is its size. In the given example
-key "a" is presented three times. In the large branchy documents with long
-keys size of naive entries representation becomes unreasonable. Both opclasses
-address this issue but in a slightly different way.
+the key "a" is presented three times. In large branchy documents with long
+keys sizes of naive entries, the representation becomes unreasonably large.
+Both opclasses address this issue, but in slightly different ways.
 
 ### jsonb\_path\_value\_ops
 
 jsonb\_path\_value\_ops represents entry as pair of path hash and value.
-Following pseudocode illustrates it.
+Following pseudocode illustrates it:
 
     (hash(path_item_1.path_item_2. ... .path_item_n); value)
 
-In comparison of entries path hash is the higher part of entry and value is
-its lower part. This determines the features of this opclass. Since path
-is hashed and it is higher part of entry we need to know the full path to
-the value in order to use it for search. However, once path is specified
+When comparison entries, the path hash is the higher part of entry and the value is
+the lower part. This determines the features of this opclass. Since the path
+is hashed and it's the higher part of the entry, we need to know the full path to
+a value in order to use the it for searching. However, once the path is specified
 we can use both exact and range searches very efficiently.
 
 ### jsonb\_value\_path\_ops
 
-jsonb\_value\_path\_ops represents entry as pair of value and bloom filter
-of path.
+jsonb\_value\_path\_ops represents entry as pair of the value and a bloom filter
+of paths:
 
     (value; bloom(path_item_1) | bloom(path_item_2) | ... | bloom(path_item_n))
 
 In comparison of entries value is the higher part of entry and bloom filter of
 path is its lower part. This determines the features of this opclass. Since
-value is the higher part of entry we can perform only exact value search
-efficiently. Range value search is possible as well but we would have to
-filter all the the different paths where matching values occur. Bloom filter
-over path items allows index usage for conditions containing `%` and `*` in
+the value is the higher part of an entry, we can only perform exact value search
+effectively. A search over a range of values is possible as well, but we have to
+filter all the the different paths where matching values occur. The Bloom filter
+over path items allows the index to be used for conditions containing `%` and `*` in
 their paths.
 
 ### Query optimization
 
-JsQuery opclasses perform complex query optimization. Thus it's valuable for
+JsQuery opclasses perform complex query optimization. It's valuable for a
 developer or administrator to see the result of such optimization.
-Unfortunately, opclasses aren't allowed to do any custom output to the
-EXPLAIN. That's why JsQuery provides following functions which allows to see
-how particular opclass optimizes given query.
+Unfortunately, opclasses aren't allowed to put any custom output in an
+EXPLAIN. That's why JsQuery provides these functions to let you see
+how particular opclass optimizes given query:
 
  * gin\_debug\_query\_path\_value(jsquery) – for jsonb\_path\_value\_ops
  * gin\_debug\_query\_value\_path(jsquery) – for jsonb\_value\_path\_ops
 
-Result of these functions is a textual representation of query tree which
-leafs are GIN search entries. Following examples show different results of
-query optimization by different opclasses.
+The result of these functions is a textual representation of the query tree
+where leaves are GIN search entries. Following examples show different results of
+query optimization by different opclasses:
 
     # SELECT gin_debug_query_path_value('x = 1 AND (*.y = 1 OR y = 2)');
      gin_debug_query_path_value
@@ -309,9 +307,9 @@ query optimization by different opclasses.
 
 Unfortunately, jsonb have no statistics yet. That's why JsQuery optimizer has
 to do imperative decision while selecting conditions to be evaluated using
-index. This decision is made by assumtion that some condition types are less
-selective than others. Optimizer divides conditions into following selectivity
-class (listed by descending of selectivity).
+index. This decision is made by assuming that some condition types are less
+selective than others. The optimizer divides conditions into following selectivity
+classes (listed in descending order of selectivity):
 
  1. Equality (x = c)
  2. Range (c1 < x < c2)
@@ -319,19 +317,19 @@ class (listed by descending of selectivity).
  4. Is (x is type)
  5. Any (x = \*)
 
-Optimizer evades index evaluation of less selective conditions when possible.
+The optimizer avoids index evaluation of less selective conditions when possible.
 For example, in the `x = 1 AND y > 0` query `x = 1` is assumed to be more
-selective than `y > 0`. That's why index isn't used for evaluation of `y > 0`.
+selective than `y > 0`. That's why the index isn't used for evaluation of `y > 0`.
 
     # SELECT gin_debug_query_path_value('x = 1 AND y > 0');
      gin_debug_query_path_value
     ----------------------------
      x = 1 , entry 0           +
 
-With lack of statistics decisions made by optimizer can be inaccurate. That's
-why JsQuery supports hints. Comments `/*-- index */` and `/*-- noindex */`
-placed in the conditions forces optimizer to use and not use index
-correspondingly.
+With the lack of statistics, decisions made by optimizer can be inaccurate. That's
+why JsQuery supports hints. The comments `/*-- index */` or `/*-- noindex */`
+placed in the conditions force the optimizer to use or not use an index
+correspondingly:
 
     SELECT gin_debug_query_path_value('x = 1 AND y /*-- index */ > 0');
      gin_debug_query_path_value
@@ -348,11 +346,11 @@ correspondingly.
 Contribution
 ------------
 
-Please, notice, that JsQuery is still under development and while it's
-stable and tested, it may contains some bugs. Don't hesitate to raise
+Please note that JsQuery is still under development. While it's
+stable and tested, it may contain some bugs. Don't hesitate to create
 [issues at github](https://github.com/postgrespro/jsquery/issues) with your
 bug reports.
 
-If you're lacking of some functionality in JsQuery and feeling power to
-implement it then you're welcome to make pull requests.
+If there's some functionality you'd like to see added to JsQuery and you feel
+like you can implement it, then you're welcome to make pull requests.
 
