@@ -30,7 +30,7 @@ JsQuery is realized as an extension and not available in default PostgreSQL
 installation. It is available from
 [github](https://github.com/postgrespro/jsquery)
 under the same license as
-[PostgreSQL](http://www.postgresql.org/about/licence/)
+[PostgreSQL](https://www.postgresql.org/about/licence/)
 and supports PostgreSQL 9.4+.
 
 Regards
@@ -345,7 +345,7 @@ Contribution
 
 Please, notice, that JsQuery is still under development and while it's
 stable and tested, it may contains some bugs. Don't hesitate to raise
-[issues at github](https://github.com/akorotkov/jsquery/issues) with your
+[issues at github](https://github.com/postgrespro/jsquery/issues) with your
 bug reports.
 
 If you're lacking of some functionality in JsQuery and feeling power to
