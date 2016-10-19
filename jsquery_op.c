@@ -43,7 +43,6 @@ compareNumeric(Numeric a, Numeric b)
 			);
 }
 
-#define jbvScalar jbvBinary
 static int
 JsonbType(JsonbValue *jb)
 {
@@ -52,15 +51,9 @@ JsonbType(JsonbValue *jb)
 	if (jb->type == jbvBinary)
 	{
 		JsonbContainer	*jbc = jb->val.binary.data;
-
-		if (jbc->header & JB_FSCALAR)
+		type = jbc->type;
+		if (type == (jbvArray | jbvScalar))
 			type = jbvScalar;
-		else if (jbc->header & JB_FOBJECT)
-			type = jbvObject;
-		else if (jbc->header & JB_FARRAY)
-			type = jbvArray;
-		else
-			elog(ERROR, "Unknown container type: 0x%08x", jbc->header);
 	}
 
 	return type;
@@ -174,17 +167,21 @@ checkArrayEquality(JsQueryItem *jsq, JsonbValue *jb)
 	JsonbIterator	*it;
 	JsonbValue		v;
 	JsQueryItem	elem;
+	int				nelems;
 
 	if (!(jsq->type == jqiArray && JsonbType(jb) == jbvArray))
 		return false;
 
+	nelems = JsonContainerSize(jb->val.binary.data);
+	if (nelems < 0)
+		nelems = JsonGetArraySize(jb->val.binary.data);
+
+	if (nelems != jsq->array.nelems)
+		return false;
 
 	it = JsonbIteratorInit(jb->val.binary.data);
 	r = JsonbIteratorNext(&it, &v, true);
 	Assert(r == WJB_BEGIN_ARRAY);
-
-	if (v.val.array.nElems != jsq->array.nelems)
-		return false;
 
 	while((r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 	{
@@ -338,7 +335,28 @@ executeExpr(JsQueryItem *jsq, int32 op, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 			r = JsonbIteratorNext(&it, &v, true);
 			Assert(r == WJB_BEGIN_ARRAY || r == WJB_BEGIN_OBJECT);
 
-			length = (r == WJB_BEGIN_ARRAY) ? v.val.array.nElems : v.val.object.nPairs;
+			if (r == WJB_BEGIN_ARRAY)
+			{
+				length = v.val.array.nElems;
+
+				if (length < 0)
+					length = JsonGetArraySize(jb->val.binary.data);
+			}
+			else
+			{
+				length = v.val.object.nPairs;
+
+				if (length < 0)
+				{
+					length = 0;
+
+					while ((r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
+					{
+						if (r == WJB_KEY)
+							length++;
+					}
+				}
+			}
 
 			v.type = jbvNumeric;
 			v.val.numeric = DatumGetNumeric(DirectFunctionCall1(int4_numeric, Int32GetDatum(length)));
@@ -609,16 +627,14 @@ jsquery_json_exec(PG_FUNCTION_ARGS)
 	JsonbValue		jbv;
 	JsQueryItem	jsq;
 
-	jbv.type = jbvBinary;
-	jbv.val.binary.data = &jb->root;
-	jbv.val.binary.len = VARSIZE_ANY_EXHDR(jb);
+	JsonValueInitBinary(&jbv, &jb->root);
 
 	jsqInit(&jsq, jq);
 
 	res = recursiveExecute(&jsq, &jbv, NULL);
 
 	PG_FREE_IF_COPY(jq, 0);
-	PG_FREE_IF_COPY(jb, 1);
+	PG_FREE_IF_COPY_JSONB(jb, 1);
 
 	PG_RETURN_BOOL(res);
 }
@@ -633,15 +649,13 @@ json_jsquery_exec(PG_FUNCTION_ARGS)
 	JsonbValue		jbv;
 	JsQueryItem	jsq;
 
-	jbv.type = jbvBinary;
-	jbv.val.binary.data = &jb->root;
-	jbv.val.binary.len = VARSIZE_ANY_EXHDR(jb);
+	JsonValueInitBinary(&jbv, &jb->root);
 
 	jsqInit(&jsq, jq);
 
 	res = recursiveExecute(&jsq, &jbv, NULL);
 
-	PG_FREE_IF_COPY(jb, 0);
+	PG_FREE_IF_COPY_JSONB(jb, 0);
 	PG_FREE_IF_COPY(jq, 1);
 
 	PG_RETURN_BOOL(res);

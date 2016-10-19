@@ -19,6 +19,7 @@
 #include "fmgr.h"
 #include "utils/numeric.h"
 #include "utils/jsonb.h"
+#include "utils/json_generic.h"
 
 typedef struct
 {
