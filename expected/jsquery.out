@@ -1391,6 +1391,30 @@ select '{"a":[1,2]}' @@ '@#  = 1'::jsquery;
  t
 (1 row)
 
+select '[]' @@ '@# is numeric'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{}' @@ '@# is numeric'::jsquery;
+ ?column? 
+----------
+ t
+(1 row)
+
+select '0' @@ '@# is numeric'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
+select '0' @@ '@# = 1'::jsquery;
+ ?column? 
+----------
+ f
+(1 row)
+
 --ALL
 select 'a.*: = 4'::jsquery;
   jsquery   

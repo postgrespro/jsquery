@@ -283,6 +283,10 @@ select '{"a":[1,2]}' @@ '%.@# in (2, 4)'::jsquery;
 select '{"a":[1,2]}' @@ '*.@# in (2, 4)'::jsquery;
 select '{"a":[1,2]}' @@ '*.@# ($ = 4 or $ = 2)'::jsquery;
 select '{"a":[1,2]}' @@ '@#  = 1'::jsquery;
+select '[]' @@ '@# is numeric'::jsquery;
+select '{}' @@ '@# is numeric'::jsquery;
+select '0' @@ '@# is numeric'::jsquery;
+select '0' @@ '@# = 1'::jsquery;
 
 --ALL
 select 'a.*: = 4'::jsquery;
