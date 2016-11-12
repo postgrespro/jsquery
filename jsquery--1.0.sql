@@ -30,12 +30,17 @@ CREATE FUNCTION json_jsquery_exec(jsonb, jsquery)
 	AS 'MODULE_PATHNAME'
 	LANGUAGE C STRICT IMMUTABLE;
 
+CREATE FUNCTION	jsquery_sel(internal, oid, internal, integer)
+	RETURNS float8
+	AS 'MODULE_PATHNAME'
+	LANGUAGE C STRICT;
+
 CREATE OPERATOR @@ (
 	LEFTARG = jsquery,
 	RIGHTARG = jsonb,
 	PROCEDURE = jsquery_json_exec,
 	COMMUTATOR = '@@',
-	RESTRICT = contsel,
+	RESTRICT = jsquery_sel,
 	JOIN = contjoinsel
 );
 
@@ -44,7 +49,7 @@ CREATE OPERATOR @@ (
 	RIGHTARG = jsquery,
 	PROCEDURE = json_jsquery_exec,
 	COMMUTATOR = '@@',
-	RESTRICT = contsel,
+	RESTRICT = jsquery_sel,
 	JOIN = contjoinsel
 );
 
