@@ -1,13 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * jsquery_support.c
- *     Functions and operations to support jsquery  
+ *	Functions and operations to support jsquery
  *
  * Copyright (c) 2014, PostgreSQL Global Development Group
  * Author: Teodor Sigaev <teodor@sigaev.ru>
  *
  * IDENTIFICATION
- *    contrib/jsquery/jsquery_support.c
+ *	contrib/jsquery/jsquery_support.c
  *
  *-------------------------------------------------------------------------
  */
@@ -22,7 +22,7 @@
 } while(0)							\
 
 #define read_int32(v, b, p) do {	\
-	(v) = *(uint32*)((b) + (p));		\
+	(v) = *(uint32*)((b) + (p));	\
 	(p) += sizeof(int32);			\
 } while(0)							\
 
