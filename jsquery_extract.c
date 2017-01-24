@@ -463,7 +463,7 @@ processGroup(ExtractedNode *node, int start, int end)
 						first = true;
 	ExtractedNode	   *child;
 	ExtractedNodeType	type = eAny;
-	JsQueryItemType		isType = jbvNull;
+	JsQueryItemType		isType = jqiNull;
 
 	if (end - start < 2)
 		return;
