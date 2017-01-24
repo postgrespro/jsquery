@@ -1,13 +1,13 @@
 /*-------------------------------------------------------------------------
  *
- * jsquery_manipulation.c
- *     Functions and operations to manipulate jsquery  
+ * jsquery_constr.c
+ *	Functions and operations to manipulate jsquery
  *
  * Copyright (c) 2014, PostgreSQL Global Development Group
  * Author: Teodor Sigaev <teodor@sigaev.ru>
  *
  * IDENTIFICATION
- *    contrib/jsquery/jsquery_manipulation.c
+ *	contrib/jsquery/jsquery_constr.c
  *
  *-------------------------------------------------------------------------
  */
@@ -23,8 +23,8 @@ static int32
 copyJsQuery(StringInfo buf, JsQueryItem *jsq)
 {
 	JsQueryItem	elem;
-	int32			next, chld;
-	int32           resPos = buf->len - VARHDRSZ; /* position from begining of jsquery data */
+	int32		next, chld;
+	int32		resPos = buf->len - VARHDRSZ; /* position from begining of jsquery data */
 
 	check_stack_depth();
 
@@ -42,7 +42,7 @@ copyJsQuery(StringInfo buf, JsQueryItem *jsq)
 		case jqiKey:
 		case jqiString:
 			{
-				int32 	len;
+				int32	len;
 				char	*s;
 
 				s = jsqGetString(jsq, &len);
@@ -124,6 +124,10 @@ copyJsQuery(StringInfo buf, JsQueryItem *jsq)
 				*(int32*)(buf->data + argOut) = chld;
 			}
 			break;
+		case jqiIndexArray:
+			appendBinaryStringInfo(buf, (char*)&jsq->arrayIndex,
+								   sizeof(jsq->arrayIndex));
+			break;
 		case jqiNull:
 		case jqiCurrent:
 		case jqiLength:
@@ -150,7 +154,7 @@ joinJsQuery(JsQueryItemType type, JsQuery *jq1, JsQuery *jq2)
 	JsQuery			*out;
 	StringInfoData	buf;
 	int32			left, right, chld;
-	JsQueryItem	v;	
+	JsQueryItem	v;
 
 	initStringInfo(&buf);
 	enlargeStringInfo(&buf, VARSIZE_ANY(jq1) + VARSIZE_ANY(jq2) + 4 * sizeof(int32) + VARHDRSZ);
@@ -188,9 +192,9 @@ PG_FUNCTION_INFO_V1(jsquery_join_and);
 Datum
 jsquery_join_and(PG_FUNCTION_ARGS)
 {
-	JsQuery 		*jq1 = PG_GETARG_JSQUERY(0);
-	JsQuery 		*jq2 = PG_GETARG_JSQUERY(1);
-	JsQuery			*out;
+	JsQuery		*jq1 = PG_GETARG_JSQUERY(0);
+	JsQuery		*jq2 = PG_GETARG_JSQUERY(1);
+	JsQuery		*out;
 
 	out = joinJsQuery(jqiAnd, jq1, jq2);
 
@@ -204,9 +208,9 @@ PG_FUNCTION_INFO_V1(jsquery_join_or);
 Datum
 jsquery_join_or(PG_FUNCTION_ARGS)
 {
-	JsQuery 		*jq1 = PG_GETARG_JSQUERY(0);
-	JsQuery 		*jq2 = PG_GETARG_JSQUERY(1);
-	JsQuery			*out;
+	JsQuery		*jq1 = PG_GETARG_JSQUERY(0);
+	JsQuery		*jq2 = PG_GETARG_JSQUERY(1);
+	JsQuery		*out;
 
 	out = joinJsQuery(jqiOr, jq1, jq2);
 
