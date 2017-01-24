@@ -1,13 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * jsquery.h
- *     Definitions of jsquery datatype
+ *	Definitions of jsquery datatype
  *
  * Copyright (c) 2014, PostgreSQL Global Development Group
  * Author: Teodor Sigaev <teodor@sigaev.ru>
  *
  * IDENTIFICATION
- *    contrib/jsquery/jsquery.h
+ *	contrib/jsquery/jsquery.h
  *
  *-------------------------------------------------------------------------
  */
@@ -130,7 +130,7 @@ typedef struct JsQueryParseItem JsQueryParseItem;
 
 struct JsQueryParseItem {
 	JsQueryItemType	type;
-	JsQueryHint	 	hint;
+	JsQueryHint		hint;
 	JsQueryParseItem	*next; /* next in path */
 
 	union {
@@ -145,8 +145,8 @@ struct JsQueryParseItem {
 		Numeric		numeric;
 		bool		boolean;
 		struct {
-			uint32      len;
-			char        *val; /* could not be not null-terminated */
+			uint32		len;
+			char		*val; /* could not be not null-terminated */
 		} string;
 
 		struct {
@@ -162,10 +162,10 @@ extern JsQueryParseItem* parsejsquery(const char *str, int len);
 
 typedef enum
 {
-	iAny 		= jqiAny,
-	iAnyArray 	= jqiAnyArray,
-	iKey 		= jqiKey,
-	iAnyKey 	= jqiAnyKey
+	iAny		= jqiAny,
+	iAnyArray	= jqiAnyArray,
+	iKey		= jqiKey,
+	iAnyKey		= jqiAnyKey
 } PathItemType;
 
 typedef struct PathItem PathItem;
@@ -201,7 +201,7 @@ typedef struct ExtractedNode ExtractedNode;
 struct ExtractedNode
 {
 	ExtractedNodeType	type;
-	JsQueryHint	 		hint;
+	JsQueryHint			hint;
 	PathItem		   *path;
 	bool				indirect;
 	SelectivityClass	sClass;
