@@ -66,6 +66,16 @@ makeItemType(int type)
 }
 
 static JsQueryParseItem*
+makeIndexArray(string *s)
+{
+	JsQueryParseItem* v = makeItemType(jqiIndexArray);
+
+	v->arrayIndex = pg_atoi(s->val, 4, 0);
+
+	return v;
+}
+
+static JsQueryParseItem*
 makeItemString(string *s)
 {
 	JsQueryParseItem *v;
@@ -213,13 +223,13 @@ makeItemList(List *list) {
 					ARRAY_T FALSE_P NUMERIC_T OBJECT_T
 					STRING_T BOOLEAN_T
 
-%token	<str>		STRING_P NUMERIC_P
+%token	<str>		STRING_P NUMERIC_P INT_P
 
 %type	<value>		result scalar_value 
 
 %type	<elems>		path value_list
 
-%type 	<value>		key key_any right_expr expr array
+%type 	<value>		key key_any right_expr expr array numeric
 
 %token	<hint>		HINT_P
 
@@ -257,6 +267,7 @@ scalar_value:
 	| STRING_T						{ $$ = makeItemString(&$1); }
 	| BOOLEAN_T						{ $$ = makeItemString(&$1); }
 	| NUMERIC_P						{ $$ = makeItemNumeric(&$1); }
+	| INT_P							{ $$ = makeItemNumeric(&$1); }
 	;
 
 value_list:
@@ -264,15 +275,20 @@ value_list:
 	| value_list ',' scalar_value	{ $$ = lappend($1, $3); } 
 	;
 
+numeric:
+	NUMERIC_P						{ $$ = makeItemNumeric(&$1); }
+	| INT_P							{ $$ = makeItemNumeric(&$1); }
+	;
+
 right_expr:
 	'='	scalar_value				{ $$ = makeItemUnary(jqiEqual, $2); }
 	| IN_P '(' value_list ')'		{ $$ = makeItemUnary(jqiIn, makeItemArray($3)); }
 	| '=' array						{ $$ = makeItemUnary(jqiEqual, $2); }
 	| '=' '*'						{ $$ = makeItemUnary(jqiEqual, makeItemType(jqiAny)); }
-	| '<' NUMERIC_P					{ $$ = makeItemUnary(jqiLess, makeItemNumeric(&$2)); }
-	| '>' NUMERIC_P					{ $$ = makeItemUnary(jqiGreater, makeItemNumeric(&$2)); }
-	| '<' '=' NUMERIC_P				{ $$ = makeItemUnary(jqiLessOrEqual, makeItemNumeric(&$3)); }
-	| '>' '=' NUMERIC_P				{ $$ = makeItemUnary(jqiGreaterOrEqual, makeItemNumeric(&$3)); }
+	| '<' numeric					{ $$ = makeItemUnary(jqiLess, $2); }
+	| '>' numeric					{ $$ = makeItemUnary(jqiGreater, $2); }
+	| '<' '=' numeric				{ $$ = makeItemUnary(jqiLessOrEqual, $3); }
+	| '>' '=' numeric				{ $$ = makeItemUnary(jqiGreaterOrEqual, $3); }
 	| '@' '>' array					{ $$ = makeItemUnary(jqiContains, $3); } 
 	| '<' '@' array					{ $$ = makeItemUnary(jqiContained, $3); } 
 	| '&' '&' array					{ $$ = makeItemUnary(jqiOverlap, $3); }
@@ -311,6 +327,7 @@ key:
 	| '%' ':'						{ $$ = makeItemType(jqiAllKey); }
 	| '$'							{ $$ = makeItemType(jqiCurrent); }
 	| '@' '#'						{ $$ = makeItemType(jqiLength); }
+	| '#' INT_P						{ $$ = makeIndexArray(&$2); }
 	| STRING_P						{ $$ = makeItemKey(&$1); }
 	| IN_P							{ $$ = makeItemKey(&$1); }
 	| IS_P							{ $$ = makeItemKey(&$1); }
@@ -325,6 +342,7 @@ key:
 	| STRING_T						{ $$ = makeItemKey(&$1); }
 	| BOOLEAN_T						{ $$ = makeItemKey(&$1); }
 	| NUMERIC_P						{ $$ = makeItemKey(&$1); }
+	| INT_P							{ $$ = makeItemKey(&$1); }
 	;
 
 /*

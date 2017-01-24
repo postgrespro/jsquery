@@ -113,6 +113,9 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item, bool onlyCurrent
 				*(int32*)(buf->data + arg) = chld;
 			}
 			break;
+		case jqiIndexArray:
+			appendBinaryStringInfo(buf, (char*)&item->arrayIndex,
+								   sizeof(item->arrayIndex));
 		case jqiAny:
 		case jqiAnyArray:
 		case jqiAnyKey:
@@ -272,7 +275,7 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 			break;
 		case jqiArray:
 			if (printBracketes)
-				appendStringInfoChar(buf, '['); 
+				appendStringInfoChar(buf, '[');
 
 			while(jsqIterateArray(v, &elem))
 			{
@@ -363,6 +366,11 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 				appendStringInfoChar(buf, '.');
 			appendStringInfoChar(buf, '%');
 			appendStringInfoChar(buf, ':');
+			break;
+		case jqiIndexArray:
+			if (inKey)
+				appendStringInfoChar(buf, '.');
+			appendStringInfo(buf, "#%u", v->arrayIndex);
 			break;
 		default:
 			elog(ERROR, "Unknown JsQueryItem type: %d", v->type);

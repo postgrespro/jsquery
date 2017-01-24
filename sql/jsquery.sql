@@ -101,6 +101,9 @@ select  'is.in   < 1'::jsquery;
 select  'is.is   < 1'::jsquery;
 select  'is.not  < 1'::jsquery;
 
+select 'a.b.#4 > 4'::jsquery;
+select 'a.b.#10203.* > 4'::jsquery;
+
 select '{"a": {"b": null}}'::jsonb @@ 'a.b = 1';
 select '{"a": {"b": null}}'::jsonb @@ 'a.b = null';
 select '{"a": {"b": null}}'::jsonb @@ 'a.b = false';
@@ -201,6 +204,13 @@ select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ 'a.%=3';
 select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%.%="hey"';
 select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%="hey"';
 select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%=[5,6]';
+
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.#1 = 2';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.#2 = 2';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.#3 = 2';
+select '{"a": {"b": [{"x":1},{"x":2},{"x":3}]}}'::jsonb @@ 'a.b.#1.x = 2';
+select '{"a": {"b": [{"x":1},{"x":2},{"x":3}]}}'::jsonb @@ 'a.b.#2.x = 2';
+select '{"a": {"b": [{"x":1},{"x":2},{"x":3}]}}'::jsonb @@ 'a.b.#3.x = 2';
 
 select '"XXX"'::jsonb @@ '$="XXX"';
 select '"XXX"'::jsonb @@ '#.$="XXX"';

@@ -105,6 +105,7 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			pathItem->parent = path;
 			jsqGetNext(jsq, &elem);
 			return recursiveExtract(&elem, not, true, pathItem);
+		case jqiIndexArray:
 		case jqiAnyArray:
 		case jqiAllArray:
 			if ((not && jsq->type == jqiAnyArray) || (!not && jsq->type == jqiAllArray))

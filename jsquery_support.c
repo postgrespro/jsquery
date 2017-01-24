@@ -80,6 +80,9 @@ jsqInitByBuffer(JsQueryItem *v, char *base, int32 pos)
 		case jqiAllArray:
 		case jqiAllKey:
 			break;
+		case jqiIndexArray:
+			read_int32(v->arrayIndex, base, pos);
+			break;
 		case jqiKey:
 		case jqiString:
 			read_int32(v->value.datalen, base, pos);
@@ -144,6 +147,7 @@ jsqGetNext(JsQueryItem *v, JsQueryItem *a)
 		Assert(
 			v->type == jqiKey ||
 			v->type == jqiAny ||
+			v->type == jqiIndexArray ||
 			v->type == jqiAnyArray ||
 			v->type == jqiAnyKey ||
 			v->type == jqiAll ||

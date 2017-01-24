@@ -518,6 +518,19 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 				}
 			}
 			break;
+		case jqiIndexArray:
+			if (JsonbType(jb) == jbvArray)
+			{
+				JsonbValue		*v;
+
+				jsqGetNext(jsq, &elem);
+
+				v = getIthJsonbValueFromContainer(jb->val.binary.data,
+												  jsq->arrayIndex);
+
+				res = v && recursiveExecute(&elem, v, NULL);
+			}
+			break;
 		case jqiAnyKey:
 		case jqiAllKey:
 			if (JsonbType(jb) == jbvObject)
@@ -669,6 +682,10 @@ compareJsQuery(JsQueryItem *v1, JsQueryItem *v2)
 		case jqiAll:
 		case jqiAllArray:
 		case jqiAllKey:
+			break;
+		case jqiIndexArray:
+			if (v1->arrayIndex != v2->arrayIndex)
+				res = (v1->arrayIndex > v2->arrayIndex) ? 1 : -1;
 			break;
 		case jqiKey:
 		case jqiString:
@@ -963,6 +980,9 @@ hashJsQuery(JsQueryItem *v, pg_crc32 *crc)
 		case jqiAll:
 		case jqiAllArray:
 		case jqiAllKey:
+			break;
+		case jqiIndexArray:
+			COMP_CRC32(*crc, &v->arrayIndex, sizeof(v->arrayIndex));
 			break;
 		default:
 			elog(ERROR, "Unknown JsQueryItem type: %d", v->type);

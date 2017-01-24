@@ -56,7 +56,8 @@ typedef enum JsQueryItemType {
 		jqiCurrent,
 		jqiLength,
 		jqiIn,
-		jqiIs
+		jqiIs,
+		jqiIndexArray
 } JsQueryItemType;
 
 /*
@@ -104,6 +105,8 @@ typedef struct JsQueryItem {
 			int		current;
 			int32	*arrayPtr;
 		} array;
+
+		uint32		arrayIndex;
 	};
 } JsQueryItem;
 
@@ -153,6 +156,8 @@ struct JsQueryParseItem {
 			int					nelems;
 			JsQueryParseItem	**elems;
 		} array;
+
+		uint32		arrayIndex;
 	};
 };
 

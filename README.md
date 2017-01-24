@@ -89,6 +89,7 @@ the simplest case path is just an key name. In general path is key names and
 placeholders combined by dot signs. Path can use following placeholders:
 
  * `#` – any index of array;
+ * `#N` – N-th index of array;
  * `%` – any key of object;
  * `*` – any sequence of array indexes and object keys;
  * `@#` – length of array or object, could be only used as last component of

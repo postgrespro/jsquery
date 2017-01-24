@@ -85,13 +85,19 @@ unicode     \\u[0-9A-Fa-f]{4}
 									return NUMERIC_P;
 								}
 
-<INITIAL>[+-]?[0-9]+ 			{
+<INITIAL>[+-][0-9]+ 			{
 									addstring(true, yytext, yyleng);
 									addchar(false, '\0');
 									yylval->str = scanstring;
 									return NUMERIC_P;
 								}
 
+<INITIAL>[0-9]+ 				{
+									addstring(true, yytext, yyleng);
+									addchar(false, '\0');
+									yylval->str = scanstring;
+									return INT_P;
+								}
 
 <INITIAL>{any}+					{
 									addstring(true, yytext, yyleng);
