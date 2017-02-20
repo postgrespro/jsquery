@@ -1,3 +1,4 @@
+.deps
 *.so
 *.o
 jsquery_gram.c
