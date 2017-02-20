@@ -170,7 +170,8 @@ typedef enum
 	iAny		= jqiAny,
 	iAnyArray	= jqiAnyArray,
 	iKey		= jqiKey,
-	iAnyKey		= jqiAnyKey
+	iAnyKey		= jqiAnyKey,
+	iIndexArray = jqiIndexArray
 } PathItemType;
 
 typedef struct PathItem PathItem;
@@ -178,6 +179,7 @@ struct PathItem
 {
 	PathItemType	type;
 	int				len;
+	int				arrayIndex;
 	char		   *s;
 	PathItem	   *parent;
 };

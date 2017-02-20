@@ -947,7 +947,7 @@ get_query_path_hash(PathItem *pathItem, uint32 *hash)
 				*hash = (*hash << 1) | (*hash >> 31);
 				*hash ^= hash_any((unsigned char *)pathItem->s, pathItem->len);
 			}
-			else if (pathItem->type == iAnyArray)
+			else if (pathItem->type == iAnyArray || pathItem->type == iIndexArray)
 			{
 				*hash = (*hash << 1) | (*hash >> 31);
 				*hash ^= JB_FARRAY;

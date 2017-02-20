@@ -106,6 +106,12 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			jsqGetNext(jsq, &elem);
 			return recursiveExtract(&elem, not, true, pathItem);
 		case jqiIndexArray:
+			pathItem = (PathItem *)palloc(sizeof(PathItem));
+			pathItem->type = iIndexArray;
+			pathItem->arrayIndex = jsq->arrayIndex;
+			pathItem->parent = path;
+			jsqGetNext(jsq, &elem);
+			return recursiveExtract(&elem, not, true, pathItem);
 		case jqiAnyArray:
 		case jqiAllArray:
 			if ((not && jsq->type == jqiAnyArray) || (!not && jsq->type == jqiAllArray))
@@ -863,6 +869,9 @@ debugPath(StringInfo buf, PathItem *path)
 			break;
 		case jqiAnyArray:
 			appendStringInfoChar(buf, '#');
+			break;
+		case jqiIndexArray:
+			appendStringInfo(buf, "#%d", path->arrayIndex);
 			break;
 		case jqiKey:
 			appendBinaryStringInfo(buf, path->s, path->len);
