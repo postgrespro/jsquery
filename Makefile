@@ -6,6 +6,7 @@ OBJS = jsonb_gin_ops.o jsquery_constr.o jsquery_extract.o \
 
 EXTENSION = jsquery
 DATA = jsquery--1.0.sql
+INCLUDES = jsquery.h
 
 REGRESS = jsquery
 # We need a UTF8 database
@@ -34,3 +35,7 @@ distprep: jsquery_gram.c jsquery_scan.c
 maintainer-clean:
 	rm -f jsquery_gram.c jsquery_scan.c jsquery_gram.h
 
+install: installincludes
+
+installincludes:
+	$(INSTALL_DATA) $(addprefix $(srcdir)/, $(INCLUDES)) '$(DESTDIR)$(includedir)/'
