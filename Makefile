@@ -38,4 +38,4 @@ maintainer-clean:
 install: installincludes
 
 installincludes:
-	$(INSTALL_DATA) $(addprefix $(srcdir)/, $(INCLUDES)) '$(DESTDIR)$(includedir)/'
+	$(INSTALL_DATA) $(addprefix $(srcdir)/, $(INCLUDES)) '$(DESTDIR)$(includedir)/server/'
