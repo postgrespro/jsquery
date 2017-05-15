@@ -30,6 +30,8 @@ ifdef USE_ASSERT_CHECKING
 override CFLAGS += -DUSE_ASSERT_CHECKING
 endif
 
+override CPPFLAGS += $(CPPFLAGS) -I$(srcdir)/include
+
 jsquery_gram.o: jsquery_scan.c
 
 jsquery_gram.c: BISONFLAGS += -d

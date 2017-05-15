@@ -21,6 +21,7 @@
 #include "miscadmin.h"
 #include "utils/builtins.h"
 #include "utils/jsonb.h"
+#include "utils/jsonpath.h"
 
 #include "jsquery.h"
 
@@ -59,6 +60,7 @@ typedef struct
 #define BLOOM_BITS 2
 #define JsonbNestedContainsStrategyNumber	13
 #define JsQueryMatchStrategyNumber			14
+#define JsonpathExistsStrategyNumber		15
 
 typedef struct
 {
@@ -584,7 +586,8 @@ gin_compare_partial_jsonb_value_path(PG_FUNCTION_ARGS)
 	StrategyNumber strategy = PG_GETARG_UINT16(2);
 	int32		result;
 
-	if (strategy == JsQueryMatchStrategyNumber)
+	if (strategy == JsQueryMatchStrategyNumber ||
+		strategy ==	JsonpathExistsStrategyNumber)
 	{
 		KeyExtra *extra = (KeyExtra *)PG_GETARG_POINTER(3);
 		ExtractedNode *node = extra->node;
@@ -780,7 +783,6 @@ gin_extract_jsonb_query_value_path(PG_FUNCTION_ARGS)
 	int			i, n;
 	uint32	   *bloom;
 	Entries		e = {0};
-	JsQuery	   *jq;
 	ExtractedNode *root;
 
 	switch(strategy)
@@ -805,9 +807,20 @@ gin_extract_jsonb_query_value_path(PG_FUNCTION_ARGS)
 			break;
 
 		case JsQueryMatchStrategyNumber:
-			jq = PG_GETARG_JSQUERY(0);
-			root = extractJsQuery(jq, make_value_path_entry_handler,
-									check_value_path_entry_handler, (Pointer)&e);
+#ifndef NO_JSONPATH
+		case JsonpathExistsStrategyNumber:
+			if (strategy == JsonpathExistsStrategyNumber)
+				root = extractJsonPath(PG_GETARG_JSONPATH_P(0),
+									   make_value_path_entry_handler,
+									   check_value_path_entry_handler,
+									   (Pointer)&e);
+			else
+#endif
+				root = extractJsQuery(PG_GETARG_JSQUERY(0),
+									  make_value_path_entry_handler,
+									  check_value_path_entry_handler,
+									  (Pointer)&e);
+
 			if (root)
 			{
 				*nentries = e.count;
@@ -864,6 +877,7 @@ gin_consistent_jsonb_value_path(PG_FUNCTION_ARGS)
 			break;
 
 		case JsQueryMatchStrategyNumber:
+		case JsonpathExistsStrategyNumber:
 			if (nkeys == 0)
 				res = true;
 			else
@@ -925,6 +939,7 @@ gin_triconsistent_jsonb_value_path(PG_FUNCTION_ARGS)
 			break;
 
 		case JsQueryMatchStrategyNumber:
+		case JsonpathExistsStrategyNumber:
 			if (nkeys == 0)
 				res = GIN_MAYBE;
 			else
@@ -1047,7 +1062,8 @@ gin_compare_partial_jsonb_path_value(PG_FUNCTION_ARGS)
 	{
 		result = (key->hash > partial_key->hash) ? 1 : -1;
 	}
-	else if (strategy == JsQueryMatchStrategyNumber)
+	else if (strategy == JsQueryMatchStrategyNumber ||
+			 strategy == JsonpathExistsStrategyNumber)
 	{
 		KeyExtra *extra = (KeyExtra *)PG_GETARG_POINTER(3);
 		ExtractedNode *node = extra->node;
@@ -1245,7 +1261,6 @@ gin_extract_jsonb_query_path_value_internal(FunctionCallInfo fcinfo, bool lax)
 	int			i;
 	Entries		e = {0};
 	PathValueExtra extra;
-	JsQuery	   *jq;
 	ExtractedNode *root;
 
 	extra.entries = &e;
@@ -1259,9 +1274,20 @@ gin_extract_jsonb_query_path_value_internal(FunctionCallInfo fcinfo, bool lax)
 			break;
 
 		case JsQueryMatchStrategyNumber:
-			jq = PG_GETARG_JSQUERY(0);
-			root = extractJsQuery(jq, make_path_value_entry_handler,
-										check_path_value_entry_handler, (Pointer) &extra);
+#ifndef NO_JSONPATH
+		case JsonpathExistsStrategyNumber:
+			if (strategy == JsonpathExistsStrategyNumber)
+				root = extractJsonPath(PG_GETARG_JSONPATH_P(0),
+									   make_path_value_entry_handler,
+									   check_path_value_entry_handler,
+									   (Pointer) &extra);
+			else
+#endif
+				root = extractJsQuery(PG_GETARG_JSQUERY(0),
+									  make_path_value_entry_handler,
+									  check_path_value_entry_handler,
+									  (Pointer) &extra);
+
 			if (root)
 			{
 				*nentries = e.count;
@@ -1329,6 +1355,7 @@ gin_consistent_jsonb_path_value(PG_FUNCTION_ARGS)
 			break;
 
 		case JsQueryMatchStrategyNumber:
+		case JsonpathExistsStrategyNumber:
 			if (nkeys == 0)
 				res = true;
 			else
@@ -1390,6 +1417,7 @@ gin_triconsistent_jsonb_path_value(PG_FUNCTION_ARGS)
 			break;
 
 		case JsQueryMatchStrategyNumber:
+		case JsonpathExistsStrategyNumber:
 			if (nkeys == 0)
 				res = GIN_MAYBE;
 			else

@@ -19,6 +19,7 @@
 #include "fmgr.h"
 #include "utils/numeric.h"
 #include "utils/jsonb.h"
+#include "utils/jsonpath.h"
 
 typedef struct
 {
@@ -243,6 +244,10 @@ bool isLogicalNodeType(ExtractedNodeType type);
 
 ExtractedNode *extractJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
 								CheckEntryHandler checkHandler, Pointer extra);
+#ifndef NO_JSONPATH
+ExtractedNode *extractJsonPath(JsonPath *jp, MakeEntryHandler makeHandler,
+							   CheckEntryHandler checkHandler, Pointer extra);
+#endif
 char *debugJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
 								CheckEntryHandler checkHandler, Pointer extra);
 bool queryNeedRecheck(ExtractedNode *node);
