@@ -2237,6 +2237,36 @@ select count(*) from test_jsquery where v @@ 't is object';
      2
 (1 row)
 
+select count(*) from test_jsquery where v @@ '$ is boolean';
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is string';
+ count 
+-------
+     4
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is numeric';
+ count 
+-------
+     5
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is array';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is object';
+ count 
+-------
+  1017
+(1 row)
+
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric';
  count 
 -------
@@ -2252,7 +2282,19 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string';
 select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")';
  count 
 -------
-    23
+    40
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ > 2';
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ = false';
+ count 
+-------
+     2
 (1 row)
 
 select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
@@ -2443,6 +2485,36 @@ select count(*) from test_jsquery where v @@ 't is object';
      2
 (1 row)
 
+select count(*) from test_jsquery where v @@ '$ is boolean';
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is string';
+ count 
+-------
+     4
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is numeric';
+ count 
+-------
+     5
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is array';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is object';
+ count 
+-------
+  1017
+(1 row)
+
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric';
  count 
 -------
@@ -2459,6 +2531,18 @@ select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ 
  count 
 -------
      7
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ > 2';
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ = false';
+ count 
+-------
+     2
 (1 row)
 
 explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
@@ -2694,6 +2778,36 @@ select count(*) from test_jsquery where v @@ 't is object';
      2
 (1 row)
 
+select count(*) from test_jsquery where v @@ '$ is boolean';
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is string';
+ count 
+-------
+     4
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is numeric';
+ count 
+-------
+     5
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is array';
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is object';
+ count 
+-------
+  1017
+(1 row)
+
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric';
  count 
 -------
@@ -2710,6 +2824,18 @@ select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ 
  count 
 -------
      7
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ > 2';
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ = false';
+ count 
+-------
+     2
 (1 row)
 
 explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;

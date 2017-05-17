@@ -681,7 +681,8 @@ gin_extract_jsonb_value_path_internal(Jsonb *jb, int32 *nentries, uint32 **bloom
 		switch (r)
 		{
 			case WJB_BEGIN_ARRAY:
-				entries[i++] = PointerGetDatum(make_gin_key(&v, get_path_bloom(stack)));
+				if (!v.val.array.rawScalar)
+					entries[i++] = PointerGetDatum(make_gin_key(&v, get_path_bloom(stack)));
 				break;
 			case WJB_BEGIN_OBJECT:
 				entries[i++] = PointerGetDatum(make_gin_key(&v, get_path_bloom(stack)));
@@ -1111,6 +1112,8 @@ gin_extract_jsonb_path_value_internal(Jsonb *jb, int32 *nentries)
 		switch (r)
 		{
 			case WJB_BEGIN_ARRAY:
+				if (v.val.array.rawScalar)
+					break;
 				entries[i++] = PointerGetDatum(make_gin_key(&v, stack->hash));
 				tmp = stack;
 				stack = (PathHashStack *) palloc(sizeof(PathHashStack));
@@ -1137,6 +1140,9 @@ gin_extract_jsonb_path_value_internal(Jsonb *jb, int32 *nentries)
 				entries[i++] = PointerGetDatum(make_gin_key(&v, stack->hash));
 				break;
 			case WJB_END_ARRAY:
+				if (!stack->parent)
+					break; /* raw scalar array */
+				/* fall through */
 			case WJB_END_OBJECT:
 				/* Pop the stack */
 				tmp = stack->parent;

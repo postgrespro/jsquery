@@ -1015,3 +1015,20 @@
 {"t": "a"}
 {"t": true}
 {"t": false}
+[1, 2, 3]
+["a", "b", "c"]
+1
+2
+3
+4
+5
+null
+null
+null
+false
+false
+true
+"aaa"
+"bbb"
+"ccc"
+"ddd"
