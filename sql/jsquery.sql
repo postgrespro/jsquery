@@ -477,6 +477,124 @@ SELECT gin_debug_query_value_path('$ = true');
 SELECT gin_debug_query_value_path('$ . ? (review_votes > 10) . review_rating < 7');
 SELECT gin_debug_query_value_path('similar_product_ids . ? (# = "B0002W4TL2") . $');
 
+-- -extract jsonpath entries for index scan
+
+SELECT gin_debug_jsonpath_value_path('lax    $');
+SELECT gin_debug_jsonpath_value_path('strict $');
+SELECT gin_debug_jsonpath_value_path('lax    $.a');
+SELECT gin_debug_jsonpath_value_path('strict $.a');
+SELECT gin_debug_jsonpath_value_path('lax    exists($)');
+SELECT gin_debug_jsonpath_value_path('strict exists($)');
+SELECT gin_debug_jsonpath_value_path('lax    exists($.a)');
+SELECT gin_debug_jsonpath_value_path('strict exists($.a)');
+SELECT gin_debug_jsonpath_value_path('lax    exists($.a.b)');
+SELECT gin_debug_jsonpath_value_path('strict exists($.a.b)');
+
+SELECT gin_debug_jsonpath_value_path('lax    exists($ ? (@.b == 3).c.d)');
+SELECT gin_debug_jsonpath_value_path('strict exists($ ? (@.b == 3).c.d)');
+SELECT gin_debug_jsonpath_value_path('lax    exists($.a ? (@.b == 3).c.d ? (@.e == "aa" || @ == 1))');
+SELECT gin_debug_jsonpath_value_path('strict exists($.a ? (@.b == 3).c.d ? (@.e == "aa" || @ == 1))');
+
+SELECT gin_debug_jsonpath_value_path('lax    $.a ? (@.b == "foo").c == 1');
+SELECT gin_debug_jsonpath_value_path('strict $.a ? (@.b == "foo").c == 1');
+SELECT gin_debug_jsonpath_value_path('lax    $.a ? (@.b == "foo") == 1');
+SELECT gin_debug_jsonpath_value_path('strict $.a ? (@.b == "foo") == 1');
+SELECT gin_debug_jsonpath_value_path('lax    $.a ? (@.b == "foo")');
+SELECT gin_debug_jsonpath_value_path('strict $.a ? (@.b == "foo")');
+SELECT gin_debug_jsonpath_value_path('lax    exists($.a ? (@.b == "foo"))');
+SELECT gin_debug_jsonpath_value_path('strict exists($.a ? (@.b == "foo"))');
+SELECT gin_debug_jsonpath_value_path('lax    exists($.a ? (@.b == "foo").c)');
+SELECT gin_debug_jsonpath_value_path('strict exists($.a ? (@.b == "foo").c)');
+select gin_debug_jsonpath_value_path('lax    exists($.a.b ? (@.c.d == 1))');
+select gin_debug_jsonpath_value_path('strict exists($.a.b ? (@.c.d == 1))');
+
+select gin_debug_jsonpath_value_path('$.a > 1');
+
+SELECT gin_debug_jsonpath_path_value('lax    $');
+SELECT gin_debug_jsonpath_path_value('strict $');
+SELECT gin_debug_jsonpath_path_value('lax    $.a');
+SELECT gin_debug_jsonpath_path_value('strict $.a');
+SELECT gin_debug_jsonpath_path_value('lax    exists($)');
+SELECT gin_debug_jsonpath_path_value('strict exists($)');
+SELECT gin_debug_jsonpath_path_value('lax    exists($.a)');
+SELECT gin_debug_jsonpath_path_value('strict exists($.a)');
+SELECT gin_debug_jsonpath_path_value('lax    exists($.a.b)');
+SELECT gin_debug_jsonpath_path_value('strict exists($.a.b)');
+
+SELECT gin_debug_jsonpath_path_value('lax    exists($ ? (@.b == 3).c.d)');
+SELECT gin_debug_jsonpath_path_value('strict exists($ ? (@.b == 3).c.d)');
+SELECT gin_debug_jsonpath_path_value('lax    exists($.a ? (@.b == 3).c.d ? (@.e == "aa" || @ == 1))');
+SELECT gin_debug_jsonpath_path_value('strict exists($.a ? (@.b == 3).c.d ? (@.e == "aa" || @ == 1))');
+
+SELECT gin_debug_jsonpath_path_value('lax    $.a ? (@.b == "foo").c == 1');
+SELECT gin_debug_jsonpath_path_value('strict $.a ? (@.b == "foo").c == 1');
+SELECT gin_debug_jsonpath_path_value('lax    $.a ? (@.b == "foo") == 1');
+SELECT gin_debug_jsonpath_path_value('strict $.a ? (@.b == "foo") == 1');
+SELECT gin_debug_jsonpath_path_value('lax    $.a ? (@.b == "foo")');
+SELECT gin_debug_jsonpath_path_value('strict $.a ? (@.b == "foo")');
+SELECT gin_debug_jsonpath_path_value('lax    exists($.a ? (@.b == "foo"))');
+SELECT gin_debug_jsonpath_path_value('strict exists($.a ? (@.b == "foo"))');
+SELECT gin_debug_jsonpath_path_value('lax    exists($.a ? (@.b == "foo").c)');
+SELECT gin_debug_jsonpath_path_value('strict exists($.a ? (@.b == "foo").c)');
+select gin_debug_jsonpath_path_value('strict exists($.a.b ? (@.c.d == 1))');
+select gin_debug_jsonpath_path_value('lax    exists($.a.b ? (@.c.d == 1))');
+
+select gin_debug_jsonpath_path_value('strict $.a.b == 1');
+select gin_debug_jsonpath_path_value('lax    $.a.b == 1');
+select gin_debug_jsonpath_path_value('strict $.a.b[*] == 1');
+select gin_debug_jsonpath_path_value('lax    $.a.b[*] == 1');
+select gin_debug_jsonpath_path_value('strict $.a[*].b[*] == 1');
+select gin_debug_jsonpath_path_value('lax    $.a[*].b[*] == 1');
+select gin_debug_jsonpath_path_value('strict $.a.b[*][*] == 1');
+select gin_debug_jsonpath_path_value('lax    $.a.b[*][*] == 1');
+select gin_debug_jsonpath_path_value('strict $.a[*].b[*] == 1');
+select gin_debug_jsonpath_path_value('lax    $.a[*].b[*] == 1');
+
+SELECT gin_debug_jsonpath_path_value('lax    $.a > 1 && $.a < 2 && $.b >= 3 && $.c <= "aaa"');
+SELECT gin_debug_jsonpath_path_value('strict $.a > 1 && $.a < 2 && $.b >= 3 && $.c <= "aaa"');
+
+SELECT gin_debug_jsonpath_laxpath_value('lax    $');
+SELECT gin_debug_jsonpath_laxpath_value('strict $');
+SELECT gin_debug_jsonpath_laxpath_value('lax    $.a');
+SELECT gin_debug_jsonpath_laxpath_value('strict $.a');
+SELECT gin_debug_jsonpath_laxpath_value('lax    exists($)');
+SELECT gin_debug_jsonpath_laxpath_value('strict exists($)');
+SELECT gin_debug_jsonpath_laxpath_value('lax    exists($.a)');
+SELECT gin_debug_jsonpath_laxpath_value('strict exists($.a)');
+SELECT gin_debug_jsonpath_laxpath_value('lax    exists($.a.b)');
+SELECT gin_debug_jsonpath_laxpath_value('strict exists($.a.b)');
+
+SELECT gin_debug_jsonpath_laxpath_value('lax    exists($ ? (@.b == 3).c.d)');
+SELECT gin_debug_jsonpath_laxpath_value('strict exists($ ? (@.b == 3).c.d)');
+SELECT gin_debug_jsonpath_laxpath_value('lax    exists($.a ? (@.b == 3).c.d ? (@.e == "aa" || @ == 1))');
+SELECT gin_debug_jsonpath_laxpath_value('strict exists($.a ? (@.b == 3).c.d ? (@.e == "aa" || @ == 1))');
+
+SELECT gin_debug_jsonpath_laxpath_value('lax    $.a ? (@.b == "foo").c == 1');
+SELECT gin_debug_jsonpath_laxpath_value('strict $.a ? (@.b == "foo").c == 1');
+SELECT gin_debug_jsonpath_laxpath_value('lax    $.a ? (@.b == "foo") == 1');
+SELECT gin_debug_jsonpath_laxpath_value('strict $.a ? (@.b == "foo") == 1');
+SELECT gin_debug_jsonpath_laxpath_value('lax    $.a ? (@.b == "foo")');
+SELECT gin_debug_jsonpath_laxpath_value('strict $.a ? (@.b == "foo")');
+SELECT gin_debug_jsonpath_laxpath_value('lax    exists($.a ? (@.b == "foo"))');
+SELECT gin_debug_jsonpath_laxpath_value('strict exists($.a ? (@.b == "foo"))');
+SELECT gin_debug_jsonpath_laxpath_value('lax    exists($.a ? (@.b == "foo").c)');
+SELECT gin_debug_jsonpath_laxpath_value('strict exists($.a ? (@.b == "foo").c)');
+select gin_debug_jsonpath_laxpath_value('exists($.a.b ? (@.c.d == 1))');
+
+select gin_debug_jsonpath_laxpath_value('strict $.a.b == 1');
+select gin_debug_jsonpath_laxpath_value('lax    $.a.b == 1');
+select gin_debug_jsonpath_laxpath_value('strict $.a.b[*] == 1');
+select gin_debug_jsonpath_laxpath_value('lax    $.a.b[*] == 1');
+select gin_debug_jsonpath_laxpath_value('strict $.a[*].b[*] == 1');
+select gin_debug_jsonpath_laxpath_value('lax    $.a[*].b[*] == 1');
+select gin_debug_jsonpath_laxpath_value('strict $.a.b[*][*] == 1');
+select gin_debug_jsonpath_laxpath_value('lax    $.a.b[*][*] == 1');
+select gin_debug_jsonpath_laxpath_value('strict $.a[*].b[*] == 1');
+select gin_debug_jsonpath_laxpath_value('lax    $.a[*].b[*] == 1');
+
+SELECT gin_debug_jsonpath_laxpath_value('lax    $.a > 1 && $.a < 2 && $.b >= 3 && $.c <= "aaa"');
+SELECT gin_debug_jsonpath_laxpath_value('strict $.a > 1 && $.a < 2 && $.b >= 3 && $.c <= "aaa"');
+
 ---table and index
 
 select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 0;

@@ -356,6 +356,21 @@ BEGIN
 			ADD OPERATOR 15 @? (jsonb, jsonpath);
 		ALTER OPERATOR FAMILY jsonb_value_path_ops USING gin
 			ADD OPERATOR 16 @@ (jsonb, jsonpath);
+
+		CREATE OR REPLACE FUNCTION gin_debug_jsonpath_value_path(jsonpath)
+			RETURNS text
+			AS 'MODULE_PATHNAME'
+			LANGUAGE C STRICT IMMUTABLE;
+
+		CREATE OR REPLACE FUNCTION gin_debug_jsonpath_path_value(jsonpath)
+			RETURNS text
+			AS 'MODULE_PATHNAME'
+			LANGUAGE C STRICT IMMUTABLE;
+
+		CREATE OR REPLACE FUNCTION gin_debug_jsonpath_laxpath_value(jsonpath)
+			RETURNS text
+			AS 'MODULE_PATHNAME'
+			LANGUAGE C STRICT IMMUTABLE;
 	END IF;
 END
 $$;

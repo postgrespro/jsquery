@@ -1591,13 +1591,10 @@ debugRecursive(StringInfo buf, ExtractedNode *node, int shift)
  * Debug print of query processing.
  */
 char *
-debugJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
-								CheckEntryHandler checkHandler, Pointer extra)
+debugExtractedQuery(ExtractedNode  *root)
 {
-	ExtractedNode  *root;
 	StringInfoData	buf;
 
-	root = extractJsQuery(jq, makeHandler, checkHandler, extra);
 	if (!root)
 		return "NULL\n";
 

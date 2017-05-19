@@ -249,8 +249,7 @@ ExtractedNode *extractJsonPath(JsonPath *jp, bool exists, bool arrayPathItems,
 							   MakeEntryHandler makeHandler,
 							   CheckEntryHandler checkHandler, Pointer extra);
 #endif
-char *debugJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
-								CheckEntryHandler checkHandler, Pointer extra);
+char *debugExtractedQuery(ExtractedNode  *root);
 bool queryNeedRecheck(ExtractedNode *node);
 bool execRecursive(ExtractedNode *node, bool *check);
 bool execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check);
