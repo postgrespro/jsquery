@@ -340,6 +340,27 @@ correspondingly.
      gin_debug_query_path_value
      ----------------------------
       y > 0 , entry 0           +
+      
+### parse\_mquery
+This function is transofrm MongoDB query to JsQuery query. Function get string 
+like argument and return jsquery object.
+Example:
+MongoDB query:
+```
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $lte : 1 } }');
+```
+Transformed to:
+```
+select '{"a": {"b": 1 } }'::jsonb @@ 'a.b = 1';
+```
+And return:
+```
+select '{"a": {"b": 1 } }'::jsonb @@ 'a.b = 1';
+ ?column? 
+----------
+ t
+(1 row)
+```
 
 Contribution
 ------------
