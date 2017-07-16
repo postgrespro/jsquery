@@ -543,4 +543,24 @@ select v from test_jsquery where v @@ 'array && [2,3]' order by v;
 select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
 select v from test_jsquery where v @@ 'array = [2,3]' order by v;
 
+---MongoDB query translator tests
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : 1 }');
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $eq : 1 } }');
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $ne : 1 } }');
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $lt : 1 } }');
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $lte : 1 } }');
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $gt : 1 } }');
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $gte : 1 } }');
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $in : [2,3] } }');
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $nin : [2,3] } }');
+
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ a : { $exists : false } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ a : { $exists : true } }');
+
+select  parse_mquery('{ is : { $lt: 1 } }')::jsquery;
+
+select v from test_jsquery where v @@ parse_mquery('{ array : { $all: [2,3] } }') order by v;
+
+select v from test_jsquery where v @@ parse_mquery('{ { $text: { $search: "Flew" } } }');
+
 RESET enable_seqscan;

@@ -2913,4 +2913,90 @@ select v from test_jsquery where v @@ 'array = [2,3]' order by v;
  {"array": [2, 3]}
 (1 row)
 
+---MongoDB query translator tests
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : 1 }');
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $eq : 1 } }');
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $ne : 1 } }');
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $lt : 1 } }');
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $lte : 1 } }');
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $gt : 1 } }');
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $gte : 1 } }');
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $in : [2,3] } }');
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": 1 } }'::jsonb @@ parse_mquery('{ "a.b" : { $nin : [2,3] } }');
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ a : { $exists : false } }');
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ a : { $exists : true } }');
+ ?column? 
+----------
+ t
+(1 row)
+
+select  parse_mquery('{ is : { $lt: 1 } }')::jsquery;
+ parse_mquery 
+--------------
+ "is" < 1
+(1 row)
+
+select v from test_jsquery where v @@ parse_mquery('{ array : { $all: [2,3] } }') order by v;
+          v           
+----------------------
+ {"array": [2, 3]}
+ {"array": [1, 2, 3]}
+ {"array": [2, 3, 4]}
+(3 rows)
+
+select v from test_jsquery where v @@ parse_mquery('{ { $text: { $search: "Flew" } } }');
+ v 
+---
+(0 rows)
+
 RESET enable_seqscan;

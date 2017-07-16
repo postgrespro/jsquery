@@ -19,6 +19,9 @@
 #include "utils/json.h"
 
 #include "jsquery.h"
+#include "monq.h"
+
+extern MQuery *parsemquery(char *str);
 
 PG_MODULE_MAGIC;
 
@@ -167,6 +170,35 @@ jsquery_in(PG_FUNCTION_ARGS)
 
 	PG_RETURN_NULL();
 }
+
+PG_FUNCTION_INFO_V1(parse_mquery);
+Datum
+parse_mquery(PG_FUNCTION_ARGS)
+{
+	char 			   *result = getJsquery(parse((char *) PG_GETARG_CSTRING(0)));
+	int32				len = strlen(result);
+	JsQueryParseItem   *jsquery = parsejsquery(result, len);
+	JsQuery			   *res;
+	StringInfoData		buf;
+
+	initStringInfo(&buf);
+	enlargeStringInfo(&buf, 4 * len /* estimation */); 
+
+	appendStringInfoSpaces(&buf, VARHDRSZ);
+
+	if (jsquery != NULL)
+	{
+		flattenJsQueryParseItem(&buf, jsquery, false);
+
+		res = (JsQuery*)buf.data;
+		SET_VARSIZE(res, buf.len);
+
+		PG_RETURN_JSQUERY(res);
+	}
+
+	PG_RETURN_NULL();
+}
+
 
 static void
 printHint(StringInfo buf, JsQueryHint hint)
