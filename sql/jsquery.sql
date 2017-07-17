@@ -563,4 +563,69 @@ select v from test_jsquery where v @@ parse_mquery('{ array : { $all: [2,3] } }'
 
 select v from test_jsquery where v @@ parse_mquery('{ { $text: { $search: "Flew" } } }');
 
+select '{ "a" : "ssl" }'::jsonb @@ parse_mquery('{ a: { $in: [ "ssl","security"] } }');
+select '{ "a" : 1 }'::jsonb @@ parse_mquery('{ a: { $in: [ "ssl","security"] } }');
+select '{ "a" : "ssl" }'::jsonb @@ parse_mquery('{ a: { $nin: [ "ssl","security"] } }');
+select '{ "a" : "sslqwerty" }'::jsonb @@ parse_mquery('{ a: { $nin: [ "ssl","security"] } }');
+select '{ "a" : [ "ssl","security"] }'::jsonb @@ parse_mquery('{ a: { $size: 2 } }');
+select '{ "a" : [ "ssl","security"] }'::jsonb @@ parse_mquery('{ a: { $size: 1 } }');
+select '{ "a" : [ "ssl","security", "pattern"] }'::jsonb @@ parse_mquery('{ a: { $all: [ "ssl","security"] } }');
+select '{ "a" : [ "ssl","pattern"] }'::jsonb @@ parse_mquery('{ a: { $all: [ "ssl","security"] } }');
+select '{ "a" : [ "ssl","security"] }'::jsonb @@ parse_mquery('{ a: { $all: [ "ssl","security"] } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ a : { $exists : false } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ a : { $exists : true } }');
+select '{ "b" : 2 }'::jsonb @@ parse_mquery('{ a : { $exists : false } }');
+select '{ "b" : 2 }'::jsonb @@ parse_mquery('{ a : { $exists : true } }');
+select '{ "b" : 2 }'::jsonb @@ parse_mquery('{ b: { $type: "int" } }');
+select '{ "b" : "qwerttyu" }'::jsonb @@ parse_mquery('{ b: { $type: "int" } }');
+select '{ "b" : 2 }'::jsonb @@ parse_mquery('{ b: { $type: "long" } }');
+select '{ "b" : "qwerttyu" }'::jsonb @@ parse_mquery('{ b: { $type: "long" } }');
+select '{ "b" : true }'::jsonb @@ parse_mquery('{ b: { $type: "bool" } }');
+select '{ "b" : "fklgjlksdfgsldflsgjslkrjekfjkl" }'::jsonb @@ parse_mquery('{ b: { $type: "bool" } }');
+select '{ "b" : "fklgjlksdfgsldflsgjslkrjekfjkl" }'::jsonb @@ parse_mquery('{ b: { $type: "array" } }');
+select '{ "b" : [1, 4] }'::jsonb @@ parse_mquery('{ b: { $type: "array" } }');
+select '{ "b" : "fklgjlksdfgsldflsgjslkrjekfjkl" }'::jsonb @@ parse_mquery('{ b: { $type: "string" } }');
+select '{ "b" : [1, 4] }'::jsonb @@ parse_mquery('{ b: { $type: "string" } }');
+select '{ "b" : 2.23432 }'::jsonb @@ parse_mquery('{ b: { $type: "double" } }');
+select '{ "b" : 2 }'::jsonb @@ parse_mquery('{ b: { $type: "double" } }');
+select '{ "b" : 2 }'::jsonb @@ parse_mquery('{ b: { $type: "decimal" } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ y: { $type: "maxKey" } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ y: { $type: "binData" } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ y: { $type: "objectId" } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ y: { $type: "javascript" } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ y: { $type: "symbol" } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ y: { $type: "javascriptWithScope" } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ y: { $type: "timestamp" } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ y: { $type: "minKey" } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ y: { $type: "regex" } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ y: { $type: "null" } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ y: { $type: "date" } }');
+select '{ "a" : 2 }'::jsonb @@ parse_mquery('{ y: { $type: "undefined" } }');
+/* Or operator */
+select '{ "quantity" : 2, "price" : 10 }'::jsonb @@ parse_mquery('{ $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }');
+select '{ "quantity" : 200, "price" : 10 }'::jsonb @@ parse_mquery('{ $or: [ { quantity: { $lt: 20 } }, { price: 10 } ] }');
+select '{ "quantity" : 200, "price" : 10 }'::jsonb @@ parse_mquery('{ $or: [ { quantity: { $lt: 20 } }, { price: 100 } ] }');
+/* Nor operator */
+select '{ "quantity" : 2, "price" : 10 }'::jsonb @@ parse_mquery('{ $nor: [ { quantity: { $lt: 20 } }, { price: 10 } ] }');
+select '{ "quantity" : 200, "price" : 10 }'::jsonb @@ parse_mquery('{ $nor: [ { quantity: { $lt: 20 } }, { price: 10 } ] }');
+select '{ "quantity" : 200, "price" : 10 }'::jsonb @@ parse_mquery('{ $nor: [ { quantity: { $lt: 20 } }, { price: 100 } ] }');
+/* And operator */
+select '{ "quantity" : 200, "price" : 10 }'::jsonb @@ parse_mquery('{ $and: [ { quantity: { $lt: 20 } }, { price: 100 } ] }');
+select '{ "quantity" : 5, "price" : 100 }'::jsonb @@ parse_mquery('{ $and: [ { quantity: { $lt: 20 } }, { price: 100 } ] }');
+/* Not operator */
+select '{ "quantity" : 5, "price" : 100 }'::jsonb @@ parse_mquery('{ price: { $not: { $gt: 1.99 } } }');
+select '{ "quantity" : 5, "price" : 1 }'::jsonb @@ parse_mquery('{ price: { $not: { $gt: 1.99 } } }');
+/* Mod operator */
+select '{ "quantity" : 2, "price" : 10 }'::jsonb @@ parse_mquery('{ qty: { $mod: [ 4, 0 ] } } ');
+select '{"a": 5}'::jsonb @@ parse_mquery('{ a: { $eq: 5 } }');
+select '{"a": 5}'::jsonb @@ parse_mquery('{ a: { $eq: 6 } }');
+select '{ "quantity" : "qw", "price" : 10 }'::jsonb @@ parse_mquery('{ { $where: "qw"} }');
+select '{ "quantity" : "qw", "price" : 10 }'::jsonb @@ parse_mquery('{ { $text: { $search: "qsddjkhjw" } } }');
+select '{ "quantity" : "qw", "price" : 10 }'::jsonb @@ parse_mquery('{ { $text: { $search: "qw" } } }');
+select '{"a": { "qwerty" : 5} }'::jsonb @@ parse_mquery('{ "a.qwerty" : { $eq: 6 } }');
+select '{"a": { "qwerty" : { "asdfgh" : { "fgfhg" : 5 } } } }'::jsonb @@ parse_mquery('{ "a.qwerty.asdfgh.fgfhg" : { $eq: 5 } }');
+select '{ "_id" : 3, "results" : [ { "product" : "abc", "score" : 7 }, { "product" : "abc", "score" : 8 } ] }' @@ parse_mquery('{ results: { $elemMatch: { product: "abc" } } }');
+select '{ "_id" : 3, "results" : [ 81, 84, 83] }' @@ parse_mquery('{ results: { $elemMatch: { $gte: 80, $lt: 85 } } }');
+select '{ "_id" : 3, "results" : [ 81, 86, 83] }' @@ parse_mquery('{ results: { $elemMatch: { $gte: 80, $lt: 85 } } }');
+
 RESET enable_seqscan;
