@@ -1,7 +1,7 @@
 %{
     #include <stdlib.h>
     #include <stdio.h>
- 	#include "monq_structures.h"
+    #include "monq.h"
     #include "monq_gram.h"
     #include <string.h>
 
