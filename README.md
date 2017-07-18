@@ -387,7 +387,7 @@ JsQuery language, but main part is supported.
 * `$exists` - supported;
 * `$type` - supported.
 
-#### Evaluation operators:
+##### Evaluation operators:
 * `$mod` - not supported;
 * `$regex` - not supported;
 * `$text` - supported;
@@ -396,7 +396,7 @@ JsQuery language, but main part is supported.
 ##### Bitwise operators:
 * All operators are not supported.
 
-#### Array operators:
+##### Array operators:
 * `$all` - supported;
 * `$elemMatch` - supported;
 * `$size` - supported.
