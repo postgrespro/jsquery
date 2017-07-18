@@ -4,6 +4,9 @@
 jsquery_gram.c
 jsquery_scan.c
 jsquery_gram.h
+monq_gram.c
+monq_gram.h
+monq_scan.c
 regression.diffs
 regression.out
 results
