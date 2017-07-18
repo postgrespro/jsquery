@@ -6,7 +6,7 @@ OBJS = jsonb_gin_ops.o jsquery_constr.o jsquery_extract.o \
 	monq_gram.o monq_scan.o monq_get_jsquery.o monq_create_query.o monq_delete_query.o
 
 EXTENSION = jsquery
-DATA = jsquery--1.0.1.sql
+DATA = jsquery--1.1.sql jsquery--1.0--1.1.sql
 INCLUDES = jsquery.h monq.h 
 
 REGRESS = jsquery
