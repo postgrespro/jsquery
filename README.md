@@ -362,7 +362,7 @@ select '{"a": {"b": 1 } }'::jsonb @@ 'a.b = 1';
 (1 row)
 ```
 
-#### MongoDB operators supported by extension
+#### MongoDB operators supported by function
 
 Number of MongoDB query operators is limited by opportunities of 
 JsQuery language, but main part is supported.
