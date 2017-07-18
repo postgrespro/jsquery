@@ -362,6 +362,57 @@ select '{"a": {"b": 1 } }'::jsonb @@ 'a.b = 1';
 (1 row)
 ```
 
+#### MongoDB operators supported by extension
+
+Number of MongoDB query operators is limited by opportunities of 
+JsQuery language, but main part is supported.
+
+##### Comparison operators:
+* `$eq` - supported;
+* `$ne` - supported;
+* `$lt` - supported;
+* `$lte` - supported;
+* `$gt` - supported;
+* `$gte` - supported;
+* `$in` - supported;
+* `$nin` - supported.
+
+##### Logical operators:
+* `$and` - supported;
+* `$or` - supported;
+* `$not` - supported;
+* `$nor` - supported.
+
+##### Element operators:
+* `$exists` - supported;
+* `$type` - supported.
+
+#### Evaluation operators:
+* `$mod` - not supported;
+* `$regex` - not supported;
+* `$text` - supported;
+* `$where` - not supported.
+
+##### Bitwise operators:
+* All operators are not supported.
+
+#### Array operators:
+* `$all` - supported;
+* `$elemMatch` - supported;
+* `$size` - supported.
+
+##### Comment operators:
+* All operators are not supported.
+
+##### Geospatial operators:
+* All operators are not supported.
+
+##### Projextion operators:
+* All operators are not supported.
+
+Examples of queries with all this operators you can find in the file 
+[sql/jsquery.sql](https://github.com/postgrespro/jsquery/blob/master/sql/jsquery.sql)
+
 Contribution
 ------------
 
