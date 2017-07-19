@@ -9,26 +9,21 @@
 
     typedef struct yy_buffer_state *YY_BUFFER_STATE;
     extern int yylex();
-    extern void yyerror(char *s);
     extern int yyparse();
+    extern void yyerror(char *s);
     extern YY_BUFFER_STATE yy_scan_string(char * str);
     extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 
-    void 
-    yyerror(char *s) 
-    { 
-        elog(ERROR,"%s",s);
-        exit(0);
-    }
-
+    char *inputString;
+    int position;
     MQuery*
     parse(char *str)
     {
-        YY_BUFFER_STATE  buffer = yy_scan_string(str);
-        
+        YY_BUFFER_STATE buffer = yy_scan_string(str);
+        inputString = str;    
         yyparse();
         yy_delete_buffer(buffer);
-
+        position = 1;
         return RET;    
     }
 %}
