@@ -209,7 +209,7 @@ jsqGetNumeric(JsQueryItem *v)
 int32
 jsqGetIsType(JsQueryItem *v)
 {
-	Assert(v->type = jqiIs);
+	Assert(v->type == jqiIs);
 
 	return  (int32)*v->value.data;
 }
