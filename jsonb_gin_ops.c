@@ -61,6 +61,7 @@ typedef struct
 #define JsonbNestedContainsStrategyNumber	13
 #define JsQueryMatchStrategyNumber			14
 #define JsonpathExistsStrategyNumber		15
+#define JsonpathMatchStrategyNumber			16
 
 typedef struct
 {
@@ -587,7 +588,8 @@ gin_compare_partial_jsonb_value_path(PG_FUNCTION_ARGS)
 	int32		result;
 
 	if (strategy == JsQueryMatchStrategyNumber ||
-		strategy ==	JsonpathExistsStrategyNumber)
+		strategy ==	JsonpathExistsStrategyNumber ||
+		strategy ==	JsonpathMatchStrategyNumber)
 	{
 		KeyExtra *extra = (KeyExtra *)PG_GETARG_POINTER(3);
 		ExtractedNode *node = extra->node;
@@ -809,8 +811,10 @@ gin_extract_jsonb_query_value_path(PG_FUNCTION_ARGS)
 		case JsQueryMatchStrategyNumber:
 #ifndef NO_JSONPATH
 		case JsonpathExistsStrategyNumber:
-			if (strategy == JsonpathExistsStrategyNumber)
+		case JsonpathMatchStrategyNumber:
+			if (strategy != JsQueryMatchStrategyNumber)
 				root = extractJsonPath(PG_GETARG_JSONPATH_P(0),
+									   strategy == JsonpathExistsStrategyNumber,
 									   make_value_path_entry_handler,
 									   check_value_path_entry_handler,
 									   (Pointer)&e);
@@ -878,6 +882,7 @@ gin_consistent_jsonb_value_path(PG_FUNCTION_ARGS)
 
 		case JsQueryMatchStrategyNumber:
 		case JsonpathExistsStrategyNumber:
+		case JsonpathMatchStrategyNumber:
 			if (nkeys == 0)
 				res = true;
 			else
@@ -940,6 +945,7 @@ gin_triconsistent_jsonb_value_path(PG_FUNCTION_ARGS)
 
 		case JsQueryMatchStrategyNumber:
 		case JsonpathExistsStrategyNumber:
+		case JsonpathMatchStrategyNumber:
 			if (nkeys == 0)
 				res = GIN_MAYBE;
 			else
@@ -1063,7 +1069,8 @@ gin_compare_partial_jsonb_path_value(PG_FUNCTION_ARGS)
 		result = (key->hash > partial_key->hash) ? 1 : -1;
 	}
 	else if (strategy == JsQueryMatchStrategyNumber ||
-			 strategy == JsonpathExistsStrategyNumber)
+			 strategy == JsonpathExistsStrategyNumber ||
+			 strategy == JsonpathMatchStrategyNumber)
 	{
 		KeyExtra *extra = (KeyExtra *)PG_GETARG_POINTER(3);
 		ExtractedNode *node = extra->node;
@@ -1276,8 +1283,10 @@ gin_extract_jsonb_query_path_value_internal(FunctionCallInfo fcinfo, bool lax)
 		case JsQueryMatchStrategyNumber:
 #ifndef NO_JSONPATH
 		case JsonpathExistsStrategyNumber:
-			if (strategy == JsonpathExistsStrategyNumber)
+		case JsonpathMatchStrategyNumber:
+			if (strategy != JsQueryMatchStrategyNumber)
 				root = extractJsonPath(PG_GETARG_JSONPATH_P(0),
+									   strategy == JsonpathExistsStrategyNumber,
 									   make_path_value_entry_handler,
 									   check_path_value_entry_handler,
 									   (Pointer) &extra);
@@ -1356,6 +1365,7 @@ gin_consistent_jsonb_path_value(PG_FUNCTION_ARGS)
 
 		case JsQueryMatchStrategyNumber:
 		case JsonpathExistsStrategyNumber:
+		case JsonpathMatchStrategyNumber:
 			if (nkeys == 0)
 				res = true;
 			else
@@ -1418,6 +1428,7 @@ gin_triconsistent_jsonb_path_value(PG_FUNCTION_ARGS)
 
 		case JsQueryMatchStrategyNumber:
 		case JsonpathExistsStrategyNumber:
+		case JsonpathMatchStrategyNumber:
 			if (nkeys == 0)
 				res = GIN_MAYBE;
 			else

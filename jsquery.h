@@ -245,7 +245,8 @@ bool isLogicalNodeType(ExtractedNodeType type);
 ExtractedNode *extractJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
 								CheckEntryHandler checkHandler, Pointer extra);
 #ifndef NO_JSONPATH
-ExtractedNode *extractJsonPath(JsonPath *jp, MakeEntryHandler makeHandler,
+ExtractedNode *extractJsonPath(JsonPath *jp, bool exists,
+							   MakeEntryHandler makeHandler,
 							   CheckEntryHandler checkHandler, Pointer extra);
 #endif
 char *debugJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
