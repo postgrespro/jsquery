@@ -135,7 +135,10 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item, bool onlyCurrent
 	}
 
 	if (item->next)
-		*(int32*)(buf->data + next) = flattenJsQueryParseItem(buf, item->next, onlyCurrentInPath);
+	{
+		chld = flattenJsQueryParseItem(buf, item->next, onlyCurrentInPath);
+		*(int32*)(buf->data + next) = chld;
+	}
 
 	return  pos;
 }
