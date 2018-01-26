@@ -36,7 +36,7 @@ and supports PostgreSQL 9.4+.
 Regards
 -------
 
-Development is sponsored by [Wargaming.net](http://wargaming.net).
+Development was sponsored by [Wargaming.net](http://wargaming.net).
 
 Installation
 ------------
