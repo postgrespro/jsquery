@@ -1,5 +1,6 @@
 CREATE EXTENSION jsquery;
 set escape_string_warning=off;
+set standard_conforming_strings=on;
 CREATE TABLE test_jsquery (v jsonb);
 \copy test_jsquery from 'data/test_jsquery.data'
 select 'asd.zzz = 13'::jsquery;

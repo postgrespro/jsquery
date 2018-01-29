@@ -1,6 +1,7 @@
 CREATE EXTENSION jsquery;
 
 set escape_string_warning=off;
+set standard_conforming_strings=on;
 
 CREATE TABLE test_jsquery (v jsonb);
 
