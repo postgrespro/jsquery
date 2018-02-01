@@ -296,6 +296,36 @@ select '{"a":[1,2]}' @@ '*.@# in (2, 4)'::jsquery;
 select '{"a":[1,2]}' @@ '*.@# ($ = 4 or $ = 2)'::jsquery;
 select '{"a":[1,2]}' @@ '@#  = 1'::jsquery;
 
+--filter
+select '?( not b>0). x'::jsquery;
+select 'a.?(b>0 and x= 0 ) .c'::jsquery;
+select 'a.$. ?(b>0 and x= 0 ) . c.k'::jsquery;
+select 'a.$.? (b>0 and x.*= 0 ).c.k'::jsquery;
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a < 0) (b=20)';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a > 0) (b=20)';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a > 1) (b=20)';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a > 2) (b=20)';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a > 3) (b=20)';
+select '[{"a":1, "b":10}, {"a":2, "b":20}]'::jsonb ~~ '#.a';
+select '[{"a":1, "b":10}, {"a":2, "b":20}]'::jsonb ~~ '#. ?(a > 1). b';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb ~~ '# . ?(a > 1)';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb ~~ '%';
+select '{"a":1, "b":2, "c":3}'::jsonb ~~ '%';
+select '{"a":1, "b":2, "c":3}'::jsonb ~~ '% . ? ( $ > 2 )';
+select '{"a":1, "b":2, "c":3}'::jsonb ~~ '% . ? ( $ > 2 ).$';
+select '{"a":1, "b":2, "c":3}'::jsonb ~~ '? ( % > 2 )';
+select '{"a":1, "b":2, "c":3}'::jsonb ~~ '? ( %: > 0 )';
+select '{"a":1, "b":2, "c":3}'::jsonb ~~ '? ( %: > 2 )';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb ~~ '#';
+select '[1,2,3]'::jsonb ~~ '#';
+select '[1,2,3]'::jsonb ~~ '#. ?($ > 2)';
+select '[1,2,3]'::jsonb ~~ '#. ?($ > 2).$';
+select '[1,2,3]'::jsonb ~~ ' ?(#.$ > 2).$';
+select '[1,2,3]'::jsonb ~~ ' ?(#:.$ > 2).$';
+select '[1,2,3]'::jsonb ~~ ' ?(#:.$ > 0).$';
+select '{"a": {"b": {"c": 1}}}'::jsonb ~~ '*.?(c >0)';
+select '{"a": {"b": {"c": 1}}}'::jsonb ~~ '?(*.c >0)';
+
 --ALL
 select 'a.*: = 4'::jsquery;
 select '%: = 4'::jsquery;
