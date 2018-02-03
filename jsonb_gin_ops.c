@@ -24,6 +24,10 @@
 
 #include "jsquery.h"
 
+#ifdef PG_GETARG_JSONB_P
+#define PG_GETARG_JSONB PG_GETARG_JSONB_P
+#endif
+
 typedef struct PathHashStack
 {
 	uint32	hash;
