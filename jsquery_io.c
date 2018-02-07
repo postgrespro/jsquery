@@ -378,6 +378,8 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 			appendStringInfo(buf, "#%u", v->arrayIndex);
 			break;
 		case jqiFilter:
+			if (inKey)
+				appendStringInfoChar(buf, '.');
 			appendBinaryStringInfo(buf, " ?(", 3);
 			jsqGetArg(v, &elem);
 			printJsQueryItem(buf, &elem, false, false);

@@ -325,6 +325,8 @@ select '[1,2,3]'::jsonb ~~ ' ?(#:.$ > 2).$';
 select '[1,2,3]'::jsonb ~~ ' ?(#:.$ > 0).$';
 select '{"a": {"b": {"c": 1}}}'::jsonb ~~ '*.?(c >0)';
 select '{"a": {"b": {"c": 1}}}'::jsonb ~~ '?(*.c >0)';
+select '{"tags":[{"term":["NYC", "CYN"]}, {"term":["1NYC", "1CYN"]} ]}'::jsonb ~~ 'tags.#.term.#. ? ( $ = "NYC")';
+select '{"tags":[{"term":["NYC", "CYN"]}, {"term":["1NYC", "1CYN"]} ]}'::jsonb ~~ 'tags.#.term. ? ( # = "NYC")';
 
 --ALL
 select 'a.*: = 4'::jsquery;
