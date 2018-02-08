@@ -130,6 +130,8 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			pathItem->parent = path;
 			jsqGetNext(jsq, &elem);
 			return recursiveExtract(&elem, not, true, pathItem);
+		case jqiFilter:
+			/* ignore filter for now */
 		case jqiCurrent:
 			jsqGetNext(jsq, &elem);
 			return recursiveExtract(&elem, not, indirect, path);

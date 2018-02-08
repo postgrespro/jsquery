@@ -250,7 +250,6 @@ makeItemList(List *list) {
 
 result:
 	expr							{ *result = $1; }
-	| path							{ *result = makeItemList($1); }
 	| /* EMPTY */					{ *result = NULL; }
 	;
 
@@ -307,7 +306,8 @@ right_expr:
 	;
 
 expr:
-	path right_expr					{ $$ = makeItemList(lappend($1, $2)); }
+	path							{  $$ = makeItemList($1); }
+	| path right_expr				{ $$ = makeItemList(lappend($1, $2)); }
 	| path HINT_P right_expr		{ $3->hint = $2; $$ = makeItemList(lappend($1, $3)); }
 	| NOT_P expr					{ $$ = makeItemUnary(jqiNot, $2); }
 	/*

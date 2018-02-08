@@ -369,6 +369,15 @@ SELECT 'test.# IN (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,2
 select '[]' @@ '(@# > 0 and #: = 16)'::jsquery;
 select '[16]' @@ '(@# > 0 and #: = 16)'::jsquery;
 
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.b or b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.c or b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.g or b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.g or b.c';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.b and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.c and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.c and b.b';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.g and b.d';
+
 --extract entries for index scan
 
 SELECT gin_debug_query_path_value('NOT NOT NOT x(y(NOT (a=1) and NOT (b=2)) OR NOT NOT (c=3)) and z = 5');
@@ -419,6 +428,7 @@ SELECT gin_debug_query_value_path('#:(NOT x=1) AND %:(NOT y=1) AND *:(NOT z=1)')
 SELECT gin_debug_query_value_path('NOT #:(NOT x=1) AND NOT %:(NOT y=1) AND NOT *:(NOT z=1)');
 SELECT gin_debug_query_value_path('(@# > 0 and #: = 16)');
 SELECT gin_debug_query_value_path('*.@# ($ = 4 or $ = 2)');
+SELECT gin_debug_query_value_path('tags.#.term. ? ( # = "NYC").x > 0');
 
 ---table and index
 

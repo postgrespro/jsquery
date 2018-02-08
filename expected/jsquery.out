@@ -67,7 +67,7 @@ select '* < 13 AND #.zxc"x" = "true"'::jsquery;
 ERROR:  bad jsquery representation
 LINE 1: select '* < 13 AND #.zxc"x" = "true"'::jsquery;
                ^
-DETAIL:  syntax error, unexpected STRING_P at or near """
+DETAIL:  syntax error, unexpected STRING_P, expecting $end at or near """
 select 'a < 1'::jsquery;
  jsquery 
 ---------
@@ -1856,6 +1856,54 @@ select '[16]' @@ '(@# > 0 and #: = 16)'::jsquery;
  t
 (1 row)
 
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.b or b.d';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.c or b.d';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.g or b.d';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.g or b.c';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.b and b.d';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.c and b.d';
+ ?column? 
+----------
+ t
+(1 row)
+
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.c and b.b';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.g and b.d';
+ ?column? 
+----------
+ f
+(1 row)
+
 --extract entries for index scan
 SELECT gin_debug_query_path_value('NOT NOT NOT x(y(NOT (a=1) and NOT (b=2)) OR NOT NOT (c=3)) and z = 5');
  gin_debug_query_path_value 
@@ -2233,6 +2281,13 @@ SELECT gin_debug_query_value_path('*.@# ($ = 4 or $ = 2)');
  gin_debug_query_value_path 
 ----------------------------
  NULL                      +
+ 
+(1 row)
+
+SELECT gin_debug_query_value_path('tags.#.term. ? ( # = "NYC").x > 0');
+  gin_debug_query_value_path  
+------------------------------
+ tags.#.term.x > 0 , entry 0 +
  
 (1 row)
 
