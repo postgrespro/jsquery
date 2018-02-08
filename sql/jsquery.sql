@@ -378,6 +378,21 @@ select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.c and b.d';
 select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.c and b.b';
 select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.g and b.d';
 
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and b.c';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and (b.d or b.c)';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and (b.c or b.d)';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and a.c and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ '(a.b or a.c) and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ '(a.e or a.c) and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ '(a.e or a.g) and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b or (b.d or b.c)';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.d or (a.b or a.c)';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.d or (a.b and a.c)';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.f or (a.b and a.c)';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.d and (a.b and a.c)';
+select '{"a": {"b": [6,5,4], "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.d and (a.b and a.c)';
+
 --extract entries for index scan
 
 SELECT gin_debug_query_path_value('NOT NOT NOT x(y(NOT (a=1) and NOT (b=2)) OR NOT NOT (c=3)) and z = 5');

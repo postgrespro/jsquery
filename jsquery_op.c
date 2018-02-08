@@ -51,6 +51,27 @@ appendResult(ResultAccum *ra, JsonbValue *jb)
 	pushJsonbValue(&ra->jbArrayState, WJB_ELEM, jb);
 }
 
+static void
+concatResult(ResultAccum *ra, JsonbParseState *a, JsonbParseState *b)
+{
+	Jsonb			*value;
+	JsonbIterator	*it;
+	int32			r;
+	JsonbValue		v;
+
+	Assert(a);
+	Assert(b);
+
+	ra->jbArrayState = a;
+
+	value = JsonbValueToJsonb(pushJsonbValue(&b, WJB_END_ARRAY, NULL));
+	it = JsonbIteratorInit(&value->root);
+
+	while((r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
+		if (r == WJB_ELEM)
+			pushJsonbValue(&ra->jbArrayState, WJB_ELEM, &v);
+}
+
 static int
 compareNumeric(Numeric a, Numeric b)
 {
@@ -435,14 +456,37 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 
 	switch(jsq->type) {
 		case jqiAnd:
-			jsqGetLeftArg(jsq, &elem);
-			res = recursiveExecute(&elem, jb, jsqLeftArg, ra);
-			if (res == true)
 			{
-				jsqGetRightArg(jsq, &elem);
+				JsonbParseState *saveJbArrayState = NULL;
+
+				jsqGetLeftArg(jsq, &elem);
+				if (ra && ra->missAppend == false)
+				{
+					saveJbArrayState = ra->jbArrayState;
+					ra->jbArrayState = NULL;
+				}
+
 				res = recursiveExecute(&elem, jb, jsqLeftArg, ra);
+				if (res == true)
+				{
+					jsqGetRightArg(jsq, &elem);
+					res = recursiveExecute(&elem, jb, jsqLeftArg, ra);
+				}
+
+				if (ra && ra->missAppend == false)
+				{
+					if (res == true)
+					{
+						if (saveJbArrayState != NULL)
+							/* append args lists to current */
+							concatResult(ra, saveJbArrayState, ra->jbArrayState);
+					}
+					else
+						ra->jbArrayState = saveJbArrayState;
+				}
+
+				break;
 			}
-			break;
 		case jqiOr:
 			jsqGetLeftArg(jsq, &elem);
 			res = recursiveExecute(&elem, jb, jsqLeftArg, ra);
@@ -453,9 +497,18 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 			}
 			break;
 		case jqiNot:
-			jsqGetArg(jsq, &elem);
-			res = !recursiveExecute(&elem, jb, jsqLeftArg, ra);
-			break;
+			{
+				bool saveMissAppend = (ra) ? ra->missAppend : true;
+
+				jsqGetArg(jsq, &elem);
+				if (ra)
+					ra->missAppend = true;
+				res = !recursiveExecute(&elem, jb, jsqLeftArg, ra);
+				if (ra)
+					ra->missAppend = saveMissAppend;
+
+				break;
+			}
 		case jqiKey:
 			if (JsonbType(jb) == jbvObject) {
 				JsonbValue	*v, key;
