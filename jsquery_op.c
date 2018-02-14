@@ -270,7 +270,7 @@ checkScalarIn(JsQueryItem *jsq, JsonbValue *jb)
 static bool
 executeArrayOp(JsQueryItem *jsq, int32 op, JsonbValue *jb)
 {
-	int32			r;
+	int32			r = 0; /* keep static analyzer quiet */
 	JsonbIterator	*it;
 	JsonbValue		v;
 	JsQueryItem	elem;
