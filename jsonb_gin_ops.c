@@ -462,7 +462,7 @@ make_value_path_entry_handler(ExtractedNode *node, Pointer extra)
 {
 	Entries	   *e = (Entries *)extra;
 	uint32		hash;
-	bool		lossy, partialMatch;
+	bool		lossy, partialMatch = false;
 	GINKey	   *key;
 	KeyExtra   *keyExtra;
 	int			result;
@@ -1174,6 +1174,7 @@ gin_debug_query_path_value(PG_FUNCTION_ARGS)
 	JsQuery	   *jq;
 	Entries		e = {0};
 	char	   *s;
+
 
 	jq = PG_GETARG_JSQUERY(0);
 	s = debugJsQuery(jq, make_path_value_entry_handler,

@@ -36,7 +36,7 @@ if [ $CHECK_CODE = "true" ]; then
 	if [ "$CC" = "clang" ]; then
 		sudo apt-get -y install -qq clang-$LLVM_VER
 
-		scan-build-$LLVM_VER --status-bugs make USE_PGXS=1 PG_CONFIG=$config_path || status=$?
+		scan-build-$LLVM_VER --status-bugs make USE_PGXS=1 USE_ASSERT_CHECKING=1 PG_CONFIG=$config_path || status=$?
 		exit $status
 
 	elif [ "$CC" = "gcc" ]; then

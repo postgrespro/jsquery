@@ -26,6 +26,10 @@ include $(top_builddir)/src/Makefile.global
 include $(top_srcdir)/contrib/contrib-global.mk
 endif
 
+ifdef USE_ASSERT_CHECKING
+override CFLAGS += -DUSE_ASSERT_CHECKING
+endif
+
 jsquery_gram.o: jsquery_scan.c
 
 jsquery_gram.c: BISONFLAGS += -d
