@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/postgrespro/jsquery.svg?branch=master)](https://travis-ci.org/postgrespro/jsquery)
+[![codecov](https://codecov.io/gh/postgrespro/jsquery/branch/master/graph/badge.svg)](https://codecov.io/gh/postgrespro/jsquery)
+
 JsQuery – json query language with GIN indexing support
 =======================================================
 
