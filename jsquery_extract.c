@@ -22,6 +22,7 @@
 #include "jsquery.h"
 
 static ExtractedNode *recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path);
+static ExtractedNode *makeAnyNode(bool not, bool indirect, PathItem *path);
 static int coundChildren(ExtractedNode *node, ExtractedNodeType type, bool first, bool *found);
 static void fillChildren(ExtractedNode *node, ExtractedNodeType type, bool first, ExtractedNode **items, int *i);
 static void flatternTree(ExtractedNode *node);
@@ -95,7 +96,8 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			pathItem->type = iKey;
 			pathItem->s = jsqGetString(jsq, &pathItem->len);
 			pathItem->parent = path;
-			jsqGetNext(jsq, &elem);
+			if (!jsqGetNext(jsq, &elem))
+				return makeAnyNode(not, indirect, pathItem);
 			return recursiveExtract(&elem, not, indirect, pathItem);
 		case jqiAny:
 		case jqiAll:
@@ -104,14 +106,16 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			pathItem = (PathItem *)palloc(sizeof(PathItem));
 			pathItem->type = iAny;
 			pathItem->parent = path;
-			jsqGetNext(jsq, &elem);
+			if (!jsqGetNext(jsq, &elem))
+				return makeAnyNode(not, indirect, pathItem);
 			return recursiveExtract(&elem, not, true, pathItem);
 		case jqiIndexArray:
 			pathItem = (PathItem *)palloc(sizeof(PathItem));
 			pathItem->type = iIndexArray;
 			pathItem->arrayIndex = jsq->arrayIndex;
 			pathItem->parent = path;
-			jsqGetNext(jsq, &elem);
+			if (!jsqGetNext(jsq, &elem))
+				return makeAnyNode(not, indirect, pathItem);
 			return recursiveExtract(&elem, not, true, pathItem);
 		case jqiAnyArray:
 		case jqiAllArray:
@@ -120,7 +124,8 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			pathItem = (PathItem *)palloc(sizeof(PathItem));
 			pathItem->type = iAnyArray;
 			pathItem->parent = path;
-			jsqGetNext(jsq, &elem);
+			if (!jsqGetNext(jsq, &elem))
+				return makeAnyNode(not, indirect, pathItem);
 			return recursiveExtract(&elem, not, true, pathItem);
 		case jqiAnyKey:
 		case jqiAllKey:
@@ -129,12 +134,14 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			pathItem = (PathItem *)palloc(sizeof(PathItem));
 			pathItem->type = iAnyKey;
 			pathItem->parent = path;
-			jsqGetNext(jsq, &elem);
+			if (!jsqGetNext(jsq, &elem))
+				return makeAnyNode(not, indirect, pathItem);
 			return recursiveExtract(&elem, not, true, pathItem);
 		case jqiFilter:
 			/* ignore filter for now */
 		case jqiCurrent:
-			jsqGetNext(jsq, &elem);
+			if (!jsqGetNext(jsq, &elem))
+				return makeAnyNode(not, indirect, path);
 			return recursiveExtract(&elem, not, indirect, path);
 		case jqiEqual:
 			if (not)
@@ -262,6 +269,25 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 	}
 
 	return NULL;
+}
+
+/*
+ * Make node for checking existence of path.
+ */
+static ExtractedNode *
+makeAnyNode(bool not, bool indirect, PathItem *path)
+{
+	ExtractedNode  *result;
+
+	if (not)
+		return NULL;
+
+	result = (ExtractedNode *) palloc(sizeof(ExtractedNode));
+	result->type = eAny;
+	result->hint = false;
+	result->path = path;
+	result->indirect = indirect;
+	return result;
 }
 
 /*
@@ -857,6 +883,11 @@ execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check)
 static void
 debugPath(StringInfo buf, PathItem *path)
 {
+	if (!path)
+	{
+		appendStringInfoChar(buf, '$');
+		return;
+	}
 	if (path->parent)
 	{
 		debugPath(buf, path->parent);

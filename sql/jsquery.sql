@@ -417,6 +417,7 @@ SELECT gin_debug_query_path_value('x is object');
 SELECT gin_debug_query_path_value('#:(x=1) AND %:(y=1) AND *:(z=1)');
 SELECT gin_debug_query_path_value('#:(NOT x=1) AND %:(NOT y=1) AND *:(NOT z=1)');
 SELECT gin_debug_query_path_value('NOT #:(NOT x=1) AND NOT %:(NOT y=1) AND NOT *:(NOT z=1)');
+SELECT gin_debug_query_path_value('$ = true');
 
 SELECT gin_debug_query_value_path('NOT NOT NOT x(y(NOT (a=1) and NOT (b=2)) OR NOT NOT (c=3)) and z = 5');
 SELECT gin_debug_query_value_path('NOT #(x=1) and NOT *(y=1) and NOT %(z=1) ');
@@ -444,6 +445,7 @@ SELECT gin_debug_query_value_path('NOT #:(NOT x=1) AND NOT %:(NOT y=1) AND NOT *
 SELECT gin_debug_query_value_path('(@# > 0 and #: = 16)');
 SELECT gin_debug_query_value_path('*.@# ($ = 4 or $ = 2)');
 SELECT gin_debug_query_value_path('tags.#.term. ? ( # = "NYC").x > 0');
+SELECT gin_debug_query_path_value('$ = true');
 
 ---table and index
 
@@ -492,6 +494,9 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string';
 select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")';
 select count(*) from test_jsquery where v @@ '$ > 2';
 select count(*) from test_jsquery where v @@ '$ = false';
+select count(*) from test_jsquery where v @@ 't';
+select count(*) from test_jsquery where v @@ '$';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#';
 
 select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
 select v from test_jsquery where v @@ 'array && [2,3]' order by v;
@@ -538,6 +543,9 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string';
 select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")';
 select count(*) from test_jsquery where v @@ '$ > 2';
 select count(*) from test_jsquery where v @@ '$ = false';
+select count(*) from test_jsquery where v @@ 't';
+select count(*) from test_jsquery where v @@ '$';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#';
 
 explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
 explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]' order by v;
@@ -591,6 +599,9 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string';
 select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")';
 select count(*) from test_jsquery where v @@ '$ > 2';
 select count(*) from test_jsquery where v @@ '$ = false';
+select count(*) from test_jsquery where v @@ 't';
+select count(*) from test_jsquery where v @@ '$';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#';
 
 explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
 explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]' order by v;

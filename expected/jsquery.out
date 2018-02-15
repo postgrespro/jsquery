@@ -2165,6 +2165,13 @@ SELECT gin_debug_query_path_value('NOT #:(NOT x=1) AND NOT %:(NOT y=1) AND NOT *
  
 (1 row)
 
+SELECT gin_debug_query_path_value('$ = true');
+ gin_debug_query_path_value 
+----------------------------
+ $ = true , entry 0        +
+ 
+(1 row)
+
 SELECT gin_debug_query_value_path('NOT NOT NOT x(y(NOT (a=1) and NOT (b=2)) OR NOT NOT (c=3)) and z = 5');
  gin_debug_query_value_path 
 ----------------------------
@@ -2372,6 +2379,13 @@ SELECT gin_debug_query_value_path('tags.#.term. ? ( # = "NYC").x > 0');
   gin_debug_query_value_path  
 ------------------------------
  tags.#.term.x > 0 , entry 0 +
+ 
+(1 row)
+
+SELECT gin_debug_query_path_value('$ = true');
+ gin_debug_query_path_value 
+----------------------------
+ $ = true , entry 0        +
  
 (1 row)
 
@@ -2624,6 +2638,24 @@ select count(*) from test_jsquery where v @@ '$ = false';
      2
 (1 row)
 
+select count(*) from test_jsquery where v @@ 't';
+ count 
+-------
+    10
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$';
+ count 
+-------
+  1034
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#';
+ count 
+-------
+  1001
+(1 row)
+
 select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
          v         
 -------------------
@@ -2870,6 +2902,24 @@ select count(*) from test_jsquery where v @@ '$ = false';
  count 
 -------
      2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't';
+ count 
+-------
+    10
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$';
+ count 
+-------
+  1034
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#';
+ count 
+-------
+  1001
 (1 row)
 
 explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
@@ -3163,6 +3213,24 @@ select count(*) from test_jsquery where v @@ '$ = false';
  count 
 -------
      2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't';
+ count 
+-------
+    10
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$';
+ count 
+-------
+  1034
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#';
+ count 
+-------
+   950
 (1 row)
 
 explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
