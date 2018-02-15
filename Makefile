@@ -5,7 +5,7 @@ OBJS = jsonb_gin_ops.o jsquery_constr.o jsquery_extract.o \
 	jsquery_gram.o jsquery_io.o jsquery_op.o jsquery_support.o
 
 EXTENSION = jsquery
-DATA = jsquery--1.0.sql
+DATA = jsquery--1.1.sql jsquery--1.0--1.1.sql
 INCLUDES = jsquery.h
 
 REGRESS = jsquery

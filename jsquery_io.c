@@ -1,13 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * jsquery_io.c
- *     I/O functions for jsquery datatype
+ *	I/O functions for jsquery datatype
  *
  * Copyright (c) 2014, PostgreSQL Global Development Group
  * Author: Teodor Sigaev <teodor@sigaev.ru>
  *
  * IDENTIFICATION
- *    contrib/jsquery/jsquery_io.c
+ *	contrib/jsquery/jsquery_io.c
  *
  *-------------------------------------------------------------------------
  */
@@ -103,6 +103,7 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item, bool onlyCurrent
 		case jqiContained:
 		case jqiOverlap:
 		case jqiNot:
+		case jqiFilter:
 			{
 				int32 arg;
 
@@ -154,7 +155,7 @@ jsquery_in(PG_FUNCTION_ARGS)
 	StringInfoData		buf;
 
 	initStringInfo(&buf);
-	enlargeStringInfo(&buf, 4 * len /* estimation */); 
+	enlargeStringInfo(&buf, 4 * len /* estimation */);
 
 	appendStringInfoSpaces(&buf, VARHDRSZ);
 
@@ -321,7 +322,8 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 			appendStringInfoChar(buf, ')');
 			break;
 		case jqiNot:
-			appendBinaryStringInfo(buf, "(NOT ", 5);
+			appendStringInfoChar(buf, '(');
+			appendBinaryStringInfo(buf, "NOT ", 4);
 			jsqGetArg(v, &elem);
 			printJsQueryItem(buf, &elem, false, true);
 			appendStringInfoChar(buf, ')');
@@ -374,6 +376,14 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 			if (inKey)
 				appendStringInfoChar(buf, '.');
 			appendStringInfo(buf, "#%u", v->arrayIndex);
+			break;
+		case jqiFilter:
+			if (inKey)
+				appendStringInfoChar(buf, '.');
+			appendBinaryStringInfo(buf, " ?(", 3);
+			jsqGetArg(v, &elem);
+			printJsQueryItem(buf, &elem, false, false);
+			appendBinaryStringInfo(buf, ") ", 2);
 			break;
 		default:
 			elog(ERROR, "Unknown JsQueryItem type: %d", v->type);

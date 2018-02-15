@@ -1,13 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * jsquery_gram.y
- *     Grammar definitions for jsquery datatype
+ *	Grammar definitions for jsquery datatype
  *
  * Copyright (c) 2014, PostgreSQL Global Development Group
  * Author: Teodor Sigaev <teodor@sigaev.ru>
  *
  * IDENTIFICATION
- *    contrib/jsquery/jsquery_gram.y
+ *	contrib/jsquery/jsquery_gram.y
  *
  *-------------------------------------------------------------------------
  */
@@ -43,8 +43,8 @@ fprintf_to_ereport(const char *fmt, const char *msg)
 
 /* struct string is shared between scan and gram */
 typedef struct string {
-	char 	*val;
-	int  	len;
+	char	*val;
+	int		len;
 	int		total;
 } string;
 #include <jsquery_gram.h>
@@ -188,6 +188,9 @@ makeItemList(List *list) {
 
 	head = end = (JsQueryParseItem*)linitial(list);
 
+	while(end->next)
+		end = end->next;
+
 	foreach(cell, list)
 	{
 		JsQueryParseItem	*c = (JsQueryParseItem*)lfirst(cell);
@@ -197,6 +200,9 @@ makeItemList(List *list) {
 
 		end->next = c;
 		end = c;
+
+		while(end->next)
+			end = end->next;
 	}
 
 	return head;
@@ -212,7 +218,7 @@ makeItemList(List *list) {
 %parse-param {JsQueryParseItem **result}
 
 %union {
-	string 				str;
+	string				str;
 	List				*elems; /* list of JsQueryParseItem */
 
 	JsQueryParseItem	*value;
@@ -225,25 +231,25 @@ makeItemList(List *list) {
 
 %token	<str>		STRING_P NUMERIC_P INT_P
 
-%type	<value>		result scalar_value 
+%type	<value>		result scalar_value
 
 %type	<elems>		path value_list
 
-%type 	<value>		key key_any right_expr expr array numeric
+%type	<value>		key key_any right_expr expr array numeric
 
 %token	<hint>		HINT_P
 
-%left OR_P 
-%left AND_P 
-%right NOT_P 
-%nonassoc IN_P IS_P 
+%left OR_P
+%left AND_P
+%right NOT_P
+%nonassoc IN_P IS_P
 %nonassoc '(' ')'
 
 /* Grammar follows */
 %%
 
-result: 
-	expr							{ *result = $1; } 
+result:
+	expr							{ *result = $1; }
 	| /* EMPTY */					{ *result = NULL; }
 	;
 
@@ -271,8 +277,8 @@ scalar_value:
 	;
 
 value_list:
-	scalar_value 					{ $$ = lappend(NIL, $1); } 
-	| value_list ',' scalar_value	{ $$ = lappend($1, $3); } 
+	scalar_value					{ $$ = lappend(NIL, $1); }
+	| value_list ',' scalar_value	{ $$ = lappend($1, $3); }
 	;
 
 numeric:
@@ -289,20 +295,21 @@ right_expr:
 	| '>' numeric					{ $$ = makeItemUnary(jqiGreater, $2); }
 	| '<' '=' numeric				{ $$ = makeItemUnary(jqiLessOrEqual, $3); }
 	| '>' '=' numeric				{ $$ = makeItemUnary(jqiGreaterOrEqual, $3); }
-	| '@' '>' array					{ $$ = makeItemUnary(jqiContains, $3); } 
-	| '<' '@' array					{ $$ = makeItemUnary(jqiContained, $3); } 
+	| '@' '>' array					{ $$ = makeItemUnary(jqiContains, $3); }
+	| '<' '@' array					{ $$ = makeItemUnary(jqiContained, $3); }
 	| '&' '&' array					{ $$ = makeItemUnary(jqiOverlap, $3); }
-	| IS_P ARRAY_T 					{ $$ = makeItemIs(jbvArray); }
-	| IS_P NUMERIC_T 				{ $$ = makeItemIs(jbvNumeric); }
-	| IS_P OBJECT_T 				{ $$ = makeItemIs(jbvObject); }
-	| IS_P STRING_T 				{ $$ = makeItemIs(jbvString); }
-	| IS_P BOOLEAN_T 				{ $$ = makeItemIs(jbvBool); }
+	| IS_P ARRAY_T					{ $$ = makeItemIs(jbvArray); }
+	| IS_P NUMERIC_T				{ $$ = makeItemIs(jbvNumeric); }
+	| IS_P OBJECT_T					{ $$ = makeItemIs(jbvObject); }
+	| IS_P STRING_T					{ $$ = makeItemIs(jbvString); }
+	| IS_P BOOLEAN_T				{ $$ = makeItemIs(jbvBool); }
 	;
 
 expr:
-	path right_expr					{ $$ = makeItemList(lappend($1, $2)); }
+	path							{  $$ = makeItemList($1); }
+	| path right_expr				{ $$ = makeItemList(lappend($1, $2)); }
 	| path HINT_P right_expr		{ $3->hint = $2; $$ = makeItemList(lappend($1, $3)); }
-	| NOT_P expr 					{ $$ = makeItemUnary(jqiNot, $2); }
+	| NOT_P expr					{ $$ = makeItemUnary(jqiNot, $2); }
 	/*
 	 * In next two lines NOT_P is a path actually, not a an
 	 * logical expression.
@@ -346,15 +353,17 @@ key:
 	;
 
 /*
- * NOT keyword needs separate processing 
+ * NOT keyword needs separate processing
  */
 key_any:
 	key								{ $$ = $$; }
+	| '?' '(' expr ')'				{ $$ = makeItemUnary(jqiFilter, $3); }
 	| NOT_P							{ $$ = makeItemKey(&$1); }
 	;
 
 path:
 	key								{ $$ = lappend(NIL, $1); }
+	| '?' '(' expr ')'				{ $$ = lappend(NIL, makeItemUnary(jqiFilter, $3)); }
 	| path '.' key_any				{ $$ = lappend($1, $3); }
 	| NOT_P '.' key_any				{ $$ = lappend(lappend(NIL, makeItemKey(&$1)), $3); }
 	;

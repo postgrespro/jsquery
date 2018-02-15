@@ -112,6 +112,7 @@ jsqInitByBuffer(JsQueryItem *v, char *base, int32 pos)
 		case jqiOverlap:
 		case jqiIn:
 		case jqiNot:
+		case jqiFilter:
 			read_int32(v->arg, base, pos);
 			break;
 		default:
@@ -132,6 +133,7 @@ jsqGetArg(JsQueryItem *v, JsQueryItem *a)
 		v->type == jqiContains ||
 		v->type == jqiContained ||
 		v->type == jqiOverlap ||
+		v->type == jqiFilter ||
 		v->type == jqiIn ||
 		v->type == jqiNot
 	);
@@ -154,6 +156,7 @@ jsqGetNext(JsQueryItem *v, JsQueryItem *a)
 			v->type == jqiAllArray ||
 			v->type == jqiAllKey ||
 			v->type == jqiCurrent ||
+			v->type == jqiFilter ||
 			v->type == jqiLength
 		);
 

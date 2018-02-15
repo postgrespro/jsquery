@@ -137,6 +137,7 @@ copyJsQuery(StringInfo buf, JsQueryItem *jsq)
 		case jqiAll:
 		case jqiAllArray:
 		case jqiAllKey:
+		case jqiFilter:
 			break;
 		default:
 			elog(ERROR, "Unknown type: %d", jsq->type);

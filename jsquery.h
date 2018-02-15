@@ -57,12 +57,13 @@ typedef enum JsQueryItemType {
 		jqiLength,
 		jqiIn,
 		jqiIs,
-		jqiIndexArray
+		jqiIndexArray,
+		jqiFilter
 } JsQueryItemType;
 
 /*
  * JsQueryHint is stored in the same byte as JsQueryItemType so
- * JsQueryItemType should not use two high bits
+ * JsQueryItemType should not use three high bits
  */
 typedef enum JsQueryHint {
 		jsqIndexDefault = 0x00,
@@ -84,7 +85,7 @@ typedef enum JsQueryHint {
 typedef struct JsQueryItem {
 	JsQueryItemType	type;
 	JsQueryHint		hint;
-	int32			nextPos;
+	uint32			nextPos;
 	char			*base;
 
 	union {
@@ -135,6 +136,7 @@ struct JsQueryParseItem {
 	JsQueryItemType	type;
 	JsQueryHint		hint;
 	JsQueryParseItem	*next; /* next in path */
+	bool			filter;
 
 	union {
 		struct {

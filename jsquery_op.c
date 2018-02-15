@@ -1,13 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * jsquery_op.c
- *     Functions and operations over jsquery/jsonb datatypes
+ *	Functions and operations over jsquery/jsonb datatypes
  *
  * Copyright (c) 2014, PostgreSQL Global Development Group
  * Author: Teodor Sigaev <teodor@sigaev.ru>
  *
  * IDENTIFICATION
- *    contrib/jsquery/jsquery_op.c
+ *	contrib/jsquery/jsquery_op.c
  *
  *-------------------------------------------------------------------------
  */
@@ -29,7 +29,48 @@
 
 #include "jsquery.h"
 
-static bool recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg);
+typedef struct ResultAccum {
+	StringInfo	buf;
+	bool		missAppend;
+	JsonbParseState	*jbArrayState;
+} ResultAccum;
+
+
+static bool recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
+							 ResultAccum *ra);
+
+static void
+appendResult(ResultAccum *ra, JsonbValue *jb)
+{
+	if (ra == NULL || ra->missAppend == true)
+		return;
+
+	if (ra->jbArrayState == NULL)
+		pushJsonbValue(&ra->jbArrayState, WJB_BEGIN_ARRAY, NULL);
+
+	pushJsonbValue(&ra->jbArrayState, WJB_ELEM, jb);
+}
+
+static void
+concatResult(ResultAccum *ra, JsonbParseState *a, JsonbParseState *b)
+{
+	Jsonb			*value;
+	JsonbIterator	*it;
+	int32			r;
+	JsonbValue		v;
+
+	Assert(a);
+	Assert(b);
+
+	ra->jbArrayState = a;
+
+	value = JsonbValueToJsonb(pushJsonbValue(&b, WJB_END_ARRAY, NULL));
+	it = JsonbIteratorInit(&value->root);
+
+	while((r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
+		if (r == WJB_ELEM)
+			pushJsonbValue(&ra->jbArrayState, WJB_ELEM, &v);
+}
 
 static int
 compareNumeric(Numeric a, Numeric b)
@@ -67,7 +108,7 @@ JsonbType(JsonbValue *jb)
 }
 
 static bool
-recursiveAny(JsQueryItem *jsq, JsonbValue *jb)
+recursiveAny(JsQueryItem *jsq, JsonbValue *jb, ResultAccum *ra)
 {
 	bool			res = false;
 	JsonbIterator	*it;
@@ -88,10 +129,14 @@ recursiveAny(JsQueryItem *jsq, JsonbValue *jb)
 
 		if (r == WJB_VALUE || r == WJB_ELEM)
 		{
-			res = recursiveExecute(jsq, &v, NULL);
+			/*
+			 * we don't need actually store result, we may need to store whole
+			 * object/array
+			 */
+			res = recursiveExecute(jsq, &v, NULL, ra);
 
 			if (res == false && v.type == jbvBinary)
-				res = recursiveAny(jsq, &v);
+				res = recursiveAny(jsq, &v, ra);
 		}
 	}
 
@@ -99,7 +144,7 @@ recursiveAny(JsQueryItem *jsq, JsonbValue *jb)
 }
 
 static bool
-recursiveAll(JsQueryItem *jsq, JsonbValue *jb)
+recursiveAll(JsQueryItem *jsq, JsonbValue *jb, ResultAccum *ra)
 {
 	bool			res = true;
 	JsonbIterator	*it;
@@ -120,10 +165,14 @@ recursiveAll(JsQueryItem *jsq, JsonbValue *jb)
 
 		if (r == WJB_VALUE || r == WJB_ELEM)
 		{
-			if ((res = recursiveExecute(jsq, &v, NULL)) == true)
+			/*
+			 * we don't need actually store result, we may need to store whole
+			 * object/array
+			 */
+			if ((res = recursiveExecute(jsq, &v, NULL, ra)) == true)
 			{
 				if (v.type == jbvBinary)
-					res = recursiveAll(jsq, &v);
+					res = recursiveAll(jsq, &v, ra);
 			}
 
 			if (res == false)
@@ -397,7 +446,8 @@ executeExpr(JsQueryItem *jsq, int32 op, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 }
 
 static bool
-recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg)
+recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
+				 ResultAccum *ra)
 {
 	JsQueryItem		elem;
 	bool			res = false;
@@ -406,27 +456,59 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 
 	switch(jsq->type) {
 		case jqiAnd:
-			jsqGetLeftArg(jsq, &elem);
-			res = recursiveExecute(&elem, jb, jsqLeftArg);
-			if (res == true)
 			{
-				jsqGetRightArg(jsq, &elem);
-				res = recursiveExecute(&elem, jb, jsqLeftArg);
+				JsonbParseState *saveJbArrayState = NULL;
+
+				jsqGetLeftArg(jsq, &elem);
+				if (ra && ra->missAppend == false)
+				{
+					saveJbArrayState = ra->jbArrayState;
+					ra->jbArrayState = NULL;
+				}
+
+				res = recursiveExecute(&elem, jb, jsqLeftArg, ra);
+				if (res == true)
+				{
+					jsqGetRightArg(jsq, &elem);
+					res = recursiveExecute(&elem, jb, jsqLeftArg, ra);
+				}
+
+				if (ra && ra->missAppend == false)
+				{
+					if (res == true)
+					{
+						if (saveJbArrayState != NULL)
+							/* append args lists to current */
+							concatResult(ra, saveJbArrayState, ra->jbArrayState);
+					}
+					else
+						ra->jbArrayState = saveJbArrayState;
+				}
+
+				break;
 			}
-			break;
 		case jqiOr:
 			jsqGetLeftArg(jsq, &elem);
-			res = recursiveExecute(&elem, jb, jsqLeftArg);
+			res = recursiveExecute(&elem, jb, jsqLeftArg, ra);
 			if (res == false)
 			{
 				jsqGetRightArg(jsq, &elem);
-				res = recursiveExecute(&elem, jb, jsqLeftArg);
+				res = recursiveExecute(&elem, jb, jsqLeftArg, ra);
 			}
 			break;
 		case jqiNot:
-			jsqGetArg(jsq, &elem);
-			res = !recursiveExecute(&elem, jb, jsqLeftArg);
-			break;
+			{
+				bool saveMissAppend = (ra) ? ra->missAppend : true;
+
+				jsqGetArg(jsq, &elem);
+				if (ra)
+					ra->missAppend = true;
+				res = !recursiveExecute(&elem, jb, jsqLeftArg, ra);
+				if (ra)
+					ra->missAppend = saveMissAppend;
+
+				break;
+			}
 		case jqiKey:
 			if (JsonbType(jb) == jbvObject) {
 				JsonbValue	*v, key;
@@ -438,15 +520,24 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 
 				if (v != NULL)
 				{
-					jsqGetNext(jsq, &elem);
-					res = recursiveExecute(&elem, v, NULL);
+					if (jsqGetNext(jsq, &elem) == false)
+					{
+						appendResult(ra, v);
+						res = true;
+					}
+					else
+						res = recursiveExecute(&elem, v, NULL, ra);
 					pfree(v);
 				}
 			}
 			break;
 		case jqiCurrent:
-			jsqGetNext(jsq, &elem);
-			if (JsonbType(jb) == jbvScalar)
+			if (jsqGetNext(jsq, &elem) == false)
+			{
+				appendResult(ra, jb);
+				res = true;
+			}
+			else if (JsonbType(jb) == jbvScalar)
 			{
 				JsonbIterator	*it;
 				int32			r;
@@ -462,26 +553,34 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 				r = JsonbIteratorNext(&it, &v, true);
 				Assert(r == WJB_ELEM);
 
-				res = recursiveExecute(&elem, &v, jsqLeftArg);
+				res = recursiveExecute(&elem, &v, jsqLeftArg, ra);
 			}
 			else
 			{
-				res = recursiveExecute(&elem, jb, jsqLeftArg);
+				res = recursiveExecute(&elem, jb, jsqLeftArg, ra);
 			}
 			break;
 		case jqiAny:
-			jsqGetNext(jsq, &elem);
-			if (recursiveExecute(&elem, jb, NULL))
+			if (jsqGetNext(jsq, &elem) == false)
+			{
+				res = true;
+				appendResult(ra, jb);
+			}
+			else if (recursiveExecute(&elem, jb, NULL, ra))
 				res = true;
 			else if (jb->type == jbvBinary)
-				res = recursiveAny(&elem, jb);
+				res = recursiveAny(&elem, jb, ra);
 			break;
 		case jqiAll:
-			jsqGetNext(jsq, &elem);
-			if ((res = recursiveExecute(&elem, jb, NULL)) == true)
+			if (jsqGetNext(jsq, &elem) == false)
+			{
+				res = true;
+				appendResult(ra, jb);
+			}
+			if ((res = recursiveExecute(&elem, jb, NULL, ra)) == true)
 			{
 				if (jb->type == jbvBinary)
-					res = recursiveAll(&elem, jb);
+					res = recursiveAll(&elem, jb, ra);
 			}
 			break;
 		case jqiAnyArray:
@@ -491,9 +590,22 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 				JsonbIterator	*it;
 				int32			r;
 				JsonbValue		v;
+				bool			anyres = false;
+				bool			hasNext;
 
-				jsqGetNext(jsq, &elem);
+				hasNext = jsqGetNext(jsq, &elem);
 				it = JsonbIteratorInit(jb->val.binary.data);
+
+				if (hasNext == false)
+				{
+					res = true;
+
+					while(ra && (r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
+						if (r == WJB_ELEM)
+							appendResult(ra, &v);
+
+					break;
+				}
 
 				if (jsq->type == jqiAllArray)
 					res = true;
@@ -502,11 +614,13 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 				{
 					if (r == WJB_ELEM)
 					{
-						res = recursiveExecute(&elem, &v, NULL);
+						res = recursiveExecute(&elem, &v, NULL, ra);
 
 						if (jsq->type == jqiAnyArray)
 						{
-							if (res == true)
+							anyres |= res;
+							if (res == true &&
+								(ra == NULL || ra->missAppend == true))
 								break;
 						}
 						else if (jsq->type == jqiAllArray)
@@ -516,6 +630,9 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 						}
 					}
 				}
+
+				if (jsq->type == jqiAnyArray)
+					res = anyres;
 			}
 			break;
 		case jqiIndexArray:
@@ -523,12 +640,19 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 			{
 				JsonbValue		*v;
 
-				jsqGetNext(jsq, &elem);
-
 				v = getIthJsonbValueFromContainer(jb->val.binary.data,
 												  jsq->arrayIndex);
 
-				res = v && recursiveExecute(&elem, v, NULL);
+				if (v)
+				{
+					if (jsqGetNext(jsq, &elem) == false)
+					{
+						res = true;
+						appendResult(ra, v);
+					}
+					else
+						res = recursiveExecute(&elem, v, NULL, ra);
+				}
 			}
 			break;
 		case jqiAnyKey:
@@ -538,9 +662,22 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 				JsonbIterator	*it;
 				int32			r;
 				JsonbValue		v;
+				bool			anyres = false;
+				bool			hasNext;
 
-				jsqGetNext(jsq, &elem);
+				hasNext = jsqGetNext(jsq, &elem);
 				it = JsonbIteratorInit(jb->val.binary.data);
+
+				if (hasNext == false)
+				{
+					res = true;
+
+					while(ra && (r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
+						if (r == WJB_VALUE)
+							appendResult(ra, &v);
+
+					break;
+				}
 
 				if (jsq->type == jqiAllKey)
 					res = true;
@@ -549,11 +686,13 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 				{
 					if (r == WJB_VALUE)
 					{
-						res = recursiveExecute(&elem, &v, NULL);
+						res = recursiveExecute(&elem, &v, NULL, ra);
 
 						if (jsq->type == jqiAnyKey)
 						{
-							if (res == true)
+							anyres |= res;
+							if (res == true &&
+								(ra == NULL || ra->missAppend == true))
 								break;
 						}
 						else if (jsq->type == jqiAllKey)
@@ -563,6 +702,9 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 						}
 					}
 				}
+
+				if (jsq->type == jqiAnyKey)
+					res = anyres;
 			}
 			break;
 		case jqiEqual:
@@ -579,7 +721,7 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 			break;
 		case jqiLength:
 			jsqGetNext(jsq, &elem);
-			res = recursiveExecute(&elem, jb, jsq);
+			res = recursiveExecute(&elem, jb, jsq, ra);
 			break;
 		case jqiIs:
 			if (JsonbType(jb) == jbvScalar)
@@ -605,6 +747,27 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg)
 				res = (jsqGetIsType(jsq) == JsonbType(jb));
 			}
 			break;
+		case jqiFilter:
+			{
+				bool saveMissAppend = (ra) ? ra->missAppend : true;
+
+				jsqGetArg(jsq, &elem);
+				if (ra)
+					ra->missAppend = true;
+				res = recursiveExecute(&elem, jb, jsqLeftArg, ra);
+				if (ra)
+					ra->missAppend = saveMissAppend;
+				if (res) {
+					if (jsqGetNext(jsq, &elem) == false)
+					{
+						appendResult(ra, jb);
+						res = true;
+					}
+					else
+						res = recursiveExecute(&elem, jb, jsqLeftArg, ra);
+				}
+			}
+			break;
 		default:
 			elog(ERROR,"Wrong state: %d", jsq->type);
 	}
@@ -620,7 +783,7 @@ jsquery_json_exec(PG_FUNCTION_ARGS)
 	Jsonb			*jb = PG_GETARG_JSONB(1);
 	bool			res;
 	JsonbValue		jbv;
-	JsQueryItem	jsq;
+	JsQueryItem		jsq;
 
 	jbv.type = jbvBinary;
 	jbv.val.binary.data = &jb->root;
@@ -628,7 +791,7 @@ jsquery_json_exec(PG_FUNCTION_ARGS)
 
 	jsqInit(&jsq, jq);
 
-	res = recursiveExecute(&jsq, &jbv, NULL);
+	res = recursiveExecute(&jsq, &jbv, NULL, NULL);
 
 	PG_FREE_IF_COPY(jq, 0);
 	PG_FREE_IF_COPY(jb, 1);
@@ -652,13 +815,50 @@ json_jsquery_exec(PG_FUNCTION_ARGS)
 
 	jsqInit(&jsq, jq);
 
-	res = recursiveExecute(&jsq, &jbv, NULL);
+	res = recursiveExecute(&jsq, &jbv, NULL, NULL);
 
 	PG_FREE_IF_COPY(jb, 0);
 	PG_FREE_IF_COPY(jq, 1);
 
 	PG_RETURN_BOOL(res);
 }
+
+PG_FUNCTION_INFO_V1(json_jsquery_filter);
+Datum
+json_jsquery_filter(PG_FUNCTION_ARGS)
+{
+	Jsonb			*jb = PG_GETARG_JSONB(0);
+	JsQuery			*jq = PG_GETARG_JSQUERY(1);
+	Jsonb			*res = NULL;
+	JsonbValue		jbv;
+	JsQueryItem		jsq;
+	ResultAccum		ra;
+
+	jbv.type = jbvBinary;
+	jbv.val.binary.data = &jb->root;
+	jbv.val.binary.len = VARSIZE_ANY_EXHDR(jb);
+
+	jsqInit(&jsq, jq);
+	memset(&ra, 0, sizeof(ra));
+
+	recursiveExecute(&jsq, &jbv, NULL, &ra);
+
+	if (ra.jbArrayState)
+	{
+		res = JsonbValueToJsonb(
+				pushJsonbValue(&ra.jbArrayState, WJB_END_ARRAY, NULL)
+		);
+	}
+
+	PG_FREE_IF_COPY(jb, 0);
+	PG_FREE_IF_COPY(jq, 1);
+
+	if (res)
+		PG_RETURN_JSONB(res);
+	else
+		PG_RETURN_NULL();
+}
+
 
 static int
 compareJsQuery(JsQueryItem *v1, JsQueryItem *v2)
@@ -682,6 +882,7 @@ compareJsQuery(JsQueryItem *v1, JsQueryItem *v2)
 		case jqiAll:
 		case jqiAllArray:
 		case jqiAllKey:
+		case jqiFilter:
 			break;
 		case jqiIndexArray:
 			if (v1->arrayIndex != v2->arrayIndex)
@@ -980,6 +1181,7 @@ hashJsQuery(JsQueryItem *v, pg_crc32 *crc)
 		case jqiAll:
 		case jqiAllArray:
 		case jqiAllKey:
+		case jqiFilter:
 			break;
 		case jqiIndexArray:
 			COMP_CRC32(*crc, &v->arrayIndex, sizeof(v->arrayIndex));

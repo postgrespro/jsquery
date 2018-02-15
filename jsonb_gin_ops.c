@@ -1,13 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * jsonb_gin_ops.c
- *     Support GIN over jsonb with jsquery operation
+ *	Support GIN over jsonb with jsquery operation
  *
  * Copyright (c) 2014, PostgreSQL Global Development Group
  * Author: Alexander Korotkov <aekorotkov@gmail.com>
  *
  * IDENTIFICATION
- *    contrib/jsquery/jsonb_gin_ops.c
+ *	contrib/jsquery/jsonb_gin_ops.c
  *
  *-------------------------------------------------------------------------
  */
