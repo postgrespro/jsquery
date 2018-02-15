@@ -56,12 +56,25 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 	{
 		case jqiAnd:
 		case jqiOr:
-			type = ((jsq->type == jqiAnd) == not) ? eOr : eAnd;
+		case jqiFilter:
+			type = ((jsq->type == jqiAnd || jsq->type == jqiFilter) == not) ? eOr : eAnd;
 
-			jsqGetLeftArg(jsq, &elem);
-			leftNode = recursiveExtract(&elem, not, false, path);
-			jsqGetRightArg(jsq, &elem);
-			rightNode = recursiveExtract(&elem, not, false, path);
+			if (jsq->type == jqiFilter)
+			{
+				jsqGetArg(jsq, &elem);
+				leftNode = recursiveExtract(&elem, not, false, path);
+				if (jsqGetNext(jsq, &elem))
+					rightNode = recursiveExtract(&elem, not, false, path);
+				else
+					rightNode = makeAnyNode(not, false, path);
+			}
+			else
+			{
+				jsqGetLeftArg(jsq, &elem);
+				leftNode = recursiveExtract(&elem, not, false, path);
+				jsqGetRightArg(jsq, &elem);
+				rightNode = recursiveExtract(&elem, not, false, path);
+			}
 
 			if (!leftNode || !rightNode)
 			{
@@ -137,8 +150,6 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			if (!jsqGetNext(jsq, &elem))
 				return makeAnyNode(not, indirect, pathItem);
 			return recursiveExtract(&elem, not, true, pathItem);
-		case jqiFilter:
-			/* ignore filter for now */
 		case jqiCurrent:
 			if (!jsqGetNext(jsq, &elem))
 				return makeAnyNode(not, indirect, path);
