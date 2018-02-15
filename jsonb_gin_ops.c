@@ -691,6 +691,8 @@ gin_extract_jsonb_value_path_internal(Jsonb *jb, int32 *nentries, uint32 **bloom
 				stack->parent = tmp;
 				break;
 			case WJB_KEY:
+				if (!stack) /* should never happen */
+					elog(ERROR, "error jsonb iteration");
 				stack->hash = 0;
 				JsonbHashScalarValue(&v, &stack->hash);
 				break;
@@ -709,6 +711,8 @@ gin_extract_jsonb_value_path_internal(Jsonb *jb, int32 *nentries, uint32 **bloom
 				break;
 			case WJB_END_OBJECT:
 				/* Pop the stack */
+				if (!stack) /* should never happen */
+					elog(ERROR, "error jsonb iteration");
 				tmp = stack->parent;
 				pfree(stack);
 				stack = tmp;
@@ -1109,6 +1113,9 @@ gin_extract_jsonb_path_value_internal(Jsonb *jb, int32 *nentries)
 			entries = (Datum *) repalloc(entries, sizeof(Datum) * total);
 		}
 
+		if (!stack) /* should never happen */
+			elog(ERROR, "error jsonb iteration");
+
 		switch (r)
 		{
 			case WJB_BEGIN_ARRAY:
@@ -1131,6 +1138,8 @@ gin_extract_jsonb_path_value_internal(Jsonb *jb, int32 *nentries)
 				break;
 			case WJB_KEY:
 				/* Initialize hash from parent */
+				if (!stack->parent) /* should never happen */
+					elog(ERROR, "error jsonb iteration");
 				stack->hash = stack->parent->hash;
 				JsonbHashScalarValue(&v, &stack->hash);
 				break;

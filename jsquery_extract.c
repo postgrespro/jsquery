@@ -48,6 +48,7 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 	ExtractedNodeType	type;
 	JsQueryItem			elem, e;
 
+	e.hint = false;
 	check_stack_depth();
 
 	switch(jsq->type)
