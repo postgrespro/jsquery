@@ -68,6 +68,10 @@ fi
 CLUSTER_PATH=$(pwd)/test_cluster
 $initdb_path -D $CLUSTER_PATH -U $USER -A trust
 
+# enable core dumps and specify their path
+ulimit -c unlimited -S
+echo '/tmp/%e-%s-%p.core' | sudo tee /proc/sys/kernel/core_pattern
+
 # build jsquery (using CFLAGS_SL for gcov)
 make USE_PGXS=1 PG_CONFIG=$config_path CFLAGS_SL="$($config_path --cflags_sl) -coverage"
 sudo make install USE_PGXS=1 PG_CONFIG=$config_path
@@ -88,6 +92,13 @@ PGPORT=55435 PGUSER=$USER PG_CONFIG=$config_path make installcheck USE_PGXS=1 ||
 
 # show diff if it exists
 if test -f regression.diffs; then cat regression.diffs; fi
+
+# check core dumps if any
+for corefile in $(find /tmp/ -name '*.core' 2>/dev/null) ; do
+	binary=$(gdb -quiet -core $corefile -batch -ex 'info auxv' | grep AT_EXECFN | perl -pe "s/^.*\"(.*)\"\$/\$1/g")
+	echo dumping $corefile for $binary
+	gdb --batch --quiet -ex "thread apply all bt full" -ex "quit" $binary $corefile
+done
 
 #generate *.gcov files
 gcov *.c *.h
