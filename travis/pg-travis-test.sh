@@ -119,6 +119,9 @@ fi
 # run regression tests
 PGPORT=55435 PGUSER=$USER PG_CONFIG=$config_path make installcheck USE_PGXS=1 || status=$?
 
+# stop cluster
+$pg_ctl_path -D $CLUSTER_PATH stop -l postgres.log -w
+
 # show diff if it exists
 if test -f regression.diffs; then cat regression.diffs; fi
 
@@ -139,9 +142,6 @@ for corefile in $(find /tmp/ -name '*.core' 2>/dev/null) ; do
 	echo dumping $corefile for $binary
 	gdb --batch --quiet -ex "thread apply all bt full" -ex "quit" $binary $corefile
 done
-
-# stop cluster
-$pg_ctl_path -D $CLUSTER_PATH stop -l postgres.log -w
 
 #generate *.gcov files
 if [ $CHECK_TYPE == "valgrind" ] && [ $CC = "clang" ]; then
