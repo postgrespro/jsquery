@@ -20,16 +20,14 @@ env:
   global:
     - LLVM_VER=4.0
   matrix:
-    - PG_VER=10  CHECK_CODE=true
-    - PG_VER=10  CHECK_CODE=false
-    - PG_VER=9.6 CHECK_CODE=true
-    - PG_VER=9.6 CHECK_CODE=false
-    - PG_VER=9.5 CHECK_CODE=true
-    - PG_VER=9.5 CHECK_CODE=false
-    - PG_VER=9.4 CHECK_CODE=true
-    - PG_VER=9.4 CHECK_CODE=false
+    - PG_VER=10  CHECK_TYPE=normal
+    - PG_VER=10  CHECK_TYPE=static
+    - PG_VER=10  CHECK_TYPE=valgrind
+    - PG_VER=9.6 CHECK_TYPE=normal
+    - PG_VER=9.6 CHECK_TYPE=static
+    - PG_VER=9.5 CHECK_TYPE=normal
+    - PG_VER=9.5 CHECK_TYPE=static
+    - PG_VER=9.4 CHECK_TYPE=normal
+    - PG_VER=9.4 CHECK_TYPE=static
 
 script: bash ./travis/pg-travis-test.sh
-
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
