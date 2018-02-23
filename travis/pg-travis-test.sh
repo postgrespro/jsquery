@@ -89,11 +89,11 @@ ulimit -c unlimited -S
 echo '/tmp/%e-%s-%p.core' | sudo tee /proc/sys/kernel/core_pattern
 
 # build extension (using CFLAGS_SL for gcov)
-if [ $CHECK_TYPE == "valgrind" ] && [ $CC = "clang" ]; then
+if [ $CHECK_TYPE == "valgrind" ]; then
 	make USE_PGXS=1 USE_ASSERT_CHECKING=1 PG_CONFIG=$config_path
 	make install USE_PGXS=1 PG_CONFIG=$config_path
 else
-	make USE_PGXS=1 USE_ASSERT_CHECKING=1 PG_CONFIG=$config_path CFLAGS_SL="$($config_path --cflags_sl) -coverage"
+	make USE_PGXS=1 USE_ASSERT_CHECKING=1 CC=$CC PG_CONFIG=$config_path CFLAGS_SL="$($config_path --cflags_sl) -coverage"
 	sudo make install USE_PGXS=1 PG_CONFIG=$config_path
 fi
 
@@ -144,7 +144,7 @@ for corefile in $(find /tmp/ -name '*.core' 2>/dev/null) ; do
 done
 
 #generate *.gcov files
-if [ $CHECK_TYPE == "valgrind" ] && [ $CC = "clang" ]; then
+if [ $CC = "clang" ]; then
 	bash <(curl -s https://codecov.io/bash) -x "llvm-cov gcov"
 else
 	bash <(curl -s https://codecov.io/bash)
