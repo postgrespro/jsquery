@@ -2,6 +2,8 @@
 
 set -eux
 
+echo -en 'travis_fold:start:pg_install\\r' && echo 'PostgreSQL installation'
+
 sudo apt-get update
 
 # bug: http://www.postgresql.org/message-id/20130508192711.GA9243@msgid.df7cb.de
@@ -46,8 +48,11 @@ config_path=$prefix/bin/pg_config
 # exit code
 status=0
 
+echo -en 'travis_fold:end:pg_install\\r'
+
 # perform code analysis if necessary
 if [ $CHECK_TYPE = "static" ]; then
+	echo -en 'travis_fold:start:static_analysis\\r' && echo 'Static analysis'
 
 	if [ "$CC" = "clang" ]; then
 		sudo apt-get -y install -qq clang-$LLVM_VER
@@ -55,7 +60,6 @@ if [ $CHECK_TYPE = "static" ]; then
 		scan-build-$LLVM_VER --status-bugs \
 			-disable-checker deadcode.DeadStores \
 			make USE_PGXS=1 USE_ASSERT_CHECKING=1 PG_CONFIG=$config_path || status=$?
-		exit $status
 
 	elif [ "$CC" = "gcc" ]; then
 		sudo apt-get -y install -qq cppcheck
@@ -71,22 +75,15 @@ if [ $CHECK_TYPE = "static" ]; then
 			cat cppcheck.log
 			status=1 # error
 		fi
-
-		exit $status
 	fi
 
 	# don't forget to "make clean"
 	make clean USE_PGXS=1 PG_CONFIG=$config_path
+	echo -en 'travis_fold:end:static_analysis\\r'
+	exit $status
 fi
 
-
-# create cluster 'test'
-CLUSTER_PATH=$(pwd)/test_cluster
-$initdb_path -D $CLUSTER_PATH -U $USER -A trust
-
-# enable core dumps and specify their path
-ulimit -c unlimited -S
-echo '/tmp/%e-%s-%p.core' | sudo tee /proc/sys/kernel/core_pattern
+echo -en 'travis_fold:start:build_extension\\r' && echo 'Build extension'
 
 # build extension (using CFLAGS_SL for gcov)
 if [ $CHECK_TYPE == "valgrind" ]; then
@@ -101,8 +98,20 @@ fi
 status=$?
 if [ $status -ne 0 ]; then exit $status; fi
 
+echo -en 'travis_fold:end:build_extension\\r'
+
+echo -en 'travis_fold:start:run_tests\\r' && echo 'Run tests'
+
+# enable core dumps and specify their path
+ulimit -c unlimited -S
+echo '/tmp/%e-%s-%p.core' | sudo tee /proc/sys/kernel/core_pattern
+
 # set permission to write postgres locks
 sudo chown $USER /var/run/postgresql/
+
+# create cluster 'test'
+CLUSTER_PATH=$(pwd)/test_cluster
+$initdb_path -D $CLUSTER_PATH -U $USER -A trust
 
 # start cluster 'test'
 echo "port = 55435" >> $CLUSTER_PATH/postgresql.conf
@@ -121,6 +130,10 @@ PGPORT=55435 PGUSER=$USER PG_CONFIG=$config_path make installcheck USE_PGXS=1 ||
 
 # stop cluster
 $pg_ctl_path -D $CLUSTER_PATH stop -l postgres.log -w
+
+echo -en 'travis_fold:end:run_tests\\r'
+
+echo -en 'travis_fold:start:output\\r' && echo 'Check output'
 
 # show diff if it exists
 if test -f regression.diffs; then cat regression.diffs; fi
@@ -143,11 +156,17 @@ for corefile in $(find /tmp/ -name '*.core' 2>/dev/null) ; do
 	gdb --batch --quiet -ex "thread apply all bt full" -ex "quit" $binary $corefile
 done
 
+echo -en 'travis_fold:end:output\\r'
+
+echo -en 'travis_fold:start:coverage\\r' && echo 'Coverage check'
+
 #generate *.gcov files
 if [ $CC = "clang" ]; then
 	bash <(curl -s https://codecov.io/bash) -x "llvm-cov gcov"
 else
 	bash <(curl -s https://codecov.io/bash)
 fi
+
+echo -en 'travis_fold:end:coverage\\r'
 
 exit $status
