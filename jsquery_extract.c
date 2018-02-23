@@ -250,16 +250,18 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 
 			if (jsq->type == jqiGreater || jsq->type == jqiGreaterOrEqual)
 			{
+				result->bounds.leftBound = (JsQueryItem *)palloc(sizeof(JsQueryItem));
 				result->bounds.leftInclusive = (jsq->type == jqiGreaterOrEqual);
 				result->bounds.rightBound = NULL;
-				result->bounds.leftBound = (JsQueryItem *)palloc(sizeof(JsQueryItem));
+				result->bounds.rightInclusive = false;
 				jsqGetArg(jsq, result->bounds.leftBound);
 			}
 			else
 			{
+				result->bounds.rightBound = (JsQueryItem *)palloc(sizeof(JsQueryItem));
 				result->bounds.rightInclusive = (jsq->type == jqiLessOrEqual);
 				result->bounds.leftBound = NULL;
-				result->bounds.rightBound = (JsQueryItem *)palloc(sizeof(JsQueryItem));
+				result->bounds.leftInclusive = false;
 				jsqGetArg(jsq, result->bounds.rightBound);
 			}
 			return result;
@@ -699,12 +701,13 @@ makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra)
 		for (i = 0; i < node->args.count; i++)
 		{
 			child = node->args.items[i];
-			if (!child) continue;
-			if (child->sClass > node->sClass && !child->forceIndex)
-			{
-				Assert(node->type != eOr);
+			if (!child)
 				continue;
-			}
+			/* Skip non-selective AND children */
+			if (child->sClass > node->sClass &&
+				node->type == eAnd &&
+				!child->forceIndex)
+				continue;
 			child = makeEntries(child, handler, extra);
 			if (child)
 			{
@@ -771,14 +774,14 @@ setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler,
 				if (!child)
 					continue;
 
+				setSelectivityClass(child, checkHandler, extra);
+
 				if (!isLogicalNodeType(child->type))
 				{
 					if (child->hint == jsqNoIndex ||
 							!checkHandler(child, extra))
 						continue;
 				}
-
-				setSelectivityClass(child, checkHandler, extra);
 
 				if (child->forceIndex)
 					node->forceIndex = true;
