@@ -94,10 +94,6 @@ else
 	sudo make install USE_PGXS=1 PG_CONFIG=$config_path
 fi
 
-# check build
-status=$?
-if [ $status -ne 0 ]; then exit $status; fi
-
 echo -en 'travis_fold:end:build_extension\\r'
 
 echo -en 'travis_fold:start:run_tests\\r' && echo 'Run tests'
