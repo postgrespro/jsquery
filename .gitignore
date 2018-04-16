@@ -1,4 +1,7 @@
 .deps
+/log/
+/results/
+/tmp_check/
 *.so
 *.o
 jsquery_gram.c
