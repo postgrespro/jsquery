@@ -780,7 +780,7 @@ Datum
 jsquery_json_exec(PG_FUNCTION_ARGS)
 {
 	JsQuery			*jq = PG_GETARG_JSQUERY(0);
-	Jsonb			*jb = PG_GETARG_JSONB(1);
+	Jsonb			*jb = PG_GETARG_JSONB_P(1);
 	bool			res;
 	JsonbValue		jbv;
 	JsQueryItem		jsq;
@@ -803,7 +803,7 @@ PG_FUNCTION_INFO_V1(json_jsquery_exec);
 Datum
 json_jsquery_exec(PG_FUNCTION_ARGS)
 {
-	Jsonb			*jb = PG_GETARG_JSONB(0);
+	Jsonb			*jb = PG_GETARG_JSONB_P(0);
 	JsQuery			*jq = PG_GETARG_JSQUERY(1);
 	bool			res;
 	JsonbValue		jbv;
@@ -827,7 +827,7 @@ PG_FUNCTION_INFO_V1(json_jsquery_filter);
 Datum
 json_jsquery_filter(PG_FUNCTION_ARGS)
 {
-	Jsonb			*jb = PG_GETARG_JSONB(0);
+	Jsonb			*jb = PG_GETARG_JSONB_P(0);
 	JsQuery			*jq = PG_GETARG_JSQUERY(1);
 	Jsonb			*res = NULL;
 	JsonbValue		jbv;
@@ -854,9 +854,9 @@ json_jsquery_filter(PG_FUNCTION_ARGS)
 	PG_FREE_IF_COPY(jq, 1);
 
 	if (res)
-		PG_RETURN_JSONB(res);
-	else
-		PG_RETURN_NULL();
+		PG_RETURN_JSONB_P(res);
+
+	PG_RETURN_NULL();
 }
 
 

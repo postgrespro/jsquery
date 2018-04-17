@@ -248,4 +248,12 @@ bool queryNeedRecheck(ExtractedNode *node);
 bool execRecursive(ExtractedNode *node, bool *check);
 bool execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check);
 
+#ifndef PG_RETURN_JSONB_P
+#define PG_RETURN_JSONB_P(x)	PG_RETURN_JSONB(x)
+#endif
+
+#ifndef PG_GETARG_JSONB_P
+#define PG_GETARG_JSONB_P(x)	PG_GETARG_JSONB(x)
+#endif
+
 #endif

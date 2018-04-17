@@ -732,7 +732,7 @@ gin_extract_jsonb_value_path_internal(Jsonb *jb, int32 *nentries, uint32 **bloom
 Datum
 gin_extract_jsonb_value_path(PG_FUNCTION_ARGS)
 {
-	Jsonb	   *jb = PG_GETARG_JSONB(0);
+	Jsonb	   *jb = PG_GETARG_JSONB_P(0);
 	int32	   *nentries = (int32 *) PG_GETARG_POINTER(1);
 
 	PG_RETURN_POINTER(gin_extract_jsonb_value_path_internal(jb, nentries, NULL));
@@ -770,12 +770,12 @@ gin_extract_jsonb_query_value_path(PG_FUNCTION_ARGS)
 	switch(strategy)
 	{
 		case JsonbContainsStrategyNumber:
-			jb = PG_GETARG_JSONB(0);
+			jb = PG_GETARG_JSONB_P(0);
 			entries = gin_extract_jsonb_value_path_internal(jb, nentries, NULL);
 			break;
 
 		case JsonbNestedContainsStrategyNumber:
-			jb = PG_GETARG_JSONB(0);
+			jb = PG_GETARG_JSONB_P(0);
 			entries = gin_extract_jsonb_value_path_internal(jb, nentries, &bloom);
 
 			n = *nentries;
@@ -867,7 +867,7 @@ gin_triconsistent_jsonb_value_path(PG_FUNCTION_ARGS)
 {
 	GinTernaryValue   *check = (GinTernaryValue *) PG_GETARG_POINTER(0);
 	StrategyNumber strategy = PG_GETARG_UINT16(1);
-	/* Jsonb	   *query = PG_GETARG_JSONB(2); */
+	/* Jsonb	   *query = PG_GETARG_JSONB_P(2); */
 	int32		nkeys = PG_GETARG_INT32(3);
 	Pointer	   *extra_data = (Pointer *) PG_GETARG_POINTER(4);
 	GinTernaryValue	res = GIN_TRUE;
@@ -1171,7 +1171,7 @@ gin_extract_jsonb_path_value_internal(Jsonb *jb, int32 *nentries)
 Datum
 gin_extract_jsonb_path_value(PG_FUNCTION_ARGS)
 {
-	Jsonb	   *jb = PG_GETARG_JSONB(0);
+	Jsonb	   *jb = PG_GETARG_JSONB_P(0);
 	int32	   *nentries = (int32 *) PG_GETARG_POINTER(1);
 
 	PG_RETURN_POINTER(gin_extract_jsonb_path_value_internal(jb, nentries));
@@ -1209,7 +1209,7 @@ gin_extract_jsonb_query_path_value(PG_FUNCTION_ARGS)
 	switch(strategy)
 	{
 		case JsonbContainsStrategyNumber:
-			jb = PG_GETARG_JSONB(0);
+			jb = PG_GETARG_JSONB_P(0);
 			entries = gin_extract_jsonb_path_value_internal(jb, nentries);
 			break;
 
@@ -1250,7 +1250,7 @@ gin_consistent_jsonb_path_value(PG_FUNCTION_ARGS)
 {
 	bool	   *check = (bool *) PG_GETARG_POINTER(0);
 	StrategyNumber strategy = PG_GETARG_UINT16(1);
-	/* Jsonb	   *query = PG_GETARG_JSONB(2); */
+	/* Jsonb	   *query = PG_GETARG_JSONB_P(2); */
 	int32		nkeys = PG_GETARG_INT32(3);
 	Pointer	   *extra_data = (Pointer *) PG_GETARG_POINTER(4);
 	bool	   *recheck = (bool *) PG_GETARG_POINTER(5);
@@ -1291,7 +1291,7 @@ gin_triconsistent_jsonb_path_value(PG_FUNCTION_ARGS)
 {
 	GinTernaryValue *check = (GinTernaryValue *) PG_GETARG_POINTER(0);
 	StrategyNumber strategy = PG_GETARG_UINT16(1);
-	/* Jsonb	   *query = PG_GETARG_JSONB(2); */
+	/* Jsonb	   *query = PG_GETARG_JSONB_P(2); */
 	int32		nkeys = PG_GETARG_INT32(3);
 	Pointer	   *extra_data = (Pointer *) PG_GETARG_POINTER(4);
 	GinTernaryValue res = GIN_TRUE;
