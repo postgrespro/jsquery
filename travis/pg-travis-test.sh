@@ -21,7 +21,9 @@ if [ $CHECK_TYPE = "valgrind" ]; then
 	apt_packages="build-essential libgd-dev valgrind lcov"
 	sudo apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y install -qq $apt_packages
 	# grab sources from github
-	tag=`curl -s 'https://api.github.com/repos/postgres/postgres/git/refs/tags' | jq -r '.[] | .ref' | sed 's/^refs\/tags\///' | grep "REL_*${PG_VER/./_}_" | tail -n 1`
+	echo `curl -s -I 'https://api.github.com/repos/postgres/postgres/git/refs/tags'`
+	tag=`curl -s 'https://api.github.com/repos/postgres/postgres/git/refs/tags' | jq -r '.[].ref' | sed 's/^refs\/tags\///' | grep "REL_*${PG_VER/./_}_" | tail -n 1`
+	[[ -z "$tag" ]] && { echo "could not get branch name for release" ; exit 1; }
 	prefix="$HOME/pgsql-$tag"
 	curl "https://codeload.github.com/postgres/postgres/tar.gz/$tag" -o ~/$tag.tar.gz
 	# build them with valgrind support
