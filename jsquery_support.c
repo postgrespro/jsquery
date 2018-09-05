@@ -252,3 +252,11 @@ jsqIterateArray(JsQueryItem *v, JsQueryItem *e)
 	}
 }
 
+void
+jsqIterateDestroy(JsQueryItem *v)
+{
+	Assert(v->type == jqiArray);
+	Assert(v->array.current <= v->array.current);
+	v->array.current++;
+}
+

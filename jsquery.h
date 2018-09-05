@@ -123,6 +123,7 @@ extern int32	jsqGetIsType(JsQueryItem *v);
 extern char * jsqGetString(JsQueryItem *v, int32 *len);
 extern void jsqIterateInit(JsQueryItem *v);
 extern bool jsqIterateArray(JsQueryItem *v, JsQueryItem *e);
+extern void jsqIterateDestroy(JsQueryItem *v);
 
 void alignStringInfoInt(StringInfo buf);
 

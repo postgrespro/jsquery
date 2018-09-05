@@ -273,7 +273,8 @@ executeArrayOp(JsQueryItem *jsq, int32 op, JsonbValue *jb)
 	int32			r = 0; /* keep static analyzer quiet */
 	JsonbIterator	*it;
 	JsonbValue		v;
-	JsQueryItem	elem;
+	JsQueryItem		elem;
+	bool			res;
 
 	if (JsonbType(jb) != jbvArray)
 		return false;
@@ -284,7 +285,7 @@ executeArrayOp(JsQueryItem *jsq, int32 op, JsonbValue *jb)
 	{
 		while(jsqIterateArray(jsq, &elem))
 		{
-			bool res = false;
+			res = false;
 
 			it = JsonbIteratorInit(jb->val.binary.data);
 
@@ -306,7 +307,7 @@ executeArrayOp(JsQueryItem *jsq, int32 op, JsonbValue *jb)
 		{
 			if (r == WJB_ELEM)
 			{
-				bool res = false;
+				res = false;
 
 				jsqIterateInit(jsq);
 				while(jsqIterateArray(jsq, &elem))
@@ -319,6 +320,7 @@ executeArrayOp(JsQueryItem *jsq, int32 op, JsonbValue *jb)
 						break;
 					}
 				}
+				jsqIterateDestroy(jsq);
 
 				if (op == jqiContained && res == false)
 					return false;
