@@ -868,7 +868,7 @@ execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check)
 			res = GIN_TRUE;
 			for (i = 0; i < node->args.count; i++)
 			{
-				v = execRecursive(node->args.items[i], (bool *) check);
+				v = execRecursiveTristate(node->args.items[i], check);
 				if (v == GIN_FALSE)
 					return GIN_FALSE;
 				else if (v == GIN_MAYBE)
@@ -879,7 +879,7 @@ execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check)
 			res = GIN_FALSE;
 			for (i = 0; i < node->args.count; i++)
 			{
-				v = execRecursive(node->args.items[i], (bool *) check);
+				v = execRecursiveTristate(node->args.items[i], check);
 				if (v == GIN_TRUE)
 					return GIN_TRUE;
 				else if (v == GIN_MAYBE)
