@@ -258,51 +258,54 @@ make_gin_key(JsonbValue *v, uint32 hash)
 {
 	GINKey *key;
 
-	if (v->type == jbvNull)
+	switch (v->type)
 	{
-		key = (GINKey *)palloc(GINKEYLEN);
-		key->type = v->type;
-		SET_VARSIZE(key, GINKEYLEN);
+		case jbvNull:
+		case jbvObject:
+		{
+			key = (GINKey *)palloc(GINKEYLEN);
+			key->type = v->type;
+			SET_VARSIZE(key, GINKEYLEN);
+			break;
+		}
+		case jbvBool:
+		{
+			key = (GINKey *)palloc(GINKEYLEN);
+			key->type = v->type | (v->val.boolean ? GINKeyTrue : 0);
+			SET_VARSIZE(key, GINKEYLEN);
+			break;
+		}
+		case jbvArray:
+		{
+			key = (GINKey *)palloc(GINKEYLEN);
+			key->type = v->type;
+			if (v->val.array.nElems == 0)
+				key->type |= GINKeyEmptyArray;
+
+			SET_VARSIZE(key, GINKEYLEN);
+			break;
+		}
+		case jbvNumeric:
+		{
+			key = (GINKey *) palloc0(GINKeyLenNumeric(VARSIZE_ANY(v->val.numeric)));
+			key->type = v->type;
+			memcpy(GINKeyDataNumeric(key), v->val.numeric, VARSIZE_ANY(v->val.numeric));
+			SET_VARSIZE(key, GINKeyLenNumeric(VARSIZE_ANY(v->val.numeric)));
+			break;
+		}
+		case jbvString:
+		{
+			key = (GINKey *) palloc0(GINKeyLenString);
+			key->type = v->type;
+			GINKeyDataString(key) = hash_any((unsigned char *)v->val.string.val,
+															  v->val.string.len);
+			SET_VARSIZE(key, GINKeyLenString);
+			break;
+		}
+		default:
+			elog(ERROR, "GINKey must be scalar");
 	}
-	else if (v->type == jbvBool)
-	{
-		key = (GINKey *)palloc(GINKEYLEN);
-		key->type = v->type | (v->val.boolean ? GINKeyTrue : 0);
-		SET_VARSIZE(key, GINKEYLEN);
-	}
-	else if (v->type == jbvArray)
-	{
-		key = (GINKey *)palloc(GINKEYLEN);
-		key->type = v->type;
-		if (v->val.array.nElems == 0)
-			key->type |= GINKeyEmptyArray;
-		SET_VARSIZE(key, GINKEYLEN);
-	}
-	else if (v->type == jbvObject)
-	{
-		key = (GINKey *)palloc(GINKEYLEN);
-		key->type = v->type;
-		SET_VARSIZE(key, GINKEYLEN);
-	}
-	else if (v->type == jbvNumeric)
-	{
-		key = (GINKey *)palloc(GINKeyLenNumeric(VARSIZE_ANY(v->val.numeric)));
-		key->type = v->type;
-		memcpy(GINKeyDataNumeric(key), v->val.numeric, VARSIZE_ANY(v->val.numeric));
-		SET_VARSIZE(key, GINKeyLenNumeric(VARSIZE_ANY(v->val.numeric)));
-	}
-	else if (v->type == jbvString)
-	{
-		key = (GINKey *)palloc(GINKeyLenString);
-		key->type = v->type;
-		GINKeyDataString(key) = hash_any((unsigned char *)v->val.string.val,
-														  v->val.string.len);
-		SET_VARSIZE(key, GINKeyLenString);
-	}
-	else
-	{
-		elog(ERROR, "GINKey must be scalar");
-	}
+
 	key->hash = hash;
 	return key;
 }
