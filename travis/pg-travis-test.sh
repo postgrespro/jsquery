@@ -20,22 +20,45 @@ if [ $CHECK_TYPE = "valgrind" ]; then
 	# install required packages
 	apt_packages="build-essential libgd-dev valgrind lcov"
 	sudo apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y install -qq $apt_packages
-	# grab sources from github
-	echo `curl -s -I 'https://api.github.com/repos/postgres/postgres/git/refs/tags'`
-	tag=`curl -s 'https://api.github.com/repos/postgres/postgres/git/refs/tags' | jq -r '.[].ref' | sed 's/^refs\/tags\///' | grep "REL_*${PG_VER/./_}_" | tail -n 1`
-	[[ -z "$tag" ]] && { echo "could not get branch name for release" ; exit 1; }
-	prefix="$HOME/pgsql-$tag"
-	curl "https://codeload.github.com/postgres/postgres/tar.gz/$tag" -o ~/$tag.tar.gz
-	# build them with valgrind support
+
+	set -e
+
 	pushd ~
-	tar -xzf "$tag.tar.gz"
-	cd "postgres-$tag"
-	./configure --enable-debug --enable-cassert --enable-coverage --prefix=$prefix
+	CUSTOM_PG_BIN=$PWD/pg_bin
+	CUSTOM_PG_SRC=$PWD/postgresql
+
+	curl "https://ftp.postgresql.org/pub/source/v$PG_VER/postgresql-$PG_VER.tar.bz2" -o postgresql.tar.bz2
+	mkdir $CUSTOM_PG_SRC
+
+	tar \
+		--extract \
+		--file postgresql.tar.bz2 \
+		--directory $CUSTOM_PG_SRC \
+		--strip-components 1
+
+	cd $CUSTOM_PG_SRC
+
+	# enable Valgrind support
 	sed -i.bak "s/\/* #define USE_VALGRIND *\//#define USE_VALGRIND/g" src/include/pg_config_manual.h
-	make -sj4
-	make -sj4 install
+
+	# enable additional options
+	./configure \
+		CFLAGS='-Og -ggdb3 -fno-omit-frame-pointer' \
+		--enable-cassert \
+		--enable-coverage \
+		--prefix=$CUSTOM_PG_BIN \
+		--quiet
+
+	# build & install PG
+	time make -s -j4 && make -s install
+
+	# override default PostgreSQL instance
+	export PATH=$CUSTOM_PG_BIN/bin:$PATH
+	export LD_LIBRARY_PATH=$CUSTOM_PG_BIN/lib
+
 	popd
-	export PATH="$prefix/bin:$PATH"
+	set +e
+	prefix=$CUSTOM_PG_BIN
 else
 	apt_packages="postgresql-$PG_VER postgresql-server-dev-$PG_VER postgresql-common build-essential libgd-dev"
 	sudo apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y install -qq $apt_packages
@@ -116,7 +139,7 @@ echo "port = 55435" >> $CLUSTER_PATH/postgresql.conf
 if [ $CHECK_TYPE = "valgrind" ]; then
 	PGCTLTIMEOUT=600 \
 	valgrind --leak-check=no --gen-suppressions=all \
-	--suppressions=$HOME/postgres-$tag/src/tools/valgrind.supp --time-stamp=yes \
+	--suppressions=$CUSTOM_PG_SRC/src/tools/valgrind.supp --time-stamp=yes \
 	--log-file=/tmp/pid-%p.log --trace-children=yes \
 	$pg_ctl_path -D $CLUSTER_PATH start -l postgres.log -w
 else

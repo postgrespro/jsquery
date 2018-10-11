@@ -20,9 +20,11 @@ env:
   global:
     - LLVM_VER=4.0
   matrix:
+    - PG_VER=11  CHECK_TYPE=normal
+    - PG_VER=11  CHECK_TYPE=static
     - PG_VER=10  CHECK_TYPE=normal
     - PG_VER=10  CHECK_TYPE=static
-    - PG_VER=10  CHECK_TYPE=valgrind
+    - PG_VER=10.5  CHECK_TYPE=valgrind
     - PG_VER=9.6 CHECK_TYPE=normal
     - PG_VER=9.6 CHECK_TYPE=static
     - PG_VER=9.5 CHECK_TYPE=normal
