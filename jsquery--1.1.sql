@@ -178,7 +178,7 @@ CREATE OPERATOR >= (
 CREATE OPERATOR > (
 	LEFTARG = jsquery,
 	RIGHTARG = jsquery,
-	PROCEDURE = jsquery_ge,
+	PROCEDURE = jsquery_gt,
 	COMMUTATOR = '<',
 	NEGATOR = '<=',
 	RESTRICT = scalargtsel,
