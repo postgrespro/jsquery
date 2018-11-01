@@ -158,7 +158,7 @@ CREATE OPERATOR = (
 CREATE OPERATOR <> (
 	LEFTARG = jsquery,
 	RIGHTARG = jsquery,
-	PROCEDURE = jsquery_eq,
+	PROCEDURE = jsquery_ne,
 	COMMUTATOR = '<>',
 	NEGATOR = '=',
 	RESTRICT = neqsel,
