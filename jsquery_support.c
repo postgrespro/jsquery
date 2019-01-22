@@ -256,7 +256,7 @@ void
 jsqIterateDestroy(JsQueryItem *v)
 {
 	Assert(v->type == jqiArray);
-	Assert(v->array.current <= v->array.current);
+	Assert(v->array.current <= v->array.nelems);
 	v->array.current++;
 }
 
