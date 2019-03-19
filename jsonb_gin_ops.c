@@ -815,6 +815,7 @@ gin_extract_jsonb_query_value_path(PG_FUNCTION_ARGS)
 			if (strategy != JsQueryMatchStrategyNumber)
 				root = extractJsonPath(PG_GETARG_JSONPATH_P(0),
 									   strategy == JsonpathExistsStrategyNumber,
+									   false,
 									   make_value_path_entry_handler,
 									   check_value_path_entry_handler,
 									   (Pointer)&e);
@@ -1287,6 +1288,7 @@ gin_extract_jsonb_query_path_value_internal(FunctionCallInfo fcinfo, bool lax)
 			if (strategy != JsQueryMatchStrategyNumber)
 				root = extractJsonPath(PG_GETARG_JSONPATH_P(0),
 									   strategy == JsonpathExistsStrategyNumber,
+									   !lax,
 									   make_path_value_entry_handler,
 									   check_path_value_entry_handler,
 									   (Pointer) &extra);

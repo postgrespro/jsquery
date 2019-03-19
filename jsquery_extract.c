@@ -1346,12 +1346,13 @@ extractJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
  * Turn jsonpath into tree of entries using user-provided handler.
  */
 ExtractedNode *
-extractJsonPath(JsonPath *jp, bool exists, MakeEntryHandler makeHandler,
+extractJsonPath(JsonPath *jp, bool exists, bool arrayPathItems,
+				MakeEntryHandler makeHandler,
 				CheckEntryHandler checkHandler, Pointer extra)
 {
 	ExtractedNode  *root;
 	JsonPathItem	jsp;
-	bool			lax = (jp->header & JSONPATH_LAX) != 0;
+	bool			lax = (jp->header & JSONPATH_LAX) != 0 && arrayPathItems;
 
 	jspInit(&jsp, jp);
 	root = exists
