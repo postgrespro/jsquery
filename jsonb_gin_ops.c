@@ -656,10 +656,7 @@ gin_extract_jsonb_value_path_internal(Jsonb *jb, int32 *nentries, uint32 **bloom
 	uint32		hash;
 
 	if (total == 0)
-	{
-		*nentries = 0;
-		return NULL;
-	}
+		total = 2;	/* single entry for empty object/array */
 
 	entries = (Datum *) palloc(sizeof(Datum) * total);
 	if (bloom)
@@ -1093,10 +1090,7 @@ gin_extract_jsonb_path_value_internal(Jsonb *jb, int32 *nentries)
 	Datum	   *entries = NULL;
 
 	if (total == 0)
-	{
-		*nentries = 0;
-		return NULL;
-	}
+		total = 2;	/* single entry for empty object/array */
 
 	entries = (Datum *) palloc(sizeof(Datum) * total);
 

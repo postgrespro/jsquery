@@ -2631,13 +2631,13 @@ select count(*) from test_jsquery where v @@ '$ is numeric';
 select count(*) from test_jsquery where v @@ '$ is array';
  count 
 -------
-     2
+     3
 (1 row)
 
 select count(*) from test_jsquery where v @@ '$ is object';
  count 
 -------
-  1017
+  1018
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric';
@@ -2655,7 +2655,7 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string';
 select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")';
  count 
 -------
-    40
+    42
 (1 row)
 
 select count(*) from test_jsquery where v @@ '$ > 2';
@@ -2679,7 +2679,7 @@ select count(*) from test_jsquery where v @@ 't';
 select count(*) from test_jsquery where v @@ '$';
  count 
 -------
-  1034
+  1036
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#';
@@ -2909,13 +2909,13 @@ select count(*) from test_jsquery where v @@ '$ is numeric';
 select count(*) from test_jsquery where v @@ '$ is array';
  count 
 -------
-     2
+     3
 (1 row)
 
 select count(*) from test_jsquery where v @@ '$ is object';
  count 
 -------
-  1017
+  1018
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric';
@@ -2957,7 +2957,7 @@ select count(*) from test_jsquery where v @@ 't';
 select count(*) from test_jsquery where v @@ '$';
  count 
 -------
-  1034
+  1036
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#';
@@ -3232,13 +3232,13 @@ select count(*) from test_jsquery where v @@ '$ is numeric';
 select count(*) from test_jsquery where v @@ '$ is array';
  count 
 -------
-     2
+     3
 (1 row)
 
 select count(*) from test_jsquery where v @@ '$ is object';
  count 
 -------
-  1017
+  1018
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric';
@@ -3280,7 +3280,7 @@ select count(*) from test_jsquery where v @@ 't';
 select count(*) from test_jsquery where v @@ '$';
  count 
 -------
-  1034
+  1036
 (1 row)
 
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#';
