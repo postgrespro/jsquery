@@ -255,6 +255,7 @@ result:
 
 array:
 	'[' value_list ']'				{ $$ = makeItemArray($2); }
+	| '[' ']'						{ $$ = makeItemArray(NIL); }
 	;
 
 scalar_value:
