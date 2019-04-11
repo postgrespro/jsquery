@@ -2188,6 +2188,205 @@ SELECT gin_debug_query_path_value('similar_product_ids . ? (# = "B0002W4TL2") . 
  
 (1 row)
 
+SELECT gin_debug_query_laxpath_value('NOT NOT NOT x(y(NOT (a=1) and NOT (b=2)) OR NOT NOT (c=3)) and z = 5');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ AND                          +
+   z = 5 , entry 0            +
+   OR                         +
+     x.y.a = 1 , entry 1      +
+     x.y.b = 2 , entry 2      +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('NOT #(x=1) and NOT *(y=1) and NOT %(z=1) ');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ NULL                         +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('#(NOT x=1) and *(NOT y=1) and %(NOT z=1) ');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ NULL                         +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('NOT #(NOT x=1) and NOT *(NOT y=1) and NOT %(NOT z=1) ');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ NULL                         +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('#(x = "a" and y > 0 and y < 1 and z > 0)');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ #.x = "a" , entry 0          +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('#(x = "a" and y /*-- index */ >= 0 and y < 1 and z > 0)');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ AND                          +
+   #.x = "a" , entry 0        +
+   #.y >= 0 , < 1 , entry 1   +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('#(x /*-- noindex */ = "a" and y > 0 and y <= 1 and z /*-- index */ > 0)');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ AND                          +
+   #.y > 0 , <= 1 , entry 0   +
+   #.z > 0 , entry 1          +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('x = 1 and (y /*-- index */ > 0 and y < 1 OR z > 0)');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ AND                          +
+   x = 1 , entry 0            +
+   OR                         +
+     y > 0 , < 1 , entry 1    +
+     z > 0 , entry 2          +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('%.x = 1');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ NULL                         +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('*.x = "b"');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ NULL                         +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('x && [1,2,3]');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ OR                           +
+   x.# = 1 , entry 0          +
+   x.# = 2 , entry 1          +
+   x.# = 3 , entry 2          +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('x @> [1,2,3]');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ AND                          +
+   x.# = 1 , entry 0          +
+   x.# = 2 , entry 1          +
+   x.# = 3 , entry 2          +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('x <@ [1,2,3]');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ OR                           +
+   x = [] , entry 0           +
+   x.# = 1 , entry 1          +
+   x.# = 2 , entry 2          +
+   x.# = 3 , entry 3          +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('x = *');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ x = * , entry 0              +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('x is boolean');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ x IS boolean , entry 0       +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('x is string');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ x IS string , entry 0        +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('x is numeric');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ x IS numeric , entry 0       +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('x is array');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ x IS array , entry 0         +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('x is object');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ x IS object , entry 0        +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('#:(x=1) AND %:(y=1) AND *:(z=1)');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ NULL                         +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('#:(NOT x=1) AND %:(NOT y=1) AND *:(NOT z=1)');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ NULL                         +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('NOT #:(NOT x=1) AND NOT %:(NOT y=1) AND NOT *:(NOT z=1)');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ NULL                         +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('$ = true');
+ gin_debug_query_laxpath_value 
+-------------------------------
+ $ = true , entry 0           +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('$ . ? (review_votes > 10) . review_rating < 7');
+ gin_debug_query_laxpath_value  
+--------------------------------
+ AND                           +
+   review_rating < 7 , entry 0 +
+   review_votes > 10 , entry 1 +
+ 
+(1 row)
+
+SELECT gin_debug_query_laxpath_value('similar_product_ids . ? (# = "B0002W4TL2") . $');
+          gin_debug_query_laxpath_value          
+-------------------------------------------------
+ similar_product_ids.# = "B0002W4TL2" , entry 0 +
+ 
+(1 row)
+
 SELECT gin_debug_query_value_path('NOT NOT NOT x(y(NOT (a=1) and NOT (b=2)) OR NOT NOT (c=3)) and z = 5');
  gin_debug_query_value_path 
 ----------------------------
@@ -3052,6 +3251,329 @@ select v from test_jsquery where v @@ 'array = [2,3]'::jsquery order by v;
 
 drop index t_idx;
 create index t_idx on test_jsquery using gin (v jsonb_path_value_ops);
+set enable_seqscan = off;
+explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0'::jsquery;
+                               QUERY PLAN                               
+------------------------------------------------------------------------
+ Aggregate
+   ->  Bitmap Heap Scan on test_jsquery
+         Recheck Cond: (v @@ '"review_helpful_votes" > 0'::jsquery)
+         ->  Bitmap Index Scan on t_idx
+               Index Cond: (v @@ '"review_helpful_votes" > 0'::jsquery)
+(5 rows)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0'::jsquery;
+ count 
+-------
+   654
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19'::jsquery;
+ count 
+-------
+    13
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19'::jsquery;
+ count 
+-------
+   985
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19'::jsquery;
+ count 
+-------
+    16
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19'::jsquery;
+ count 
+-------
+   988
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19'::jsquery;
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16'::jsquery AND
+										v @@ 'review_helpful_votes < 20'::jsquery;
+ count 
+-------
+     8
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 and review_helpful_votes < 20'::jsquery;
+ count 
+-------
+     8
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 and $ < 20)'::jsquery;
+ count 
+-------
+     8
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"]'::jsquery;
+ count 
+-------
+     7
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") '::jsquery;
+ count 
+-------
+     7
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") '::jsquery;
+ count 
+-------
+     7
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] and product_sales_rank > 300000'::jsquery;
+ count 
+-------
+     4
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]'::jsquery;
+ count 
+-------
+    54
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids @> ["B000002H2H", "B000002H6C"]'::jsquery;
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'customer_id = null'::jsquery;
+ count 
+-------
+     1
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'review_votes = true'::jsquery;
+ count 
+-------
+     1
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'product_group = false'::jsquery;
+ count 
+-------
+     1
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't = *'::jsquery;
+ count 
+-------
+    10
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is boolean'::jsquery;
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is string'::jsquery;
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is numeric'::jsquery;
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is array'::jsquery;
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't is object'::jsquery;
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is boolean'::jsquery;
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is string'::jsquery;
+ count 
+-------
+     4
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is numeric'::jsquery;
+ count 
+-------
+     5
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is array'::jsquery;
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ is object'::jsquery;
+ count 
+-------
+  1018
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric'::jsquery;
+ count 
+-------
+    51
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string'::jsquery;
+ count 
+-------
+  1001
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")'::jsquery;
+ count 
+-------
+    42
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ > 2'::jsquery;
+ count 
+-------
+     3
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ = false'::jsquery;
+ count 
+-------
+     2
+(1 row)
+
+select count(*) from test_jsquery where v @@ 't'::jsquery;
+ count 
+-------
+    10
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$'::jsquery;
+ count 
+-------
+  1036
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#'::jsquery;
+ count 
+-------
+   950
+(1 row)
+
+select count(*) from test_jsquery where v @@ '$ . ? (review_votes > 10) . review_rating < 7'::jsquery;
+ count 
+-------
+    79
+(1 row)
+
+select count(*) from test_jsquery where v @@ 'similar_product_ids . ? (# = "B0002W4TL2") . $'::jsquery;
+ count 
+-------
+     3
+(1 row)
+
+explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]'::jsquery order by v;
+                          QUERY PLAN                           
+---------------------------------------------------------------
+ Sort
+   Sort Key: v
+   ->  Bitmap Heap Scan on test_jsquery
+         Recheck Cond: (v @@ '"array" <@ [2, 3]'::jsquery)
+         ->  Bitmap Index Scan on t_idx
+               Index Cond: (v @@ '"array" <@ [2, 3]'::jsquery)
+(6 rows)
+
+explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]'::jsquery order by v;
+                          QUERY PLAN                           
+---------------------------------------------------------------
+ Sort
+   Sort Key: v
+   ->  Bitmap Heap Scan on test_jsquery
+         Recheck Cond: (v @@ '"array" && [2, 3]'::jsquery)
+         ->  Bitmap Index Scan on t_idx
+               Index Cond: (v @@ '"array" && [2, 3]'::jsquery)
+(6 rows)
+
+explain (costs off) select v from test_jsquery where v @@ 'array @> [2,3]'::jsquery order by v;
+                          QUERY PLAN                           
+---------------------------------------------------------------
+ Sort
+   Sort Key: v
+   ->  Bitmap Heap Scan on test_jsquery
+         Recheck Cond: (v @@ '"array" @> [2, 3]'::jsquery)
+         ->  Bitmap Index Scan on t_idx
+               Index Cond: (v @@ '"array" @> [2, 3]'::jsquery)
+(6 rows)
+
+explain (costs off) select v from test_jsquery where v @@ 'array = [2,3]'::jsquery order by v;
+                          QUERY PLAN                          
+--------------------------------------------------------------
+ Sort
+   Sort Key: v
+   ->  Bitmap Heap Scan on test_jsquery
+         Recheck Cond: (v @@ '"array" = [2, 3]'::jsquery)
+         ->  Bitmap Index Scan on t_idx
+               Index Cond: (v @@ '"array" = [2, 3]'::jsquery)
+(6 rows)
+
+select v from test_jsquery where v @@ 'array <@ [2,3]'::jsquery order by v;
+         v         
+-------------------
+ {"array": [2]}
+ {"array": [2, 3]}
+(2 rows)
+
+select v from test_jsquery where v @@ 'array && [2,3]'::jsquery order by v;
+          v           
+----------------------
+ {"array": [2]}
+ {"array": [2, 3]}
+ {"array": [1, 2, 3]}
+ {"array": [2, 3, 4]}
+ {"array": [3, 4, 5]}
+(5 rows)
+
+select v from test_jsquery where v @@ 'array @> [2,3]'::jsquery order by v;
+          v           
+----------------------
+ {"array": [2, 3]}
+ {"array": [1, 2, 3]}
+ {"array": [2, 3, 4]}
+(3 rows)
+
+select v from test_jsquery where v @@ 'array = [2,3]'::jsquery order by v;
+         v         
+-------------------
+ {"array": [2, 3]}
+(1 row)
+
+drop index t_idx;
+create index t_idx on test_jsquery using gin (v jsonb_laxpath_value_ops);
 set enable_seqscan = off;
 explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0'::jsquery;
                                QUERY PLAN                               

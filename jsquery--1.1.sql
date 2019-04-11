@@ -293,12 +293,39 @@ CREATE OPERATOR CLASS jsonb_path_value_ops
 	FUNCTION 6  gin_triconsistent_jsonb_path_value(internal, smallint, anyarray, integer, internal, internal, internal),
 	STORAGE bytea;
 
+CREATE OR REPLACE FUNCTION gin_extract_jsonb_laxpath_value(internal, internal, internal)
+	RETURNS internal
+	AS 'MODULE_PATHNAME'
+	LANGUAGE C STRICT IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION gin_extract_jsonb_query_laxpath_value(anyarray, internal, smallint, internal, internal, internal, internal)
+	RETURNS internal
+	AS 'MODULE_PATHNAME'
+	LANGUAGE C STRICT IMMUTABLE;
+
+CREATE OPERATOR CLASS jsonb_laxpath_value_ops
+	FOR TYPE jsonb USING gin AS
+	OPERATOR 7  @>,
+	OPERATOR 14 @@ (jsonb, jsquery),
+	FUNCTION 1  gin_compare_jsonb_path_value(bytea, bytea),
+	FUNCTION 2  gin_extract_jsonb_laxpath_value(internal, internal, internal),
+	FUNCTION 3  gin_extract_jsonb_query_laxpath_value(anyarray, internal, smallint, internal, internal, internal, internal),
+	FUNCTION 4  gin_consistent_jsonb_path_value(internal, smallint, anyarray, integer, internal, internal, internal, internal),
+	FUNCTION 5  gin_compare_partial_jsonb_path_value(bytea, bytea, smallint, internal),
+	FUNCTION 6  gin_triconsistent_jsonb_path_value(internal, smallint, anyarray, integer, internal, internal, internal),
+	STORAGE bytea;
+
 CREATE OR REPLACE FUNCTION gin_debug_query_value_path(jsquery)
 	RETURNS text
 	AS 'MODULE_PATHNAME'
 	LANGUAGE C STRICT IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION gin_debug_query_path_value(jsquery)
+	RETURNS text
+	AS 'MODULE_PATHNAME'
+	LANGUAGE C STRICT IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION gin_debug_query_laxpath_value(jsquery)
 	RETURNS text
 	AS 'MODULE_PATHNAME'
 	LANGUAGE C STRICT IMMUTABLE;

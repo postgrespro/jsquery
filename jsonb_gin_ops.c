@@ -69,6 +69,12 @@ typedef struct
 	int count, total;
 } Entries;
 
+typedef struct PathValueExtra
+{
+	Entries	   *entries;
+	bool		lax;
+} PathValueExtra;
+
 typedef struct
 {
 	ExtractedNode  *root;
@@ -107,18 +113,24 @@ Datum gin_debug_query_value_path(PG_FUNCTION_ARGS);
 PG_FUNCTION_INFO_V1(gin_compare_jsonb_path_value);
 PG_FUNCTION_INFO_V1(gin_compare_partial_jsonb_path_value);
 PG_FUNCTION_INFO_V1(gin_extract_jsonb_path_value);
+PG_FUNCTION_INFO_V1(gin_extract_jsonb_laxpath_value);
 PG_FUNCTION_INFO_V1(gin_extract_jsonb_query_path_value);
+PG_FUNCTION_INFO_V1(gin_extract_jsonb_query_laxpath_value);
 PG_FUNCTION_INFO_V1(gin_consistent_jsonb_path_value);
 PG_FUNCTION_INFO_V1(gin_triconsistent_jsonb_path_value);
 PG_FUNCTION_INFO_V1(gin_debug_query_path_value);
+PG_FUNCTION_INFO_V1(gin_debug_query_laxpath_value);
 
 Datum gin_compare_jsonb_path_value(PG_FUNCTION_ARGS);
 Datum gin_compare_partial_jsonb_path_value(PG_FUNCTION_ARGS);
 Datum gin_extract_jsonb_path_value(PG_FUNCTION_ARGS);
+Datum gin_extract_jsonb_laxpath_value(PG_FUNCTION_ARGS);
 Datum gin_extract_jsonb_query_path_value(PG_FUNCTION_ARGS);
+Datum gin_extract_jsonb_query_laxpath_value(PG_FUNCTION_ARGS);
 Datum gin_consistent_jsonb_path_value(PG_FUNCTION_ARGS);
 Datum gin_triconsistent_jsonb_path_value(PG_FUNCTION_ARGS);
 Datum gin_debug_query_path_value(PG_FUNCTION_ARGS);
+Datum gin_debug_query_laxpath_value(PG_FUNCTION_ARGS);
 
 static int
 add_entry(Entries *e, Datum key, Pointer extra, bool pmatch)
@@ -932,14 +944,14 @@ gin_triconsistent_jsonb_value_path(PG_FUNCTION_ARGS)
 }
 
 static bool
-get_query_path_hash(PathItem *pathItem, uint32 *hash)
+get_query_path_hash(PathItem *pathItem, uint32 *hash, bool lax)
 {
 	check_stack_depth();
 
 	if (!pathItem)
 		return true;
 
-	if (!get_query_path_hash(pathItem->parent, hash))
+	if (!get_query_path_hash(pathItem->parent, hash, lax))
 	{
 		return false;
 	}
@@ -956,7 +968,7 @@ get_query_path_hash(PathItem *pathItem, uint32 *hash)
 				*hash = (*hash << 1) | (*hash >> 31);
 				*hash ^= hash_any((unsigned char *)pathItem->s, pathItem->len);
 			}
-			else if (pathItem->type == iAnyArray || pathItem->type == iIndexArray)
+			else if (!lax && (pathItem->type == iAnyArray || pathItem->type == iIndexArray))
 			{
 				*hash = (*hash << 1) | (*hash >> 31);
 				*hash ^= JB_FARRAY;
@@ -969,9 +981,10 @@ get_query_path_hash(PathItem *pathItem, uint32 *hash)
 static bool
 check_path_value_entry_handler(ExtractedNode *node, Pointer extra)
 {
+	PathValueExtra *pvextra = (PathValueExtra *) extra;
 	uint32		hash;
 	hash = 0;
-	if (!get_query_path_hash(node->path, &hash))
+	if (!get_query_path_hash(node->path, &hash, pvextra->lax))
 		return false;
 	return true;
 }
@@ -979,7 +992,8 @@ check_path_value_entry_handler(ExtractedNode *node, Pointer extra)
 static int
 make_path_value_entry_handler(ExtractedNode *node, Pointer extra)
 {
-	Entries	   *e = (Entries *)extra;
+	PathValueExtra *pvextra = (PathValueExtra *) extra;
+	Entries	   *e = pvextra->entries;
 	uint32		hash;
 	GINKey	   *key;
 	KeyExtra   *keyExtra;
@@ -989,7 +1003,7 @@ make_path_value_entry_handler(ExtractedNode *node, Pointer extra)
 	Assert(!isLogicalNodeType(node->type));
 
 	hash = 0;
-	if (!get_query_path_hash(node->path, &hash))
+	if (!get_query_path_hash(node->path, &hash, pvextra->lax))
 		return -1;
 
 	keyExtra = (KeyExtra *)palloc(sizeof(KeyExtra));
@@ -1082,7 +1096,7 @@ gin_compare_partial_jsonb_path_value(PG_FUNCTION_ARGS)
 }
 
 static Datum *
-gin_extract_jsonb_path_value_internal(Jsonb *jb, int32 *nentries)
+gin_extract_jsonb_path_value_internal(Jsonb *jb, int32 *nentries, bool lax)
 {
 	int			total = 2 * JB_ROOT_COUNT(jb);
 	JsonbIterator *it;
@@ -1123,6 +1137,8 @@ gin_extract_jsonb_path_value_internal(Jsonb *jb, int32 *nentries)
 				if (v.val.array.rawScalar)
 					break;
 				entries[i++] = PointerGetDatum(make_gin_key(&v, stack->hash));
+				if (lax)
+					break;
 				tmp = stack;
 				stack = (PathHashStack *) palloc(sizeof(PathHashStack));
 				stack->parent = tmp;
@@ -1150,7 +1166,7 @@ gin_extract_jsonb_path_value_internal(Jsonb *jb, int32 *nentries)
 				entries[i++] = PointerGetDatum(make_gin_key(&v, stack->hash));
 				break;
 			case WJB_END_ARRAY:
-				if (!stack->parent)
+				if (!stack->parent || lax)
 					break; /* raw scalar array */
 				/* fall through */
 			case WJB_END_OBJECT:
@@ -1175,25 +1191,49 @@ gin_extract_jsonb_path_value(PG_FUNCTION_ARGS)
 	Jsonb	   *jb = PG_GETARG_JSONB_P(0);
 	int32	   *nentries = (int32 *) PG_GETARG_POINTER(1);
 
-	PG_RETURN_POINTER(gin_extract_jsonb_path_value_internal(jb, nentries));
+	PG_RETURN_POINTER(gin_extract_jsonb_path_value_internal(jb, nentries, false));
+}
+
+Datum
+gin_extract_jsonb_laxpath_value(PG_FUNCTION_ARGS)
+{
+	Jsonb	   *jb = PG_GETARG_JSONB_P(0);
+	int32	   *nentries = (int32 *) PG_GETARG_POINTER(1);
+
+	PG_RETURN_POINTER(gin_extract_jsonb_path_value_internal(jb, nentries, true));
+}
+
+static Datum
+gin_debug_query_path_value_internal(FunctionCallInfo fcinfo, bool lax)
+{
+	JsQuery	   *jq;
+	Entries		e = {0};
+	PathValueExtra extra;
+	char	   *s;
+
+	extra.entries = &e;
+	extra.lax = lax;
+
+	jq = PG_GETARG_JSQUERY(0);
+	s = debugJsQuery(jq, make_path_value_entry_handler,
+										check_path_value_entry_handler, (Pointer) &extra);
+	PG_RETURN_TEXT_P(cstring_to_text(s));
 }
 
 Datum
 gin_debug_query_path_value(PG_FUNCTION_ARGS)
 {
-	JsQuery	   *jq;
-	Entries		e = {0};
-	char	   *s;
-
-
-	jq = PG_GETARG_JSQUERY(0);
-	s = debugJsQuery(jq, make_path_value_entry_handler,
-										check_path_value_entry_handler, (Pointer)&e);
-	PG_RETURN_TEXT_P(cstring_to_text(s));
+	PG_RETURN_DATUM(gin_debug_query_path_value_internal(fcinfo, false));
 }
 
 Datum
-gin_extract_jsonb_query_path_value(PG_FUNCTION_ARGS)
+gin_debug_query_laxpath_value(PG_FUNCTION_ARGS)
+{
+	PG_RETURN_DATUM(gin_debug_query_path_value_internal(fcinfo, true));
+}
+
+static Datum
+gin_extract_jsonb_query_path_value_internal(FunctionCallInfo fcinfo, bool lax)
 {
 	Jsonb	   *jb;
 	int32	   *nentries = (int32 *) PG_GETARG_POINTER(1);
@@ -1204,20 +1244,24 @@ gin_extract_jsonb_query_path_value(PG_FUNCTION_ARGS)
 	Datum	   *entries = NULL;
 	int			i;
 	Entries		e = {0};
+	PathValueExtra extra;
 	JsQuery	   *jq;
 	ExtractedNode *root;
+
+	extra.entries = &e;
+	extra.lax = lax;
 
 	switch(strategy)
 	{
 		case JsonbContainsStrategyNumber:
 			jb = PG_GETARG_JSONB_P(0);
-			entries = gin_extract_jsonb_path_value_internal(jb, nentries);
+			entries = gin_extract_jsonb_path_value_internal(jb, nentries, lax);
 			break;
 
 		case JsQueryMatchStrategyNumber:
 			jq = PG_GETARG_JSQUERY(0);
 			root = extractJsQuery(jq, make_path_value_entry_handler,
-										check_path_value_entry_handler, (Pointer)&e);
+										check_path_value_entry_handler, (Pointer) &extra);
 			if (root)
 			{
 				*nentries = e.count;
@@ -1244,6 +1288,18 @@ gin_extract_jsonb_query_path_value(PG_FUNCTION_ARGS)
 		*searchMode = GIN_SEARCH_MODE_ALL;
 
 	PG_RETURN_POINTER(entries);
+}
+
+Datum
+gin_extract_jsonb_query_path_value(PG_FUNCTION_ARGS)
+{
+	return gin_extract_jsonb_query_path_value_internal(fcinfo, false);
+}
+
+Datum
+gin_extract_jsonb_query_laxpath_value(PG_FUNCTION_ARGS)
+{
+	return gin_extract_jsonb_query_path_value_internal(fcinfo, true);
 }
 
 Datum
