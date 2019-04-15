@@ -604,7 +604,9 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 
 				if (hasNext == false)
 				{
-					res = true;
+					if (jsq->type == jqiAllArray ||
+						JsonContainerSize(jb->val.binary.data) > 0)
+						res = true;
 
 					while(ra && (r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 						if (r == WJB_ELEM)

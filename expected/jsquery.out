@@ -2682,7 +2682,7 @@ select count(*) from test_jsquery where v @@ '$'::jsquery;
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#'::jsquery;
  count 
 -------
-  1001
+   950
 (1 row)
 
 select count(*) from test_jsquery where v @@ '$ . ? (review_votes > 10) . review_rating < 7'::jsquery;
@@ -2960,7 +2960,7 @@ select count(*) from test_jsquery where v @@ '$'::jsquery;
 select count(*) from test_jsquery where v @@ 'similar_product_ids.#'::jsquery;
  count 
 -------
-  1001
+   950
 (1 row)
 
 select count(*) from test_jsquery where v @@ '$ . ? (review_votes > 10) . review_rating < 7'::jsquery;
