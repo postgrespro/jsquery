@@ -114,6 +114,7 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			return recursiveExtract(&elem, not, indirect, pathItem);
 		case jqiAny:
 		case jqiAll:
+			/* 'NOT *: (predicate)' is equivalent to '*: (NOT predicate)' */
 			if ((not && jsq->type == jqiAny) || (!not && jsq->type == jqiAll))
 				return NULL;
 			pathItem = (PathItem *)palloc(sizeof(PathItem));
@@ -130,9 +131,11 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			if (!jsqGetNext(jsq, &elem))
 				return makeAnyNode(not, indirect, pathItem);
 			return recursiveExtract(&elem, not, true, pathItem);
-		case jqiAnyArray:
 		case jqiAllArray:
-			if ((not && jsq->type == jqiAnyArray) || (!not && jsq->type == jqiAllArray))
+			/* 'NOT #: (predicate)' is not equivalent to '#: (NOT predicate)' */
+			return NULL;
+		case jqiAnyArray:
+			if (not)
 				return NULL;
 			pathItem = (PathItem *)palloc(sizeof(PathItem));
 			pathItem->type = iAnyArray;
@@ -140,9 +143,11 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			if (!jsqGetNext(jsq, &elem))
 				return makeAnyNode(not, indirect, pathItem);
 			return recursiveExtract(&elem, not, true, pathItem);
-		case jqiAnyKey:
 		case jqiAllKey:
-			if ((not && jsq->type == jqiAnyKey) || (!not && jsq->type == jqiAllKey))
+			/* 'NOT %: (predicate)' is not equivalent to '%: (NOT predicate)' */
+			return NULL;
+		case jqiAnyKey:
+			if (not)
 				return NULL;
 			pathItem = (PathItem *)palloc(sizeof(PathItem));
 			pathItem->type = iAnyKey;

@@ -2161,7 +2161,7 @@ SELECT gin_debug_query_path_value('#:(NOT x=1) AND %:(NOT y=1) AND *:(NOT z=1)')
 SELECT gin_debug_query_path_value('NOT #:(NOT x=1) AND NOT %:(NOT y=1) AND NOT *:(NOT z=1)');
  gin_debug_query_path_value 
 ----------------------------
- #.x = 1 , entry 0         +
+ NULL                      +
  
 (1 row)
 
@@ -2370,10 +2370,7 @@ SELECT gin_debug_query_value_path('#:(NOT x=1) AND %:(NOT y=1) AND *:(NOT z=1)')
 SELECT gin_debug_query_value_path('NOT #:(NOT x=1) AND NOT %:(NOT y=1) AND NOT *:(NOT z=1)');
  gin_debug_query_value_path 
 ----------------------------
- AND                       +
-   #.x = 1 , entry 0       +
-   %.y = 1 , entry 1       +
-   *.z = 1 , entry 2       +
+ *.z = 1 , entry 0         +
  
 (1 row)
 
@@ -2933,7 +2930,7 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string':
 select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")'::jsquery;
  count 
 -------
-     7
+    42
 (1 row)
 
 select count(*) from test_jsquery where v @@ '$ > 2'::jsquery;
@@ -3256,7 +3253,7 @@ select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string':
 select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")'::jsquery;
  count 
 -------
-     7
+    42
 (1 row)
 
 select count(*) from test_jsquery where v @@ '$ > 2'::jsquery;
