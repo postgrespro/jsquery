@@ -315,17 +315,17 @@ CREATE OPERATOR CLASS jsonb_laxpath_value_ops
 	FUNCTION 6  gin_triconsistent_jsonb_path_value(internal, smallint, anyarray, integer, internal, internal, internal),
 	STORAGE bytea;
 
-CREATE OR REPLACE FUNCTION gin_debug_query_value_path(jsquery)
+CREATE OR REPLACE FUNCTION gin_debug_query_value_path(jsquery, flatten bool = true, simplify bool = true, selectivity bool = true)
 	RETURNS text
 	AS 'MODULE_PATHNAME'
 	LANGUAGE C STRICT IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION gin_debug_query_path_value(jsquery)
+CREATE OR REPLACE FUNCTION gin_debug_query_path_value(jsquery, flatten bool = true, simplify bool = true, selectivity bool = true)
 	RETURNS text
 	AS 'MODULE_PATHNAME'
 	LANGUAGE C STRICT IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION gin_debug_query_laxpath_value(jsquery)
+CREATE OR REPLACE FUNCTION gin_debug_query_laxpath_value(jsquery, flatten bool = true, simplify bool = true, selectivity bool = true)
 	RETURNS text
 	AS 'MODULE_PATHNAME'
 	LANGUAGE C STRICT IMMUTABLE;
@@ -357,17 +357,17 @@ BEGIN
 		ALTER OPERATOR FAMILY jsonb_value_path_ops USING gin
 			ADD OPERATOR 16 @@ (jsonb, jsonpath);
 
-		CREATE OR REPLACE FUNCTION gin_debug_jsonpath_value_path(jsonpath)
+		CREATE OR REPLACE FUNCTION gin_debug_jsonpath_value_path(jsonpath, is_exists bool = false, flatten bool = true, simplify bool = true, selectivity bool = true)
 			RETURNS text
 			AS 'MODULE_PATHNAME'
 			LANGUAGE C STRICT IMMUTABLE;
 
-		CREATE OR REPLACE FUNCTION gin_debug_jsonpath_path_value(jsonpath)
+		CREATE OR REPLACE FUNCTION gin_debug_jsonpath_path_value(jsonpath, is_exists bool = false, flatten bool = true, simplify bool = true, selectivity bool = true)
 			RETURNS text
 			AS 'MODULE_PATHNAME'
 			LANGUAGE C STRICT IMMUTABLE;
 
-		CREATE OR REPLACE FUNCTION gin_debug_jsonpath_laxpath_value(jsonpath)
+		CREATE OR REPLACE FUNCTION gin_debug_jsonpath_laxpath_value(jsonpath, is_exists bool = false, flatten bool = true, simplify bool = true, selectivity bool = true)
 			RETURNS text
 			AS 'MODULE_PATHNAME'
 			LANGUAGE C STRICT IMMUTABLE;

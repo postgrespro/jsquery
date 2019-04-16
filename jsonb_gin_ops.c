@@ -765,37 +765,76 @@ gin_extract_jsonb_value_path(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(gin_extract_jsonb_value_path_internal(jb, nentries, NULL));
 }
 
+static text *
+gin_debug_query_internal(FunctionCallInfo fcinfo,
+						 MakeEntryHandler makeHandler,
+						 CheckEntryHandler checkHandler, Pointer extra)
+{
+	JsQuery	   *jq = PG_GETARG_JSQUERY(0);
+	ExtractedNode *root;
+	char	   *s;
+	int			optimize = 0;
+
+	if (PG_GETARG_BOOL(1))
+		optimize |= optFlatten;
+	if (PG_GETARG_BOOL(2))
+		optimize |= optSimplify;
+	if (PG_GETARG_BOOL(3))
+		optimize |= optSelectivity;
+
+	root = extractJsQuery(jq, optimize, makeHandler, checkHandler, extra);
+	s = debugExtractedQuery(root);
+
+	return cstring_to_text(s);
+}
+
 Datum
 gin_debug_query_value_path(PG_FUNCTION_ARGS)
 {
-	JsQuery	   *jq;
 	Entries		e = {0};
-	ExtractedNode *root;
-	char	   *s;
 
-	jq = PG_GETARG_JSQUERY(0);
-	root = extractJsQuery(jq, make_value_path_entry_handler,
-							check_value_path_entry_handler, (Pointer)&e);
-	s = debugExtractedQuery(root);
-
-	PG_RETURN_TEXT_P(cstring_to_text(s));
+	PG_RETURN_TEXT_P(gin_debug_query_internal(fcinfo,
+											  make_value_path_entry_handler,
+											  check_value_path_entry_handler,
+											  (Pointer) &e));
 }
 
 #ifndef NO_JSONPATH
+static text *
+gin_debug_jsonpath_internal(FunctionCallInfo fcinfo,
+							bool arrayPathItems,
+							MakeEntryHandler makeHandler,
+							CheckEntryHandler checkHandler, Pointer extra)
+{
+	JsonPath   *jp = PG_GETARG_JSONPATH_P(0);
+	ExtractedNode *root;
+	char	   *s;
+	int			optimize = 0;
+	bool		exists = PG_GETARG_BOOL(1);
+
+	if (PG_GETARG_BOOL(2))
+		optimize |= optFlatten;
+	if (PG_GETARG_BOOL(3))
+		optimize |= optSimplify;
+	if (PG_GETARG_BOOL(4))
+		optimize |= optSelectivity;
+
+	root = extractJsonPath(jp, exists, arrayPathItems, optimize,
+						   makeHandler, checkHandler, extra);
+	s = debugExtractedQuery(root);
+
+	return cstring_to_text(s);
+}
+
 Datum
 gin_debug_jsonpath_value_path(PG_FUNCTION_ARGS)
 {
-	JsonPath   *jp;
 	Entries		e = {0};
-	ExtractedNode *root;
-	char	   *s;
 
-	jp = PG_GETARG_JSONPATH_P(0);
-	root = extractJsonPath(jp, false, false, make_value_path_entry_handler,
-						   check_value_path_entry_handler, (Pointer)&e);
-	s = debugExtractedQuery(root);
-
-	PG_RETURN_TEXT_P(cstring_to_text(s));
+	PG_RETURN_TEXT_P(gin_debug_jsonpath_internal(fcinfo, false,
+												 make_value_path_entry_handler,
+												 check_value_path_entry_handler,
+												 (Pointer) &e));
 }
 #endif
 
@@ -843,12 +882,14 @@ gin_extract_jsonb_query_value_path(PG_FUNCTION_ARGS)
 				root = extractJsonPath(PG_GETARG_JSONPATH_P(0),
 									   strategy == JsonpathExistsStrategyNumber,
 									   false,
+									   optAll,
 									   make_value_path_entry_handler,
 									   check_value_path_entry_handler,
 									   (Pointer)&e);
 			else
 #endif
 				root = extractJsQuery(PG_GETARG_JSQUERY(0),
+									  optAll,
 									  make_value_path_entry_handler,
 									  check_value_path_entry_handler,
 									  (Pointer)&e);
@@ -1257,21 +1298,16 @@ gin_extract_jsonb_laxpath_value(PG_FUNCTION_ARGS)
 static Datum
 gin_debug_query_path_value_internal(FunctionCallInfo fcinfo, bool lax)
 {
-	JsQuery	   *jq;
 	Entries		e = {0};
 	PathValueExtra extra;
-	ExtractedNode *root;
-	char	   *s;
 
 	extra.entries = &e;
 	extra.lax = lax;
 
-	jq = PG_GETARG_JSQUERY(0);
-	root = extractJsQuery(jq, make_path_value_entry_handler,
-						  check_path_value_entry_handler, (Pointer) &extra);
-	s = debugExtractedQuery(root);
-
-	PG_RETURN_TEXT_P(cstring_to_text(s));
+	PG_RETURN_TEXT_P(gin_debug_query_internal(fcinfo,
+											  make_path_value_entry_handler,
+											  check_path_value_entry_handler,
+											  (Pointer) &extra));
 }
 
 Datum
@@ -1287,38 +1323,31 @@ gin_debug_query_laxpath_value(PG_FUNCTION_ARGS)
 }
 
 #ifndef NO_JSONPATH
-static Datum
+static text *
 gin_debug_jsonpath_path_value_internal(FunctionCallInfo fcinfo, bool lax)
 {
-	JsonPath   *jp;
 	Entries		e = {0};
 	PathValueExtra extra;
-	ExtractedNode *root;
-	char	   *s;
 
 	extra.entries = &e;
 	extra.lax = lax;
 
-	jp = PG_GETARG_JSONPATH_P(0);
-	root = extractJsonPath(jp, false, !lax,
-						   make_path_value_entry_handler,
-						   check_path_value_entry_handler,
-						   (Pointer) &extra);
-	s = debugExtractedQuery(root);
-
-	PG_RETURN_TEXT_P(cstring_to_text(s));
+	return gin_debug_jsonpath_internal(fcinfo, !lax,
+									   make_path_value_entry_handler,
+									   check_path_value_entry_handler,
+									   (Pointer) &extra);
 }
 
 Datum
 gin_debug_jsonpath_path_value(PG_FUNCTION_ARGS)
 {
-	PG_RETURN_DATUM(gin_debug_jsonpath_path_value_internal(fcinfo, false));
+	PG_RETURN_TEXT_P(gin_debug_jsonpath_path_value_internal(fcinfo, false));
 }
 
 Datum
 gin_debug_jsonpath_laxpath_value(PG_FUNCTION_ARGS)
 {
-	PG_RETURN_DATUM(gin_debug_jsonpath_path_value_internal(fcinfo, true));
+	PG_RETURN_TEXT_P(gin_debug_jsonpath_path_value_internal(fcinfo, true));
 }
 #endif
 
@@ -1355,12 +1384,14 @@ gin_extract_jsonb_query_path_value_internal(FunctionCallInfo fcinfo, bool lax)
 				root = extractJsonPath(PG_GETARG_JSONPATH_P(0),
 									   strategy == JsonpathExistsStrategyNumber,
 									   !lax,
+									   optAll,
 									   make_path_value_entry_handler,
 									   check_path_value_entry_handler,
 									   (Pointer) &extra);
 			else
 #endif
 				root = extractJsQuery(PG_GETARG_JSQUERY(0),
+									  optAll,
 									  make_path_value_entry_handler,
 									  check_path_value_entry_handler,
 									  (Pointer) &extra);

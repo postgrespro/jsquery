@@ -242,10 +242,20 @@ typedef int (*MakeEntryHandler)(ExtractedNode *node, Pointer extra);
 typedef bool (*CheckEntryHandler)(ExtractedNode *node, Pointer extra);
 bool isLogicalNodeType(ExtractedNodeType type);
 
-ExtractedNode *extractJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
+typedef enum
+{
+	optFlatten =		0x01,
+	optSimplify =		0x02,
+	optSelectivity =	0x04,
+	optAll =			0x07
+} JsQueryOptFlags;
+
+ExtractedNode *extractJsQuery(JsQuery *jq, int optimize,
+								MakeEntryHandler makeHandler,
 								CheckEntryHandler checkHandler, Pointer extra);
 #ifndef NO_JSONPATH
 ExtractedNode *extractJsonPath(JsonPath *jp, bool exists, bool arrayPathItems,
+							   int optimize,
 							   MakeEntryHandler makeHandler,
 							   CheckEntryHandler checkHandler, Pointer extra);
 #endif

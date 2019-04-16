@@ -33,7 +33,7 @@ static int compareJsQueryItem(JsQueryItem *v1, JsQueryItem *v2);
 static void processGroup(ExtractedNode *node, int start, int end);
 static void simplifyRecursive(ExtractedNode *node);
 static SelectivityClass getScalarSelectivityClass(ExtractedNode *node);
-static ExtractedNode *makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra);
+static ExtractedNode *makeEntries(ExtractedNode *node, bool skipNonSelective, MakeEntryHandler handler, Pointer extra);
 static void setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler, Pointer extra);
 static void debugPath(StringInfo buf, PathItem *path);
 static void debugValue(StringInfo buf, JsQueryItem *v);
@@ -1204,7 +1204,8 @@ getScalarSelectivityClass(ExtractedNode *node)
  * Make entries for all leaf tree nodes using user-provided handler.
  */
 static ExtractedNode *
-makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra)
+makeEntries(ExtractedNode *node, bool skipNonSelective,
+			MakeEntryHandler handler, Pointer extra)
 {
 	if (node->type == eAnd || node->type == eOr)
 	{
@@ -1216,11 +1217,12 @@ makeEntries(ExtractedNode *node, MakeEntryHandler handler, Pointer extra)
 			if (!child)
 				continue;
 			/* Skip non-selective AND children */
-			if (child->sClass > node->sClass &&
+			if (skipNonSelective &&
+				child->sClass > node->sClass &&
 				node->type == eAnd &&
 				!child->forceIndex)
 				continue;
-			child = makeEntries(child, handler, extra);
+			child = makeEntries(child, skipNonSelective, handler, extra);
 			if (child)
 			{
 				node->args.items[j] = child;
@@ -1319,26 +1321,40 @@ setSelectivityClass(ExtractedNode *node, CheckEntryHandler checkHandler,
 	}
 }
 
+static ExtractedNode *
+emitExtractedQuery(ExtractedNode *root, int optimize,
+				   MakeEntryHandler makeHandler,
+				   CheckEntryHandler checkHandler,
+				   Pointer extra)
+{
+	if (!root)
+		return NULL;
+
+	if (optimize & optFlatten)
+		flatternTree(root);
+
+	if (optimize & optSimplify)
+		simplifyRecursive(root);
+
+	setSelectivityClass(root, checkHandler, extra);
+
+	return makeEntries(root, (optimize & optSelectivity) != 0, makeHandler, extra);
+}
+
 /*
  * Turn jsquery into tree of entries using user-provided handler.
  */
 ExtractedNode *
-extractJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
-								CheckEntryHandler checkHandler, Pointer extra)
+extractJsQuery(JsQuery *jq, int optimize, MakeEntryHandler makeHandler,
+			   CheckEntryHandler checkHandler, Pointer extra)
 {
 	ExtractedNode	*root;
 	JsQueryItem		jsq;
 
 	jsqInit(&jsq, jq);
 	root = recursiveExtract(&jsq, false, false, NULL);
-	if (root)
-	{
-		flatternTree(root);
-		simplifyRecursive(root);
-		setSelectivityClass(root, checkHandler, extra);
-		root = makeEntries(root, makeHandler, extra);
-	}
-	return root;
+
+	return emitExtractedQuery(root, optimize, makeHandler, checkHandler, extra);
 }
 
 #ifndef NO_JSONPATH
@@ -1346,7 +1362,7 @@ extractJsQuery(JsQuery *jq, MakeEntryHandler makeHandler,
  * Turn jsonpath into tree of entries using user-provided handler.
  */
 ExtractedNode *
-extractJsonPath(JsonPath *jp, bool exists, bool arrayPathItems,
+extractJsonPath(JsonPath *jp, bool exists, bool arrayPathItems, int optimize,
 				MakeEntryHandler makeHandler,
 				CheckEntryHandler checkHandler, Pointer extra)
 {
@@ -1358,14 +1374,8 @@ extractJsonPath(JsonPath *jp, bool exists, bool arrayPathItems,
 	root = exists
 		? extractJsonPathExists(&jsp, lax, NULL)
 		: recursiveExtractJsonPathExpr(&jsp, lax, false, NULL);
-	if (root)
-	{
-		flatternTree(root);
-		simplifyRecursive(root);
-		setSelectivityClass(root, checkHandler, extra);
-		root = makeEntries(root, makeHandler, extra);
-	}
-	return root;
+
+	return emitExtractedQuery(root, optimize, makeHandler, checkHandler, extra);
 }
 #endif
 
