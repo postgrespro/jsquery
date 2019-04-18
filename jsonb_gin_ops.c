@@ -819,8 +819,8 @@ gin_debug_jsonpath_internal(FunctionCallInfo fcinfo,
 	if (PG_GETARG_BOOL(4))
 		optimize |= optSelectivity;
 
-	root = extractJsonPath(jp, exists, arrayPathItems, optimize,
-						   makeHandler, checkHandler, extra);
+	root = extractJsonPathQuery(jp, exists, arrayPathItems, optimize,
+								makeHandler, checkHandler, extra);
 	s = debugExtractedQuery(root);
 
 	return cstring_to_text(s);
@@ -879,13 +879,13 @@ gin_extract_jsonb_query_value_path(PG_FUNCTION_ARGS)
 		case JsonpathExistsStrategyNumber:
 		case JsonpathMatchStrategyNumber:
 			if (strategy != JsQueryMatchStrategyNumber)
-				root = extractJsonPath(PG_GETARG_JSONPATH_P(0),
-									   strategy == JsonpathExistsStrategyNumber,
-									   false,
-									   optAll,
-									   make_value_path_entry_handler,
-									   check_value_path_entry_handler,
-									   (Pointer)&e);
+				root = extractJsonPathQuery(PG_GETARG_JSONPATH_P(0),
+											strategy == JsonpathExistsStrategyNumber,
+											false,
+											optAll,
+											make_value_path_entry_handler,
+											check_value_path_entry_handler,
+											(Pointer) &e);
 			else
 #endif
 				root = extractJsQuery(PG_GETARG_JSQUERY(0),
@@ -1381,13 +1381,13 @@ gin_extract_jsonb_query_path_value_internal(FunctionCallInfo fcinfo, bool lax)
 		case JsonpathExistsStrategyNumber:
 		case JsonpathMatchStrategyNumber:
 			if (strategy != JsQueryMatchStrategyNumber)
-				root = extractJsonPath(PG_GETARG_JSONPATH_P(0),
-									   strategy == JsonpathExistsStrategyNumber,
-									   !lax,
-									   optAll,
-									   make_path_value_entry_handler,
-									   check_path_value_entry_handler,
-									   (Pointer) &extra);
+				root = extractJsonPathQuery(PG_GETARG_JSONPATH_P(0),
+											strategy == JsonpathExistsStrategyNumber,
+											!lax,
+											optAll,
+											make_path_value_entry_handler,
+											check_path_value_entry_handler,
+											(Pointer) &extra);
 			else
 #endif
 				root = extractJsQuery(PG_GETARG_JSQUERY(0),

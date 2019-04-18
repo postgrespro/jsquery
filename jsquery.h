@@ -254,10 +254,9 @@ ExtractedNode *extractJsQuery(JsQuery *jq, int optimize,
 								MakeEntryHandler makeHandler,
 								CheckEntryHandler checkHandler, Pointer extra);
 #ifndef NO_JSONPATH
-ExtractedNode *extractJsonPath(JsonPath *jp, bool exists, bool arrayPathItems,
-							   int optimize,
-							   MakeEntryHandler makeHandler,
-							   CheckEntryHandler checkHandler, Pointer extra);
+ExtractedNode *extractJsonPathQuery(JsonPath *jp, bool exists, bool arrayPathItems,
+									int optimize, MakeEntryHandler makeHandler,
+									CheckEntryHandler checkHandler, Pointer extra);
 #endif
 char *debugExtractedQuery(ExtractedNode  *root);
 bool queryNeedRecheck(ExtractedNode *node);
