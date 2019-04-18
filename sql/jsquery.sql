@@ -709,6 +709,60 @@ select v from test_jsquery where v @@ 'array && [2,3]'::jsquery order by v;
 select v from test_jsquery where v @@ 'array @> [2,3]'::jsquery order by v;
 select v from test_jsquery where v @@ 'array = [2,3]'::jsquery order by v;
 
+explain (costs off) select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 0'::jsonpath;
+explain (costs off) select count(*) from test_jsquery where v @? '$.review_helpful_votes ? (@ > 0)'::jsonpath;
+
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 0'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes < 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes >= 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes <= 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes == 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 16'::jsonpath AND
+										v @@ '$.review_helpful_votes < 20'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 16 && $.review_helpful_votes < 20'::jsonpath;
+select count(*) from test_jsquery where v @? '$.review_helpful_votes ? (@ > 16 && @ < 20)'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.similar_product_ids[*] == "0440180295"'::jsonpath;
+select count(*) from test_jsquery where v @? '$.similar_product_ids ? (@[*] == "0440180295")'::jsonpath;
+select count(*) from test_jsquery where v @? '$.similar_product_ids[*] ? (@ == "0440180295")'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.similar_product_ids[*] == "0440180295" && $.product_sales_rank > 300000'::jsonpath;
+--select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]'::jsquery;
+select count(*) from test_jsquery where v @? 'strict $.similar_product_ids ? (@[*] == "B000002H2H" && @[*] == "B000002H6C")'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.customer_id == null'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_votes == true'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.product_group == false'::jsonpath;
+select count(*) from test_jsquery where v @? '$.t'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "boolean"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "string"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "number"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "array"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "object"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "boolean"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "string"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "number"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "array"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "object"'::jsonpath;
+--select count(*) from test_jsquery where v @@ 'similar_product_ids.#: ($ is numeric)'::jsonpath;
+--select count(*) from test_jsquery where v @@ 'similar_product_ids.#: ($ is string)'::jsonpath;
+--select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")'::jsonpath;
+select count(*) from test_jsquery where v @@ 'strict $ > 2'::jsonpath;
+select count(*) from test_jsquery where v @@ '$ == false'::jsonpath;
+select count(*) from test_jsquery where v @? '$.t'::jsonpath;
+select count(*) from test_jsquery where v @? '$'::jsonpath;
+select count(*) from test_jsquery where v @? '$.similar_product_ids[*]'::jsonpath;
+select count(*) from test_jsquery where v @@ '$ ? (@.review_votes > 10) . review_rating < 7'::jsonpath;
+select count(*) from test_jsquery where v @? '$.similar_product_ids ? (@[*] == "B0002W4TL2") '::jsonpath;
+
+--explain (costs off) select v from test_jsquery where v @@ '$.array <@ [2,3]'::jsonpath order by v;
+explain (costs off) select v from test_jsquery where v @? '$.array[*] ? (@ == 2 || @ == 3)'::jsonpath order by v;
+explain (costs off) select v from test_jsquery where v @@ '$.array[*] == 2 && $.array[*] == 3'::jsonpath order by v;
+explain (costs off) select v from test_jsquery where v @@ '$.array[0] == 2 && $.array[1] == 3 && $.array.size() == 2'::jsonpath order by v;
+
+--select v from test_jsquery where v @@ 'array <@ [2,3]'::jsonpath order by v;
+select v from test_jsquery where v @? '$.array[*] ? (@ == 2 || @ == 3)'::jsonpath order by v;
+select v from test_jsquery where v @@ '$.array[*] == 2 && $.array[*] == 3'::jsonpath order by v;
+select v from test_jsquery where v @@ '$.array[0] == 2 && $.array[1] == 3 && $.array.size() == 2'::jsonpath order by v;
+
 drop index t_idx;
 
 create index t_idx on test_jsquery using gin (v jsonb_path_value_ops);
@@ -767,6 +821,60 @@ select v from test_jsquery where v @@ 'array && [2,3]'::jsquery order by v;
 select v from test_jsquery where v @@ 'array @> [2,3]'::jsquery order by v;
 select v from test_jsquery where v @@ 'array = [2,3]'::jsquery order by v;
 
+explain (costs off) select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 0'::jsonpath;
+explain (costs off) select count(*) from test_jsquery where v @? '$.review_helpful_votes ? (@ > 0)'::jsonpath;
+
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 0'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes < 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes >= 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes <= 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes == 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 16'::jsonpath AND
+										v @@ '$.review_helpful_votes < 20'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 16 && $.review_helpful_votes < 20'::jsonpath;
+select count(*) from test_jsquery where v @? '$.review_helpful_votes ? (@ > 16 && @ < 20)'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.similar_product_ids[*] == "0440180295"'::jsonpath;
+select count(*) from test_jsquery where v @? '$.similar_product_ids ? (@[*] == "0440180295")'::jsonpath;
+select count(*) from test_jsquery where v @? '$.similar_product_ids[*] ? (@ == "0440180295")'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.similar_product_ids[*] == "0440180295" && $.product_sales_rank > 300000'::jsonpath;
+--select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]'::jsquery;
+select count(*) from test_jsquery where v @? 'strict $.similar_product_ids ? (@[*] == "B000002H2H" && @[*] == "B000002H6C")'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.customer_id == null'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_votes == true'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.product_group == false'::jsonpath;
+select count(*) from test_jsquery where v @? '$.t'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "boolean"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "string"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "number"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "array"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "object"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "boolean"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "string"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "number"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "array"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "object"'::jsonpath;
+--select count(*) from test_jsquery where v @@ 'similar_product_ids.#: ($ is numeric)'::jsonpath;
+--select count(*) from test_jsquery where v @@ 'similar_product_ids.#: ($ is string)'::jsonpath;
+--select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")'::jsonpath;
+select count(*) from test_jsquery where v @@ 'strict $ > 2'::jsonpath;
+select count(*) from test_jsquery where v @@ '$ == false'::jsonpath;
+select count(*) from test_jsquery where v @? '$.t'::jsonpath;
+select count(*) from test_jsquery where v @? '$'::jsonpath;
+select count(*) from test_jsquery where v @? '$.similar_product_ids[*]'::jsonpath;
+select count(*) from test_jsquery where v @@ '$ ? (@.review_votes > 10) . review_rating < 7'::jsonpath;
+select count(*) from test_jsquery where v @? '$.similar_product_ids ? (@[*] == "B0002W4TL2") '::jsonpath;
+
+--explain (costs off) select v from test_jsquery where v @@ '$.array <@ [2,3]'::jsonpath order by v;
+explain (costs off) select v from test_jsquery where v @? '$.array[*] ? (@ == 2 || @ == 3)'::jsonpath order by v;
+explain (costs off) select v from test_jsquery where v @@ '$.array[*] == 2 && $.array[*] == 3'::jsonpath order by v;
+explain (costs off) select v from test_jsquery where v @@ '$.array[0] == 2 && $.array[1] == 3 && $.array.size() == 2'::jsonpath order by v;
+
+--select v from test_jsquery where v @@ 'array <@ [2,3]'::jsonpath order by v;
+select v from test_jsquery where v @? '$.array[*] ? (@ == 2 || @ == 3)'::jsonpath order by v;
+select v from test_jsquery where v @@ '$.array[*] == 2 && $.array[*] == 3'::jsonpath order by v;
+select v from test_jsquery where v @@ '$.array[0] == 2 && $.array[1] == 3 && $.array.size() == 2'::jsonpath order by v;
+
 drop index t_idx;
 
 create index t_idx on test_jsquery using gin (v jsonb_laxpath_value_ops);
@@ -824,5 +932,60 @@ select v from test_jsquery where v @@ 'array <@ [2,3]'::jsquery order by v;
 select v from test_jsquery where v @@ 'array && [2,3]'::jsquery order by v;
 select v from test_jsquery where v @@ 'array @> [2,3]'::jsquery order by v;
 select v from test_jsquery where v @@ 'array = [2,3]'::jsquery order by v;
+
+
+explain (costs off) select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 0'::jsonpath;
+explain (costs off) select count(*) from test_jsquery where v @? '$.review_helpful_votes ? (@ > 0)'::jsonpath;
+
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 0'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes < 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes >= 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes <= 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes == 19'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 16'::jsonpath AND
+										v @@ '$.review_helpful_votes < 20'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_helpful_votes > 16 && $.review_helpful_votes < 20'::jsonpath;
+select count(*) from test_jsquery where v @? '$.review_helpful_votes ? (@ > 16 && @ < 20)'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.similar_product_ids[*] == "0440180295"'::jsonpath;
+select count(*) from test_jsquery where v @? '$.similar_product_ids ? (@[*] == "0440180295")'::jsonpath;
+select count(*) from test_jsquery where v @? '$.similar_product_ids[*] ? (@ == "0440180295")'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.similar_product_ids[*] == "0440180295" && $.product_sales_rank > 300000'::jsonpath;
+--select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]'::jsquery;
+select count(*) from test_jsquery where v @? 'strict $.similar_product_ids ? (@[*] == "B000002H2H" && @[*] == "B000002H6C")'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.customer_id == null'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.review_votes == true'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.product_group == false'::jsonpath;
+select count(*) from test_jsquery where v @? '$.t'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "boolean"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "string"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "number"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "array"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.t.type() == "object"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "boolean"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "string"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "number"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "array"'::jsonpath;
+select count(*) from test_jsquery where v @@ '$.type() == "object"'::jsonpath;
+--select count(*) from test_jsquery where v @@ 'similar_product_ids.#: ($ is numeric)'::jsonpath;
+--select count(*) from test_jsquery where v @@ 'similar_product_ids.#: ($ is string)'::jsonpath;
+--select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")'::jsonpath;
+select count(*) from test_jsquery where v @@ 'strict $ > 2'::jsonpath;
+select count(*) from test_jsquery where v @@ '$ == false'::jsonpath;
+select count(*) from test_jsquery where v @? '$.t'::jsonpath;
+select count(*) from test_jsquery where v @? '$'::jsonpath;
+select count(*) from test_jsquery where v @? '$.similar_product_ids[*]'::jsonpath;
+select count(*) from test_jsquery where v @@ '$ ? (@.review_votes > 10) . review_rating < 7'::jsonpath;
+select count(*) from test_jsquery where v @? '$.similar_product_ids ? (@[*] == "B0002W4TL2") '::jsonpath;
+
+--explain (costs off) select v from test_jsquery where v @@ '$.array <@ [2,3]'::jsonpath order by v;
+explain (costs off) select v from test_jsquery where v @? '$.array[*] ? (@ == 2 || @ == 3)'::jsonpath order by v;
+explain (costs off) select v from test_jsquery where v @@ '$.array[*] == 2 && $.array[*] == 3'::jsonpath order by v;
+explain (costs off) select v from test_jsquery where v @@ '$.array[0] == 2 && $.array[1] == 3 && $.array.size() == 2'::jsonpath order by v;
+
+--select v from test_jsquery where v @@ 'array <@ [2,3]'::jsonpath order by v;
+select v from test_jsquery where v @? '$.array[*] ? (@ == 2 || @ == 3)'::jsonpath order by v;
+select v from test_jsquery where v @@ '$.array[*] == 2 && $.array[*] == 3'::jsonpath order by v;
+select v from test_jsquery where v @@ '$.array[0] == 2 && $.array[1] == 3 && $.array.size() == 2'::jsonpath order by v;
 
 RESET enable_seqscan;
