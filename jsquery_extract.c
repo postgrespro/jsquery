@@ -24,6 +24,9 @@
 
 static ExtractedNode *recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path);
 static ExtractedNode *makeAnyNode(bool not, bool indirect, PathItem *path);
+static ExtractedNode *makeBinaryNode(ExtractedNodeType type, PathItem *path,
+			   bool indirect, ExtractedNode *leftNode, ExtractedNode *rightNode);
+static ExtractedNode *makeEmptyArrayNode(PathItem *path, JsQueryHint hint);
 static int coundChildren(ExtractedNode *node, ExtractedNodeType type, bool first, bool *found);
 static void fillChildren(ExtractedNode *node, ExtractedNodeType type, bool first, ExtractedNode **items, int *i);
 static void flatternTree(ExtractedNode *node);
@@ -93,15 +96,7 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 				}
 			}
 
-			result = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-			result->type = type;
-			result->path = path;
-			result->indirect = indirect;
-			result->args.items = (ExtractedNode **)palloc(2 * sizeof(ExtractedNode *));
-			result->args.items[0] = leftNode;
-			result->args.items[1] = rightNode;
-			result->args.count = 2;
-			return result;
+			return makeBinaryNode(type, path, indirect, leftNode, rightNode);
 		case jqiNot:
 			jsqGetArg(jsq, &elem);
 			return recursiveExtract(&elem, !not, indirect, path);
@@ -214,13 +209,7 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 			if (jsq->type == jqiContained ||
 					(jsq->type == jqiEqual && elem.array.nelems == 0))
 			{
-				ExtractedNode *item = (ExtractedNode *)palloc(sizeof(ExtractedNode));
-
-				item->hint = e.hint;
-				item->type = eEmptyArray;
-				item->path = pathItem->parent;
-				item->indirect = false;
-				item->hint = jsq->hint;
+				ExtractedNode *item = makeEmptyArrayNode(pathItem->parent, jsq->hint); /* XXX e.hint */
 
 				result->args.items[result->args.count] = item;
 				result->args.count++;
@@ -310,19 +299,21 @@ typedef struct ExtractedJsonPath
 	bool		type;
 } ExtractedJsonPath;
 
-static bool
-recursiveExtractJsonPath(JsonPathItem *jpi,
-						 bool lax, bool not, bool indirect, bool unwrap,
-						 PathItem *parent, List **paths, List *filters);
+typedef enum
+{
+	efLax = 0x01,
+	efArrays = 0x02,
+	efLaxWithArrays = efLax | efArrays
+} JsonPathExtractionFlags;
 
 static ExtractedNode *
-recursiveExtractJsonPathExpr(JsonPathItem *jpi, bool lax, bool not,
-							 PathItem *path);
+extractJsonPathExpr(JsonPathItem *jpi, int flags, bool not, bool indirect,
+					PathItem *path);
 
 static bool
-recursiveExtractJsonPath2(JsonPathItem *jpi,
-						  bool lax, bool not, bool indirect, bool unwrap,
-						  PathItem *parent, List **paths, List *filters)
+extractJsonPathRec(JsonPathItem *jpi,
+				   int flags, bool indirect, bool unwrap, bool preunwrap,
+				   PathItem *parent, List **paths, List *filters)
 {
 	JsonPathItem	next;
 	PathItem	   *path;
@@ -334,44 +325,78 @@ recursiveExtractJsonPath2(JsonPathItem *jpi,
 		case jpiRoot:
 			Assert(!parent);
 			path = NULL;
+			indirect = parent != NULL;
 			break;
 
 		case jpiCurrent:
 			path = parent;
+			indirect = false;
 			break;
 
 		case jpiKey:
+			if (flags == efLaxWithArrays && preunwrap &&
+				!extractJsonPathRec(jpi, flags, true, unwrap, false,
+									makePathItem(iAnyArray, parent),
+									paths, filters))
+				return false;
+
 			path = makePathItem(iKey, parent);
 			path->s = jspGetString(jpi, &path->len);
 			break;
 
 		case jpiAny:
-		/* case jpiAll: */
-			if ((not && jpi->type == jpiAny) /*|| (!not && jpi->type == jpiAll)*/)
-				return false;
-
 			path = makePathItem(iAny, parent);
 			indirect = true;
 			break;
 
-		case jpiIndexArray:
-			path = makePathItem(iIndexArray, parent);
-			path->arrayIndex = -1; /* FIXME */
-			indirect = true;
-			break;
-
 		case jpiAnyArray:
-		/* case jpiAllArray: */
-			if ((not && jpi->type == jpiAnyArray) /*|| (!not && jpi->type == jpiAllArray)*/)
-				return false;
+		case jpiIndexArray:
+			if (flags == efLaxWithArrays)
+			{
+				/* try to skip [*] path item */
+				JsonPathItem next;
 
-			path = makePathItem(iAnyArray, parent);
+				if (!jspGetNext(jpi, &next))
+				{
+					ExtractedJsonPath *ejp = palloc(sizeof(*ejp));
+
+					ejp->path = parent;
+					ejp->filters = list_copy(filters);
+					ejp->indirect = indirect;
+					ejp->type = false;
+
+					*paths = lappend(*paths, ejp);
+				}
+				else if (!extractJsonPathRec(&next, flags, indirect, unwrap,
+											 false, parent, paths, filters))
+					return false;
+			}
+
 			indirect = true;
+#if 0
+			if (jpi->content.array.nelems == 1)
+			{
+				JsonPathItem from;
+				JsonPathItem to;
+
+				if (!jspGetArraySubscript(jpi, &from, &to, 0) &&
+					from->type == jpiNumeric)
+				{
+					path = makePathItem(iIndexArray, parent);
+					path->arrayIndex = -1;
+					break;
+				}
+			}
+#endif
+			path = makePathItem(iAnyArray, parent);
 			break;
 
 		case jpiAnyKey:
-		/* case jpiAllKey: */
-			if ((not && jpi->type == jpiAnyKey) /*|| (!not && jpi->type == jpiAllKey)*/)
+			/* add implicit [*] path item in lax mode */
+			if (flags == efLaxWithArrays && preunwrap &&
+				!extractJsonPathRec(jpi, flags, true, unwrap, false,
+									makePathItem(iAnyArray, parent),
+									paths, filters))
 				return false;
 
 			path = makePathItem(iAnyKey, parent);
@@ -383,11 +408,15 @@ recursiveExtractJsonPath2(JsonPathItem *jpi,
 				JsonPathItem arg;
 				ExtractedNode *expr;
 
-				if (not)
+				/* add implicit [*] path item in lax mode */
+				if (flags == efLaxWithArrays && preunwrap &&
+					!extractJsonPathRec(jpi, flags, true, unwrap, false,
+										makePathItem(iAnyArray, parent),
+										paths, filters))
 					return false;
 
 				jspGetArg(jpi, &arg);
-				expr = recursiveExtractJsonPathExpr(&arg, lax, not, parent);
+				expr = extractJsonPathExpr(&arg, flags, false, false, parent);
 
 				if (expr)
 					filters = lappend(list_copy(filters), expr);
@@ -407,19 +436,20 @@ recursiveExtractJsonPath2(JsonPathItem *jpi,
 		ExtractedJsonPath *ejp = palloc(sizeof(*ejp));
 
 		ejp->path = path;
-		ejp->filters = filters;
-		ejp->indirect = indirect;
+		ejp->filters = list_copy(filters);
+		ejp->indirect = flags == efLax ? path != NULL : indirect;
 		ejp->type = jspHasNext(jpi) && next.type == jpiType;
 
 		*paths = lappend(*paths, ejp);
 
-		if (lax && unwrap && //!(path && path->type == iAnyArray) &&
+		if (flags == efLaxWithArrays && unwrap &&
 			!(jspHasNext(jpi) && next.type == jpiType))
 		{
 			ejp = palloc(sizeof(*ejp));
+
 			ejp->path = makePathItem(iAnyArray, path);
-			ejp->filters = filters;
-			ejp->indirect = indirect;
+			ejp->filters = list_copy(filters);
+			ejp->indirect = true;
 			ejp->type = false;
 
 			*paths = lappend(*paths, ejp);
@@ -428,62 +458,16 @@ recursiveExtractJsonPath2(JsonPathItem *jpi,
 		return true;
 	}
 
-	return recursiveExtractJsonPath(&next, lax, not, indirect, unwrap, path,
-									paths, filters);
+	return extractJsonPathRec(&next, flags, indirect, unwrap, true, path, paths, filters);
 }
 
-static bool
-recursiveExtractJsonPath(JsonPathItem *jpi,
-						 bool lax, bool not, bool indirect, bool unwrap,
-						 PathItem *parent, List **paths, List *filters)
+static List *
+extractJsonPath(JsonPathItem *jpi, int flags, bool unwrap, PathItem *parent)
 {
-	switch (jpi->type)
-	{
-		case jpiRoot:
-		case jpiAny:
-			break;
+	List	   *paths = NIL;
 
-		case jpiAnyArray:
-		case jpiIndexArray:
-			if (lax)
-			{
-				/* try to skip [*] path item */
-				JsonPathItem next;
-
-				if (!jspGetNext(jpi, &next))
-				{
-					ExtractedJsonPath *ejp = palloc(sizeof(*ejp));
-
-					ejp->path = parent;
-					ejp->filters = filters;
-					ejp->indirect = indirect;
-					ejp->type = false;
-
-					*paths = lappend(*paths, ejp);
-				}
-				else if (!recursiveExtractJsonPath2(&next, lax, not, indirect, unwrap,
-													parent, paths, filters))
-					return false;
-			}
-
-			break;
-
-		case jpiKey:
-		case jpiAnyKey:
-			/* add implicit [*] path item in lax mode */
-			if (lax &&
-				!recursiveExtractJsonPath2(jpi, lax, not, true, unwrap,
-										   makePathItem(iAnyArray, parent),
-										   paths, filters))
-				return false;
-			break;
-
-		default:
-			break;
-	}
-
-	return recursiveExtractJsonPath2(jpi, lax, not, indirect, unwrap, parent,
-									 paths, filters);
+	return extractJsonPathRec(jpi, flags, false, unwrap, false, parent,
+							  &paths, NIL) ? paths : NIL;
 }
 
 static inline JsQueryItem *
@@ -567,14 +551,13 @@ appendJsonPathExprNode(ExtractedNode *result, ExtractedNode *node, PathItem *pat
 }
 
 static ExtractedNode *
-extractJsonPathExists(JsonPathItem *jpi, bool lax, PathItem *path)
+extractJsonPathExists(JsonPathItem *jpi, int flags, bool indirect, PathItem *path)
 {
-	List	   *paths = NIL;
+	List	   *paths;
 	ListCell   *lc;
 	ExtractedNode *result;
 
-	if (!recursiveExtractJsonPath(jpi, lax, false, false /* FIXME */, false,
-								  path, &paths, NIL))
+	if (!(paths = extractJsonPath(jpi, flags, false, path)))
 		return NULL;
 
 	result = NULL;
@@ -590,9 +573,22 @@ extractJsonPathExists(JsonPathItem *jpi, bool lax, PathItem *path)
 	return result;
 }
 
+static JsQueryItem *
+extractJsonPathConst(JsonPathItem *jpi, bool equal)
+{
+	if (jpi->type == jpiNumeric ||
+		(equal &&
+		 (jpi->type == jpiNull ||
+		  jpi->type == jpiBool ||
+		  jpi->type == jpiString)))
+		return jspConstToJsQueryItem(jpi);
+
+	return NULL;
+}
+
 static ExtractedNode *
-recursiveExtractJsonPathExpr(JsonPathItem *jpi, bool lax, bool not,
-							 PathItem *path)
+extractJsonPathExpr(JsonPathItem *jpi, int flags, bool not, bool indirect,
+					PathItem *path)
 {
 	ExtractedNode  *result;
 	JsonPathItem	elem;
@@ -607,48 +603,36 @@ recursiveExtractJsonPathExpr(JsonPathItem *jpi, bool lax, bool not,
 				ExtractedNode	   *leftNode;
 				ExtractedNode	   *rightNode;
 				ExtractedNodeType	type;
-				bool				indirect = false;
 
 				type = ((jpi->type == jpiAnd) == not) ? eOr : eAnd;
 
 				jspGetLeftArg(jpi, &elem);
-				leftNode = recursiveExtractJsonPathExpr(&elem, lax, not, path);
+				leftNode = extractJsonPathExpr(&elem, flags, not, indirect, path);
 
 				jspGetRightArg(jpi, &elem);
-				rightNode = recursiveExtractJsonPathExpr(&elem, lax, not, path);
+				rightNode = extractJsonPathExpr(&elem, flags, not, indirect, path);
 
-				if (!leftNode || !rightNode)
+				if (leftNode && rightNode)
+					return makeBinaryNode(type, path, indirect, leftNode, rightNode);
+				else if (type == eOr)
+					return NULL;
+				else if (leftNode)
 				{
-					if (type == eOr || (!leftNode && !rightNode))
-						return NULL;
-
-					if (leftNode)
-					{
-						leftNode->indirect |= indirect;
-						return leftNode;
-					}
-					else
-					{
-						rightNode->indirect |= indirect;
-						return rightNode;
-					}
+					leftNode->indirect |= indirect;
+					return leftNode;
 				}
-
-				result = palloc(sizeof(ExtractedNode));
-				result->type = type;
-				result->path = path;
-				result->indirect = indirect;
-				result->args.items = palloc(2 * sizeof(ExtractedNode *));
-				result->args.items[0] = leftNode;
-				result->args.items[1] = rightNode;
-				result->args.count = 2;
-
-				return result;
+				else if (rightNode)
+				{
+					rightNode->indirect |= indirect;
+					return rightNode;
+				}
+				else
+					return NULL;
 			}
 
 		case jpiNot:
 			jspGetArg(jpi, &elem);
-			return recursiveExtractJsonPathExpr(&elem, lax, !not, path);
+			return extractJsonPathExpr(&elem, flags, !not, indirect, path);
 
 		case jpiEqual:
 		case jpiLess:
@@ -664,6 +648,7 @@ recursiveExtractJsonPathExpr(JsonPathItem *jpi, bool lax, bool not,
 				List	   *paths = NIL;
 				ListCell   *lc;
 				JsQueryItem *bound;
+				JsonPathItem *patharg;
 				JsonPathItem larg;
 				JsonPathItem rarg;
 
@@ -673,33 +658,19 @@ recursiveExtractJsonPathExpr(JsonPathItem *jpi, bool lax, bool not,
 				jspGetLeftArg(jpi, &larg);
 				jspGetRightArg(jpi, &rarg);
 
-				if (rarg.type == jpiNumeric ||
-					(equal &&
-					 (rarg.type == jpiNull ||
-					  rarg.type == jpiBool ||
-					  rarg.type == jpiString)))
+				if ((bound = extractJsonPathConst(&rarg, equal)))
 				{
-					bound = jspConstToJsQueryItem(&rarg);
-
-					if (!recursiveExtractJsonPath(&larg, lax, not, false/* FIXME */, true, path,
-												  &paths, NIL))
-						return NULL;
+					patharg = &larg;
 				}
-				else if (larg.type == jpiNumeric ||
-						 (equal &&
-						  (larg.type == jpiNull ||
-						   larg.type == jpiBool ||
-						   larg.type == jpiString)))
+				else if ((bound = extractJsonPathConst(&larg, equal)))
 				{
-					bound = jspConstToJsQueryItem(&larg);
-
-					if (!recursiveExtractJsonPath(&rarg, lax, not, false/* FIXME */, true, path,
-												  &paths, NIL))
-						return NULL;
-
+					patharg = &rarg;
 					greater = !greater;
 				}
 				else
+					return NULL;
+
+				if (!(paths = extractJsonPath(patharg, flags, true, path)))
 					return NULL;
 
 				result = NULL;
@@ -784,7 +755,7 @@ recursiveExtractJsonPathExpr(JsonPathItem *jpi, bool lax, bool not,
 
 				jspGetArg(jpi, &elem);
 
-				return extractJsonPathExists(&elem, lax, path);
+				return extractJsonPathExists(&elem, flags, indirect, path);
 			}
 
 		default:
@@ -812,6 +783,36 @@ makeAnyNode(bool not, bool indirect, PathItem *path)
 	result->hint = false;
 	result->path = path;
 	result->indirect = indirect;
+	return result;
+}
+
+static ExtractedNode *
+makeBinaryNode(ExtractedNodeType type, PathItem *path, bool indirect,
+			   ExtractedNode *leftNode, ExtractedNode *rightNode)
+{
+	ExtractedNode *result = (ExtractedNode *) palloc(sizeof(ExtractedNode));
+
+	result->type = type;
+	result->path = path;
+	result->indirect = indirect;
+	result->args.items = (ExtractedNode **)palloc(2 * sizeof(ExtractedNode *));
+	result->args.items[0] = leftNode;
+	result->args.items[1] = rightNode;
+	result->args.count = 2;
+
+	return result;
+}
+
+static ExtractedNode *
+makeEmptyArrayNode(PathItem *path, JsQueryHint hint)
+{
+	ExtractedNode *result = (ExtractedNode *) palloc(sizeof(ExtractedNode));
+
+	result->type = eEmptyArray;
+	result->path = path;
+	result->indirect = false;
+	result->hint = hint;
+
 	return result;
 }
 
@@ -1368,12 +1369,13 @@ extractJsonPathQuery(JsonPath *jp, bool exists, bool arrayPathItems, int optimiz
 {
 	ExtractedNode  *root;
 	JsonPathItem	jsp;
-	bool			lax = (jp->header & JSONPATH_LAX) != 0 && arrayPathItems;
+	bool			lax = (jp->header & JSONPATH_LAX) != 0;
+	int				flags = (lax ? efLax : 0) | (arrayPathItems ? efArrays : 0);
 
 	jspInit(&jsp, jp);
 	root = exists
-		? extractJsonPathExists(&jsp, lax, NULL)
-		: recursiveExtractJsonPathExpr(&jsp, lax, false, NULL);
+		? extractJsonPathExists(&jsp, flags, false, NULL)
+		: extractJsonPathExpr(&jsp, flags, false, false, NULL);
 
 	return emitExtractedQuery(root, optimize, makeHandler, checkHandler, extra);
 }
