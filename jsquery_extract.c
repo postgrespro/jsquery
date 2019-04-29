@@ -551,13 +551,14 @@ appendJsonPathExprNode(ExtractedNode *result, ExtractedNode *node, PathItem *pat
 }
 
 static ExtractedNode *
-extractJsonPathExists(JsonPathItem *jpi, int flags, bool indirect, PathItem *path)
+extractJsonPathExists(JsonPathItem *jpi, int flags, bool indirect, bool unwrap,
+					  PathItem *path)
 {
 	List	   *paths;
 	ListCell   *lc;
 	ExtractedNode *result;
 
-	if (!(paths = extractJsonPath(jpi, flags, false, path)))
+	if (!(paths = extractJsonPath(jpi, flags, unwrap, path)))
 		return NULL;
 
 	result = NULL;
@@ -668,7 +669,20 @@ extractJsonPathExpr(JsonPathItem *jpi, int flags, bool not, bool indirect,
 					greater = !greater;
 				}
 				else
-					return NULL;
+				{
+					ExtractedNode *lnode;
+					ExtractedNode *rnode;
+
+					lnode = extractJsonPathExists(&larg, flags, indirect, true, path);
+					rnode = extractJsonPathExists(&rarg, flags, indirect, true, path);
+
+					if (lnode && rnode)
+						return makeBinaryNode(eAnd, path, indirect, lnode, rnode);
+					else if (lnode)
+						return lnode;
+					else
+						return rnode;
+				}
 
 				if (!(paths = extractJsonPath(patharg, flags, true, path)))
 					return NULL;
@@ -755,7 +769,7 @@ extractJsonPathExpr(JsonPathItem *jpi, int flags, bool not, bool indirect,
 
 				jspGetArg(jpi, &elem);
 
-				return extractJsonPathExists(&elem, flags, indirect, path);
+				return extractJsonPathExists(&elem, flags, indirect, false, path);
 			}
 
 		default:
@@ -1374,7 +1388,7 @@ extractJsonPathQuery(JsonPath *jp, bool exists, bool arrayPathItems, int optimiz
 
 	jspInit(&jsp, jp);
 	root = exists
-		? extractJsonPathExists(&jsp, flags, false, NULL)
+		? extractJsonPathExists(&jsp, flags, false, false, NULL)
 		: extractJsonPathExpr(&jsp, flags, false, false, NULL);
 
 	return emitExtractedQuery(root, optimize, makeHandler, checkHandler, extra);

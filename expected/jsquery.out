@@ -2823,6 +2823,24 @@ select gin_debug_jsonpath_value_path('$.a > 1');
  
 (1 row)
 
+SELECT gin_debug_jsonpath_value_path('lax $.a == $.b');
+ gin_debug_jsonpath_value_path 
+-------------------------------
+ AND                          +
+   a = * , entry 0            +
+   b = * , entry 1            +
+ 
+(1 row)
+
+SELECT gin_debug_jsonpath_value_path('strict $.a == $.b');
+ gin_debug_jsonpath_value_path 
+-------------------------------
+ AND                          +
+   a = * , entry 0            +
+   b = * , entry 1            +
+ 
+(1 row)
+
 SELECT gin_debug_jsonpath_path_value('lax    $');
  gin_debug_jsonpath_path_value 
 -------------------------------
@@ -3954,6 +3972,32 @@ SELECT gin_debug_jsonpath_path_value('strict $.a > 1 && $.a < 2 && $.b >= 3 && $
  
 (1 row)
 
+SELECT gin_debug_jsonpath_path_value('lax $.a == $.b');
+ gin_debug_jsonpath_path_value 
+-------------------------------
+ AND                          +
+   OR                         +
+     #.a = * , entry 0        +
+     #.a.# = * , entry 1      +
+     a = * , entry 2          +
+     a.# = * , entry 3        +
+   OR                         +
+     #.b = * , entry 4        +
+     #.b.# = * , entry 5      +
+     b = * , entry 6          +
+     b.# = * , entry 7        +
+ 
+(1 row)
+
+SELECT gin_debug_jsonpath_path_value('strict $.a == $.b');
+ gin_debug_jsonpath_path_value 
+-------------------------------
+ AND                          +
+   a = * , entry 0            +
+   b = * , entry 1            +
+ 
+(1 row)
+
 SELECT gin_debug_jsonpath_laxpath_value('lax    $');
  gin_debug_jsonpath_laxpath_value 
 ----------------------------------
@@ -4229,6 +4273,24 @@ SELECT gin_debug_jsonpath_laxpath_value('strict $.a > 1 && $.a < 2 && $.b >= 3 &
  gin_debug_jsonpath_laxpath_value 
 ----------------------------------
  a > 1 , < 2 , entry 0           +
+ 
+(1 row)
+
+SELECT gin_debug_jsonpath_laxpath_value('lax $.a == $.b');
+ gin_debug_jsonpath_laxpath_value 
+----------------------------------
+ AND                             +
+   a = * , entry 0               +
+   b = * , entry 1               +
+ 
+(1 row)
+
+SELECT gin_debug_jsonpath_laxpath_value('strict $.a == $.b');
+ gin_debug_jsonpath_laxpath_value 
+----------------------------------
+ AND                             +
+   a = * , entry 0               +
+   b = * , entry 1               +
  
 (1 row)
 

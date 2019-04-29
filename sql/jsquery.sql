@@ -510,6 +510,9 @@ select gin_debug_jsonpath_value_path('strict exists($.a.b ? (@.c.d == 1))');
 
 select gin_debug_jsonpath_value_path('$.a > 1');
 
+SELECT gin_debug_jsonpath_value_path('lax $.a == $.b');
+SELECT gin_debug_jsonpath_value_path('strict $.a == $.b');
+
 SELECT gin_debug_jsonpath_path_value('lax    $');
 SELECT gin_debug_jsonpath_path_value('strict $');
 SELECT gin_debug_jsonpath_path_value('lax    $.a');
@@ -553,6 +556,9 @@ select gin_debug_jsonpath_path_value('lax    $.a[*].b[*] == 1');
 SELECT gin_debug_jsonpath_path_value('lax    $.a > 1 && $.a < 2 && $.b >= 3 && $.c <= "aaa"');
 SELECT gin_debug_jsonpath_path_value('strict $.a > 1 && $.a < 2 && $.b >= 3 && $.c <= "aaa"');
 
+SELECT gin_debug_jsonpath_path_value('lax $.a == $.b');
+SELECT gin_debug_jsonpath_path_value('strict $.a == $.b');
+
 SELECT gin_debug_jsonpath_laxpath_value('lax    $');
 SELECT gin_debug_jsonpath_laxpath_value('strict $');
 SELECT gin_debug_jsonpath_laxpath_value('lax    $.a');
@@ -594,6 +600,9 @@ select gin_debug_jsonpath_laxpath_value('lax    $.a[*].b[*] == 1');
 
 SELECT gin_debug_jsonpath_laxpath_value('lax    $.a > 1 && $.a < 2 && $.b >= 3 && $.c <= "aaa"');
 SELECT gin_debug_jsonpath_laxpath_value('strict $.a > 1 && $.a < 2 && $.b >= 3 && $.c <= "aaa"');
+
+SELECT gin_debug_jsonpath_laxpath_value('lax $.a == $.b');
+SELECT gin_debug_jsonpath_laxpath_value('strict $.a == $.b');
 
 ---table and index
 
