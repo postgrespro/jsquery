@@ -220,13 +220,14 @@ for more examples.
 GIN indexes
 -----------
 
-JsQuery extension contains two operator classes (opclasses) for GIN which
+JsQuery extension contains three operator classes (opclasses) for GIN which
 provide different kinds of query optimization.
 
  * `jsonb_path_value_ops`
+ * `jsonb_laxpath_value_ops`
  * `jsonb_value_path_ops`
 
-In each of two GIN opclasses jsonb documents are decomposed into entries. Each
+In each of GIN opclasses jsonb documents are decomposed into entries. Each
 entry is associated with particular value and it's path. Difference between
 opclasses is in the entry representation, comparison and usage for search
 optimization.
@@ -247,7 +248,7 @@ same `#` sign in the path.
 
 Major problem in the entries representation is its size. In the given example
 key "a" is presented three times. In the large branchy documents with long
-keys size of naive entries representation becomes unreasonable. Both opclasses
+keys size of naive entries representation becomes unreasonable. All opclasses
 address this issue but in a slightly different way.
 
 ### `jsonb_path_value_ops`
@@ -263,6 +264,21 @@ is hashed and it is higher part of entry we need to know the full path to
 the value in order to use it for search. However, once path is specified
 we can use both exact and range searches very efficiently.
 
+### `jsonb_laxpath_value_ops`
+
+`jsonb_laxpath_value_ops` differs from the `jsonb_path_value_ops` only in
+that it skips array path items from the hashing. So, the jsonb document above
+would be decomposed into following entries:
+
+ * `(hash("a", "b"); "xyz")`
+ * `(hash("a", "c"); true)`
+ * `(hash("a"); 10)`
+ * `(hash("d", "e"); 7)`
+ * `(hash("d", "e"); false)`
+
+Skipping array items greatly simplifies extraction of lax JSON path queries –
+there is no need to extract all possible unwrapped paths (see example for
+`gin_debug_jsonpath_path_value()` below).
 
 ### `jsonb_value_path_ops`
 
@@ -287,8 +303,15 @@ Unfortunately, opclasses aren't allowed to do any custom output to the
 EXPLAIN. That's why JsQuery provides following functions which allows to see
 how particular opclass optimizes given query.
 
- * gin\_debug\_query\_path\_value(jsquery) – for jsonb\_path\_value\_ops
- * gin\_debug\_query\_value\_path(jsquery) – for jsonb\_value\_path\_ops
+ * `jsonb_path_value_ops`:
+   - `gin_debug_query_path_value(jsquery)`
+   - `gin_debug_jsonpath_path_value(jsonpath)`
+ * `jsonb_laxpath_value_ops`:
+   - `gin_debug_query_laxpath_value(jsquery)`
+   - `gin_debug_jsonpath_laxpath_value(jsonpath)`
+ * `jsonb_value_path_ops`:
+   - `gin_debug_query_value_path(jsquery)`
+   - `gin_debug_jsonpath_value_path(jsonpath)`
 
 Result of these functions is a textual representation of query tree which
 leafs are GIN search entries. Following examples show different results of
@@ -307,6 +330,31 @@ query optimization by different opclasses.
        OR                      +
          *.y = 1 , entry 1     +
          y = 2 , entry 2       +
+
+Examples for nearly equivalent JSON path query:
+
+    # SELECT gin_debug_jsonpath_value_path('$.x == 1 && ($.**.y == 1 || $.y == 2)');
+     gin_debug_jsonpath_value_path
+    -------------------------------
+     AND                          +
+       OR                         +
+         *.y = 1 , entry 0        +
+         y = 2 , entry 1          +
+       x = 1 , entry 2            +
+
+    # SELECT gin_debug_jsonpath_path_value('$.x == 1 && ($.**.y == 1 || $.y == 2)');
+     gin_debug_jsonpath_path_value
+    -------------------------------
+     OR                           +
+       #.x = 1 , entry 0          +
+       #.x.# = 1 , entry 1        +
+       x = 1 , entry 2            +
+       x.# = 1 , entry 3          +
+
+    # SELECT gin_debug_jsonpath_laxpath_value('$.x == 1 && ($.**.y == 1 || $.y == 2)');
+     gin_debug_jsonpath_laxpath_value
+    ----------------------------------
+     x = 1 , entry 0                 +
 
 Unfortunately, jsonb have no statistics yet. That's why JsQuery optimizer has
 to do imperative decision while selecting conditions to be evaluated using
