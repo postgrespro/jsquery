@@ -195,7 +195,7 @@ examples.
 Same rules apply when you search inside objects and branchy structures.
 
 Type checking operators and "every" placeholders are useful for document
-schema validation. JsQuery matchig operator `@@` is immutable and can be used
+schema validation. JsQuery matching operator `@@` is immutable and can be used
 in CHECK constraint. See following example.
 
 ```sql
@@ -309,7 +309,7 @@ query optimization by different opclasses.
 
 Unfortunately, jsonb have no statistics yet. That's why JsQuery optimizer has
 to do imperative decision while selecting conditions to be evaluated using
-index. This decision is made by assumtion that some condition types are less
+index. This decision is made by assumption that some condition types are less
 selective than others. Optimizer divides conditions into following selectivity
 class (listed by descending of selectivity).
 
