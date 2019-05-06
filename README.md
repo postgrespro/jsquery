@@ -223,8 +223,8 @@ GIN indexes
 JsQuery extension contains two operator classes (opclasses) for GIN which
 provide different kinds of query optimization.
 
- * jsonb\_path\_value\_ops
- * jsonb\_value\_path\_ops
+ * `jsonb_path_value_ops`
+ * `jsonb_value_path_ops`
 
 In each of two GIN opclasses jsonb documents are decomposed into entries. Each
 entry is associated with particular value and it's path. Difference between
@@ -235,11 +235,11 @@ For example, jsonb document
 `{"a": [{"b": "xyz", "c": true}, 10], "d": {"e": [7, false]}}`
 would be decomposed into following entries:
 
- * "a".#."b"."xyz"
- * "a".#."c".true
- * "a".#.10
- * "d"."e".#.7
- * "d"."e".#.false
+ * `"a".#."b"."xyz"`
+ * `"a".#."c".true`
+ * `"a".#.10`
+ * `"d"."e".#.7`
+ * `"d"."e".#.false`
 
 Since JsQuery doesn't support search in particular array index, we consider
 all array elements to be equivalent. Thus, each array element is marked with
@@ -250,9 +250,9 @@ key "a" is presented three times. In the large branchy documents with long
 keys size of naive entries representation becomes unreasonable. Both opclasses
 address this issue but in a slightly different way.
 
-### jsonb\_path\_value\_ops
+### `jsonb_path_value_ops`
 
-jsonb\_path\_value\_ops represents entry as pair of path hash and value.
+`jsonb_path_value_ops` represents entry as pair of path hash and value.
 Following pseudocode illustrates it.
 
     (hash(path_item_1.path_item_2. ... .path_item_n); value)
@@ -263,9 +263,10 @@ is hashed and it is higher part of entry we need to know the full path to
 the value in order to use it for search. However, once path is specified
 we can use both exact and range searches very efficiently.
 
-### jsonb\_value\_path\_ops
 
-jsonb\_value\_path\_ops represents entry as pair of value and bloom filter
+### `jsonb_value_path_ops`
+
+`jsonb_value_path_ops` represents entry as pair of value and bloom filter
 of path.
 
     (value; bloom(path_item_1) | bloom(path_item_2) | ... | bloom(path_item_n))
@@ -313,11 +314,11 @@ index. This decision is made by assumption that some condition types are less
 selective than others. Optimizer divides conditions into following selectivity
 class (listed by descending of selectivity).
 
- 1. Equality (x = c)
- 2. Range (c1 < x < c2)
- 3. Inequality (x > c)
- 4. Is (x is type)
- 5. Any (x = \*)
+ 1. Equality (`x = c`)
+ 2. Range (`c1 < x < c2`)
+ 3. Inequality (`x > c`)
+ 4. Is (`x is type`)
+ 5. Any (`x = *`)
 
 Optimizer evades index evaluation of less selective conditions when possible.
 For example, in the `x = 1 AND y > 0` query `x = 1` is assumed to be more
