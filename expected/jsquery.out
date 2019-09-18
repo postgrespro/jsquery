@@ -530,343 +530,343 @@ select 'a.b.#10203.* > 4'::jsquery;
  "a"."b".#10203.* > 4
 (1 row)
 
-select '{"a": {"b": null}}'::jsonb @@ 'a.b = 1';
+select '{"a": {"b": null}}'::jsonb @@ 'a.b = 1'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": null}}'::jsonb @@ 'a.b = null';
+select '{"a": {"b": null}}'::jsonb @@ 'a.b = null'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": null}}'::jsonb @@ 'a.b = false';
+select '{"a": {"b": null}}'::jsonb @@ 'a.b = false'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": false}}'::jsonb @@ 'a.b = false';
+select '{"a": {"b": false}}'::jsonb @@ 'a.b = false'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": false}}'::jsonb @@ 'a.b = true';
+select '{"a": {"b": false}}'::jsonb @@ 'a.b = true'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": true}}'::jsonb @@ 'a.b = true';
+select '{"a": {"b": true}}'::jsonb @@ 'a.b = true'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b = 1';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b = 1'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b < 1';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b < 1'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b <= 1';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b <= 1'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b >= 1';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b >= 1'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b > 1';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b > 1'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b = 2';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b = 2'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b < 2';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b < 2'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b <= 2';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b <= 2'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b >= 2';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b >= 2'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b > 2';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b > 2'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b = 0';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b = 0'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b < 0';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b < 0'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b <= 0';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b <= 0'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b >= 0';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b >= 0'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.b > 0';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.b > 0'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ '*.b > 0';
+select '{"a": {"b": 1}}'::jsonb @@ '*.b > 0'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ '*.b > 0';
+select '{"a": {"b": 1}}'::jsonb @@ '*.b > 0'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.* > 0';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.* > 0'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1}}'::jsonb @@ 'a.* > 0';
+select '{"a": {"b": 1}}'::jsonb @@ 'a.* > 0'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b && [ 1 ]';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b && [ 1 ]'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b @> [ 1 ]';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b @> [ 1 ]'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b <@ [ 1 ]';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b <@ [ 1 ]'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b @> [ 1,2,3,4 ]';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b @> [ 1,2,3,4 ]'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b <@ [ 1,2,3,4 ]';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b <@ [ 1,2,3,4 ]'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[{"a": 2}, {"a": 3}]'::jsonb @@ '*.a = 4';
+select '[{"a": 2}, {"a": 3}]'::jsonb @@ '*.a = 4'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '[{"a": 2}, {"a": 3}]'::jsonb @@ '*.a = 3';
+select '[{"a": 2}, {"a": 3}]'::jsonb @@ '*.a = 3'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#.a = 4';
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#.a = 4'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '*.a = 4';
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '*.a = 4'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 1 OR a=3)';
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 1 OR a=3)'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 OR a=1)';
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 OR a=1)'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 and a=1)';
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 and a=1)'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 and a=2)' as "false";
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#(a = 3 and a=2)'::jsquery as "false";
  false 
 -------
  f
 (1 row)
 
-select '[{"a": 2, "b":3}, {"a": 3, "b": 1}]'::jsonb @@ '#(b = 1 and a=3)';
+select '[{"a": 2, "b":3}, {"a": 3, "b": 1}]'::jsonb @@ '#(b = 1 and a=3)'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#.a.a = 4';
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#.a.a = 4'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '*.a.a = 4';
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '*.a.a = 4'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '*.#.a.a = 4';
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '*.#.a.a = 4'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#.*.a.a = 4';
+select '[{"a": 2}, {"a": 3}, {"a": {"a":4}}]'::jsonb @@ '#.*.a.a = 4'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": 1}'::jsonb @@ 'a in (0,1,2)';
+select '{"a": 1}'::jsonb @@ 'a in (0,1,2)'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": 1}'::jsonb @@ 'a in (0,2)';
+select '{"a": 1}'::jsonb @@ 'a in (0,2)'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.#=2';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.#=2'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b && [ 5 ]';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b && [ 5 ]'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a=*';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a=*'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b=*';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b=*'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.c=*';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.c=*'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b = [1,2,3]';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b = [1,2,3]'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.# = [1,2,3]';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.# = [1,2,3]'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b && [1,2,3]';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b && [1,2,3]'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.# && [1,2,3]';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.# && [1,2,3]'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select 'asd.# = 3'::jsquery & 'zzz = true' | 'xxx.# = zero';
+select 'asd.# = 3'::jsquery & 'zzz = true' | 'xxx.# = zero'::jsquery;
                        ?column?                       
 ------------------------------------------------------
  (("asd".# = 3 AND "zzz" = true) OR "xxx".# = "zero")
 (1 row)
 
-select !'asd.# = 3'::jsquery & 'zzz = true' | !'xxx.# = zero';
+select !'asd.# = 3'::jsquery & 'zzz = true' | !'xxx.# = zero'::jsquery;
                              ?column?                             
 ------------------------------------------------------------------
  (((NOT "asd".# = 3) AND "zzz" = true) OR (NOT "xxx".# = "zero"))
 (1 row)
 
-select !'asd.#3.f = 3'::jsquery & 'zzz = true' | !'xxx.# = zero';
+select !'asd.#3.f = 3'::jsquery & 'zzz = true' | !'xxx.# = zero'::jsquery;
                                ?column?                                
 -----------------------------------------------------------------------
  (((NOT "asd".#3."f" = 3) AND "zzz" = true) OR (NOT "xxx".# = "zero"))
@@ -890,175 +890,175 @@ select '{"x":[0,1,1,2]}'::jsonb @@ 'x @> [1,0,3]'::jsquery;
  f
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b && [ 2 ]';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b && [ 2 ]'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b($ && [ 2 ])';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ '*.b($ && [ 2 ])'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.$.b && [ 2 ]';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.$.b && [ 2 ]'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.$.b ($ && [ 2 ])';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.$.b ($ && [ 2 ])'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[1,2,3]'::jsonb @@ '# && [2]';
+select '[1,2,3]'::jsonb @@ '# && [2]'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '[1,2,3]'::jsonb @@ '#($ && [2])';
+select '[1,2,3]'::jsonb @@ '#($ && [2])'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '[1,2,3]'::jsonb @@ '$ && [2]';
+select '[1,2,3]'::jsonb @@ '$ && [2]'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[1,2,3]'::jsonb @@ '$ ($ && [2])';
+select '[1,2,3]'::jsonb @@ '$ ($ && [2])'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[1,2,3]'::jsonb @@ '$ = 2';
+select '[1,2,3]'::jsonb @@ '$ = 2'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '[1,2,3]'::jsonb @@ '# = 2';
+select '[1,2,3]'::jsonb @@ '# = 2'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[1,2,3]'::jsonb @@ '#.$ = 2';
+select '[1,2,3]'::jsonb @@ '#.$ = 2'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[1,2,3]'::jsonb @@ '#($ = 2)';
+select '[1,2,3]'::jsonb @@ '#($ = 2)'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[3,4]'::jsonb @@ '#($ > 2 and $ < 5)';
+select '[3,4]'::jsonb @@ '#($ > 2 and $ < 5)'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[3,4]'::jsonb @@ '# > 2 and # < 5';
+select '[3,4]'::jsonb @@ '# > 2 and # < 5'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[1,6]'::jsonb @@ '#($ > 2 and $ < 5)';
+select '[1,6]'::jsonb @@ '#($ > 2 and $ < 5)'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '[1,6]'::jsonb @@ '# > 2 and # < 5';
+select '[1,6]'::jsonb @@ '# > 2 and # < 5'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%.b=3';
+select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%.b=3'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ 'a.%=3';
+select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ 'a.%=3'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%.%="hey"';
+select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%.%="hey"'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%="hey"';
+select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%="hey"'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%=[5,6]';
+select '{"a": {"b": 3, "c": "hey"}, "x": [5,6]}'::jsonb @@ '%=[5,6]'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.#1 = 2';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.#1 = 2'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.#2 = 2';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.#2 = 2'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.#3 = 2';
+select '{"a": {"b": [1,2,3]}}'::jsonb @@ 'a.b.#3 = 2'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": [{"x":1},{"x":2},{"x":3}]}}'::jsonb @@ 'a.b.#1.x = 2';
+select '{"a": {"b": [{"x":1},{"x":2},{"x":3}]}}'::jsonb @@ 'a.b.#1.x = 2'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": [{"x":1},{"x":2},{"x":3}]}}'::jsonb @@ 'a.b.#2.x = 2';
+select '{"a": {"b": [{"x":1},{"x":2},{"x":3}]}}'::jsonb @@ 'a.b.#2.x = 2'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": [{"x":1},{"x":2},{"x":3}]}}'::jsonb @@ 'a.b.#3.x = 2';
+select '{"a": {"b": [{"x":1},{"x":2},{"x":3}]}}'::jsonb @@ 'a.b.#3.x = 2'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '"XXX"'::jsonb @@ '$="XXX"';
+select '"XXX"'::jsonb @@ '$="XXX"'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '"XXX"'::jsonb @@ '#.$="XXX"';
+select '"XXX"'::jsonb @@ '#.$="XXX"'::jsquery;
  ?column? 
 ----------
  f
@@ -1071,19 +1071,19 @@ select 'a\t = "dollar \u0024 character"'::jsquery;
  "a\t" = "dollar $ character"
 (1 row)
 
-select '{ "a":  "dollar \u0024 character" }'::jsonb @@ '* = "dollar \u0024 character"';
+select '{ "a":  "dollar \u0024 character" }'::jsonb @@ '* = "dollar \u0024 character"'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{ "a":  "dollar \u0024 character" }'::jsonb @@ '* = "dollar $ character"';
+select '{ "a":  "dollar \u0024 character" }'::jsonb @@ '* = "dollar $ character"'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{ "a":  "dollar $ character" }'::jsonb @@ '* = "dollar \u0024 character"';
+select '{ "a":  "dollar $ character" }'::jsonb @@ '* = "dollar \u0024 character"'::jsquery;
  ?column? 
 ----------
  t
@@ -1471,157 +1471,157 @@ select 'a.$.? (b>0 and x.*= 0 ).c.k'::jsquery;
  "a".$. ?(("b" > 0 AND "x".* = 0)) ."c"."k"
 (1 row)
 
-select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a < 0) (b=20)';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a < 0) (b=20)'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a > 0) (b=20)';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a > 0) (b=20)'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a > 1) (b=20)';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a > 1) (b=20)'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a > 2) (b=20)';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a > 2) (b=20)'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a > 3) (b=20)';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb @@ '#. ?(a > 3) (b=20)'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '[{"a":1, "b":10}, {"a":2, "b":20}]'::jsonb ~~ '#.a';
+select '[{"a":1, "b":10}, {"a":2, "b":20}]'::jsonb ~~ '#.a'::jsquery;
  ?column? 
 ----------
  [1, 2]
 (1 row)
 
-select '[{"a":1, "b":10}, {"a":2, "b":20}]'::jsonb ~~ '#. ?(a > 1). b';
+select '[{"a":1, "b":10}, {"a":2, "b":20}]'::jsonb ~~ '#. ?(a > 1). b'::jsquery;
  ?column? 
 ----------
  [20]
 (1 row)
 
-select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb ~~ '# . ?(a > 1)';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb ~~ '# . ?(a > 1)'::jsquery;
                 ?column?                
 ----------------------------------------
  [{"a": 2, "b": 20}, {"a": 3, "b": 30}]
 (1 row)
 
-select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb ~~ '%';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb ~~ '%'::jsquery;
  ?column? 
 ----------
  
 (1 row)
 
-select '{"a":1, "b":2, "c":3}'::jsonb ~~ '%';
+select '{"a":1, "b":2, "c":3}'::jsonb ~~ '%'::jsquery;
  ?column?  
 -----------
  [1, 2, 3]
 (1 row)
 
-select '{"a":1, "b":2, "c":3}'::jsonb ~~ '% . ? ( $ > 2 )';
+select '{"a":1, "b":2, "c":3}'::jsonb ~~ '% . ? ( $ > 2 )'::jsquery;
  ?column? 
 ----------
  [3]
 (1 row)
 
-select '{"a":1, "b":2, "c":3}'::jsonb ~~ '% . ? ( $ > 2 ).$';
+select '{"a":1, "b":2, "c":3}'::jsonb ~~ '% . ? ( $ > 2 ).$'::jsquery;
  ?column? 
 ----------
  [3]
 (1 row)
 
-select '{"a":1, "b":2, "c":3}'::jsonb ~~ '? ( % > 2 )';
+select '{"a":1, "b":2, "c":3}'::jsonb ~~ '? ( % > 2 )'::jsquery;
           ?column?          
 ----------------------------
  [{"a": 1, "b": 2, "c": 3}]
 (1 row)
 
-select '{"a":1, "b":2, "c":3}'::jsonb ~~ '? ( %: > 0 )';
+select '{"a":1, "b":2, "c":3}'::jsonb ~~ '? ( %: > 0 )'::jsquery;
           ?column?          
 ----------------------------
  [{"a": 1, "b": 2, "c": 3}]
 (1 row)
 
-select '{"a":1, "b":2, "c":3}'::jsonb ~~ '? ( %: > 2 )';
+select '{"a":1, "b":2, "c":3}'::jsonb ~~ '? ( %: > 2 )'::jsquery;
  ?column? 
 ----------
  
 (1 row)
 
-select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb ~~ '#';
+select '[{"a":1, "b":10}, {"a":2, "b":20}, {"a":3, "b":30}]'::jsonb ~~ '#'::jsquery;
                          ?column?                          
 -----------------------------------------------------------
  [{"a": 1, "b": 10}, {"a": 2, "b": 20}, {"a": 3, "b": 30}]
 (1 row)
 
-select '[1,2,3]'::jsonb ~~ '#';
+select '[1,2,3]'::jsonb ~~ '#'::jsquery;
  ?column?  
 -----------
  [1, 2, 3]
 (1 row)
 
-select '[1,2,3]'::jsonb ~~ '#. ?($ > 2)';
+select '[1,2,3]'::jsonb ~~ '#. ?($ > 2)'::jsquery;
  ?column? 
 ----------
  [3]
 (1 row)
 
-select '[1,2,3]'::jsonb ~~ '#. ?($ > 2).$';
+select '[1,2,3]'::jsonb ~~ '#. ?($ > 2).$'::jsquery;
  ?column? 
 ----------
  [3]
 (1 row)
 
-select '[1,2,3]'::jsonb ~~ ' ?(#.$ > 2).$';
+select '[1,2,3]'::jsonb ~~ ' ?(#.$ > 2).$'::jsquery;
   ?column?   
 -------------
  [[1, 2, 3]]
 (1 row)
 
-select '[1,2,3]'::jsonb ~~ ' ?(#:.$ > 2).$';
+select '[1,2,3]'::jsonb ~~ ' ?(#:.$ > 2).$'::jsquery;
  ?column? 
 ----------
  
 (1 row)
 
-select '[1,2,3]'::jsonb ~~ ' ?(#:.$ > 0).$';
+select '[1,2,3]'::jsonb ~~ ' ?(#:.$ > 0).$'::jsquery;
   ?column?   
 -------------
  [[1, 2, 3]]
 (1 row)
 
-select '{"a": {"b": {"c": 1}}}'::jsonb ~~ '*.?(c >0)';
+select '{"a": {"b": {"c": 1}}}'::jsonb ~~ '*.?(c >0)'::jsquery;
   ?column?  
 ------------
  [{"c": 1}]
 (1 row)
 
-select '{"a": {"b": {"c": 1}}}'::jsonb ~~ '?(*.c >0)';
+select '{"a": {"b": {"c": 1}}}'::jsonb ~~ '?(*.c >0)'::jsquery;
          ?column?         
 --------------------------
  [{"a": {"b": {"c": 1}}}]
 (1 row)
 
-select '{"tags":[{"term":["NYC", "CYN"]}, {"term":["1NYC", "1CYN"]} ]}'::jsonb ~~ 'tags.#.term.#. ? ( $ = "NYC")';
+select '{"tags":[{"term":["NYC", "CYN"]}, {"term":["1NYC", "1CYN"]} ]}'::jsonb ~~ 'tags.#.term.#. ? ( $ = "NYC")'::jsquery;
  ?column? 
 ----------
  ["NYC"]
 (1 row)
 
-select '{"tags":[{"term":["NYC", "CYN"]}, {"term":["1NYC", "1CYN"]} ]}'::jsonb ~~ 'tags.#.term. ? ( # = "NYC")';
+select '{"tags":[{"term":["NYC", "CYN"]}, {"term":["1NYC", "1CYN"]} ]}'::jsonb ~~ 'tags.#.term. ? ( # = "NYC")'::jsquery;
      ?column?     
 ------------------
  [["NYC", "CYN"]]
@@ -1856,133 +1856,133 @@ select '[16]' @@ '(@# > 0 and #: = 16)'::jsquery;
  t
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.b or b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.b or b.d'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.c or b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.c or b.d'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.g or b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.g or b.d'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.g or b.c';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.g or b.c'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.b and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.b and b.d'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.c and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.c and b.d'::jsquery;
  ?column? 
 ----------
  t
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.c and b.b';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.c and b.b'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.g and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb @@ 'a.g and b.d'::jsquery;
  ?column? 
 ----------
  f
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and b.d'::jsquery;
  ?column? 
 ----------
  [1, 3]
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and b.c';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and b.c'::jsquery;
  ?column? 
 ----------
  
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and (b.d or b.c)';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and (b.d or b.c)'::jsquery;
  ?column? 
 ----------
  [1, 3]
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and (b.c or b.d)';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and (b.c or b.d)'::jsquery;
  ?column? 
 ----------
  [1, 3]
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and a.c and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b and a.c and b.d'::jsquery;
  ?column?  
 -----------
  [1, 2, 3]
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ '(a.b or a.c) and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ '(a.b or a.c) and b.d'::jsquery;
  ?column? 
 ----------
  [1, 3]
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ '(a.e or a.c) and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ '(a.e or a.c) and b.d'::jsquery;
  ?column? 
 ----------
  [2, 3]
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ '(a.e or a.g) and b.d';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ '(a.e or a.g) and b.d'::jsquery;
  ?column? 
 ----------
  
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b or (b.d or b.c)';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'a.b or (b.d or b.c)'::jsquery;
  ?column? 
 ----------
  [1]
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.d or (a.b or a.c)';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.d or (a.b or a.c)'::jsquery;
  ?column? 
 ----------
  [3]
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.d or (a.b and a.c)';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.d or (a.b and a.c)'::jsquery;
  ?column? 
 ----------
  [3]
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.f or (a.b and a.c)';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.f or (a.b and a.c)'::jsquery;
  ?column? 
 ----------
  [1, 2]
 (1 row)
 
-select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.d and (a.b and a.c)';
+select '{"a": {"b": 1, "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.d and (a.b and a.c)'::jsquery;
  ?column?  
 -----------
  [3, 1, 2]
 (1 row)
 
-select '{"a": {"b": [6,5,4], "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.d and (a.b and a.c)';
+select '{"a": {"b": [6,5,4], "c": 2}, "b": {"d":3}}'::jsonb ~~ 'b.d and (a.b and a.c)'::jsquery;
      ?column?      
 -------------------
  [3, [6, 5, 4], 2]
@@ -2465,249 +2465,249 @@ select count(*) from test_jsquery where (v->>'review_helpful_votes')::int4 > 16 
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0'::jsquery;
  count 
 -------
    654
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19'::jsquery;
  count 
 -------
     13
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19'::jsquery;
  count 
 -------
    985
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19'::jsquery;
  count 
 -------
     16
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19'::jsquery;
  count 
 -------
    988
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19'::jsquery;
  count 
 -------
      3
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16' AND
-										v @@ 'review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16'::jsquery AND
+										v @@ 'review_helpful_votes < 20'::jsquery;
  count 
 -------
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 and review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 and review_helpful_votes < 20'::jsquery;
  count 
 -------
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 and $ < 20)';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 and $ < 20)'::jsquery;
  count 
 -------
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"]'::jsquery;
  count 
 -------
      7
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
+select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") '::jsquery;
  count 
 -------
      7
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") '::jsquery;
  count 
 -------
      7
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] and product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] and product_sales_rank > 300000'::jsquery;
  count 
 -------
      4
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]'::jsquery;
  count 
 -------
     54
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids @> ["B000002H2H", "B000002H6C"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids @> ["B000002H2H", "B000002H6C"]'::jsquery;
  count 
 -------
      3
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'customer_id = null';
+select count(*) from test_jsquery where v @@ 'customer_id = null'::jsquery;
  count 
 -------
      1
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_votes = true';
+select count(*) from test_jsquery where v @@ 'review_votes = true'::jsquery;
  count 
 -------
      1
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'product_group = false';
+select count(*) from test_jsquery where v @@ 'product_group = false'::jsquery;
  count 
 -------
      1
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't = *';
+select count(*) from test_jsquery where v @@ 't = *'::jsquery;
  count 
 -------
     10
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is boolean';
+select count(*) from test_jsquery where v @@ 't is boolean'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is string';
+select count(*) from test_jsquery where v @@ 't is string'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is numeric';
+select count(*) from test_jsquery where v @@ 't is numeric'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is array';
+select count(*) from test_jsquery where v @@ 't is array'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is object';
+select count(*) from test_jsquery where v @@ 't is object'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is boolean';
+select count(*) from test_jsquery where v @@ '$ is boolean'::jsquery;
  count 
 -------
      3
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is string';
+select count(*) from test_jsquery where v @@ '$ is string'::jsquery;
  count 
 -------
      4
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is numeric';
+select count(*) from test_jsquery where v @@ '$ is numeric'::jsquery;
  count 
 -------
      5
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is array';
+select count(*) from test_jsquery where v @@ '$ is array'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is object';
+select count(*) from test_jsquery where v @@ '$ is object'::jsquery;
  count 
 -------
   1017
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric'::jsquery;
  count 
 -------
     51
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string'::jsquery;
  count 
 -------
   1001
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")';
+select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")'::jsquery;
  count 
 -------
     40
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ > 2';
+select count(*) from test_jsquery where v @@ '$ > 2'::jsquery;
  count 
 -------
      3
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ = false';
+select count(*) from test_jsquery where v @@ '$ = false'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't';
+select count(*) from test_jsquery where v @@ 't'::jsquery;
  count 
 -------
     10
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$';
+select count(*) from test_jsquery where v @@ '$'::jsquery;
  count 
 -------
   1034
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids.#';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#'::jsquery;
  count 
 -------
   1001
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ . ? (review_votes > 10) . review_rating < 7';
+select count(*) from test_jsquery where v @@ '$ . ? (review_votes > 10) . review_rating < 7'::jsquery;
  count 
 -------
     79
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids . ? (# = "B0002W4TL2") . $';
+select count(*) from test_jsquery where v @@ 'similar_product_ids . ? (# = "B0002W4TL2") . $'::jsquery;
  count 
 -------
      3
 (1 row)
 
-select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
+select v from test_jsquery where v @@ 'array <@ [2,3]'::jsquery order by v;
          v         
 -------------------
  {"array": [2]}
  {"array": [2, 3]}
 (2 rows)
 
-select v from test_jsquery where v @@ 'array && [2,3]' order by v;
+select v from test_jsquery where v @@ 'array && [2,3]'::jsquery order by v;
           v           
 ----------------------
  {"array": [2]}
@@ -2717,7 +2717,7 @@ select v from test_jsquery where v @@ 'array && [2,3]' order by v;
  {"array": [3, 4, 5]}
 (5 rows)
 
-select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
+select v from test_jsquery where v @@ 'array @> [2,3]'::jsquery order by v;
           v           
 ----------------------
  {"array": [2, 3]}
@@ -2725,7 +2725,7 @@ select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
  {"array": [2, 3, 4]}
 (3 rows)
 
-select v from test_jsquery where v @@ 'array = [2,3]' order by v;
+select v from test_jsquery where v @@ 'array = [2,3]'::jsquery order by v;
          v         
 -------------------
  {"array": [2, 3]}
@@ -2733,7 +2733,7 @@ select v from test_jsquery where v @@ 'array = [2,3]' order by v;
 
 create index t_idx on test_jsquery using gin (v jsonb_value_path_ops);
 set enable_seqscan = off;
-explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0'::jsquery;
                                QUERY PLAN                               
 ------------------------------------------------------------------------
  Aggregate
@@ -2743,242 +2743,242 @@ explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful
                Index Cond: (v @@ '"review_helpful_votes" > 0'::jsquery)
 (5 rows)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0'::jsquery;
  count 
 -------
    654
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19'::jsquery;
  count 
 -------
     13
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19'::jsquery;
  count 
 -------
    985
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19'::jsquery;
  count 
 -------
     16
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19'::jsquery;
  count 
 -------
    988
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19'::jsquery;
  count 
 -------
      3
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16' AND
-										v @@ 'review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16'::jsquery AND
+										v @@ 'review_helpful_votes < 20'::jsquery;
  count 
 -------
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 and review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 and review_helpful_votes < 20'::jsquery;
  count 
 -------
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 and $ < 20)';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 and $ < 20)'::jsquery;
  count 
 -------
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"]'::jsquery;
  count 
 -------
      7
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
+select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") '::jsquery;
  count 
 -------
      7
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") '::jsquery;
  count 
 -------
      7
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] and product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] and product_sales_rank > 300000'::jsquery;
  count 
 -------
      4
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]'::jsquery;
  count 
 -------
     54
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids @> ["B000002H2H", "B000002H6C"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids @> ["B000002H2H", "B000002H6C"]'::jsquery;
  count 
 -------
      3
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'customer_id = null';
+select count(*) from test_jsquery where v @@ 'customer_id = null'::jsquery;
  count 
 -------
      1
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_votes = true';
+select count(*) from test_jsquery where v @@ 'review_votes = true'::jsquery;
  count 
 -------
      1
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'product_group = false';
+select count(*) from test_jsquery where v @@ 'product_group = false'::jsquery;
  count 
 -------
      1
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't = *';
+select count(*) from test_jsquery where v @@ 't = *'::jsquery;
  count 
 -------
     10
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is boolean';
+select count(*) from test_jsquery where v @@ 't is boolean'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is string';
+select count(*) from test_jsquery where v @@ 't is string'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is numeric';
+select count(*) from test_jsquery where v @@ 't is numeric'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is array';
+select count(*) from test_jsquery where v @@ 't is array'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is object';
+select count(*) from test_jsquery where v @@ 't is object'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is boolean';
+select count(*) from test_jsquery where v @@ '$ is boolean'::jsquery;
  count 
 -------
      3
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is string';
+select count(*) from test_jsquery where v @@ '$ is string'::jsquery;
  count 
 -------
      4
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is numeric';
+select count(*) from test_jsquery where v @@ '$ is numeric'::jsquery;
  count 
 -------
      5
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is array';
+select count(*) from test_jsquery where v @@ '$ is array'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is object';
+select count(*) from test_jsquery where v @@ '$ is object'::jsquery;
  count 
 -------
   1017
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric'::jsquery;
  count 
 -------
     51
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string'::jsquery;
  count 
 -------
   1001
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")';
+select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")'::jsquery;
  count 
 -------
      7
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ > 2';
+select count(*) from test_jsquery where v @@ '$ > 2'::jsquery;
  count 
 -------
      3
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ = false';
+select count(*) from test_jsquery where v @@ '$ = false'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't';
+select count(*) from test_jsquery where v @@ 't'::jsquery;
  count 
 -------
     10
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$';
+select count(*) from test_jsquery where v @@ '$'::jsquery;
  count 
 -------
   1034
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids.#';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#'::jsquery;
  count 
 -------
   1001
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ . ? (review_votes > 10) . review_rating < 7';
+select count(*) from test_jsquery where v @@ '$ . ? (review_votes > 10) . review_rating < 7'::jsquery;
  count 
 -------
     79
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids . ? (# = "B0002W4TL2") . $';
+select count(*) from test_jsquery where v @@ 'similar_product_ids . ? (# = "B0002W4TL2") . $'::jsquery;
  count 
 -------
      3
 (1 row)
 
-explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
+explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]'::jsquery order by v;
                           QUERY PLAN                           
 ---------------------------------------------------------------
  Sort
@@ -2989,7 +2989,7 @@ explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order
                Index Cond: (v @@ '"array" <@ [2, 3]'::jsquery)
 (6 rows)
 
-explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]' order by v;
+explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]'::jsquery order by v;
                           QUERY PLAN                           
 ---------------------------------------------------------------
  Sort
@@ -3000,7 +3000,7 @@ explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]' order
                Index Cond: (v @@ '"array" && [2, 3]'::jsquery)
 (6 rows)
 
-explain (costs off) select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
+explain (costs off) select v from test_jsquery where v @@ 'array @> [2,3]'::jsquery order by v;
                           QUERY PLAN                           
 ---------------------------------------------------------------
  Sort
@@ -3011,7 +3011,7 @@ explain (costs off) select v from test_jsquery where v @@ 'array @> [2,3]' order
                Index Cond: (v @@ '"array" @> [2, 3]'::jsquery)
 (6 rows)
 
-explain (costs off) select v from test_jsquery where v @@ 'array = [2,3]' order by v;
+explain (costs off) select v from test_jsquery where v @@ 'array = [2,3]'::jsquery order by v;
                           QUERY PLAN                          
 --------------------------------------------------------------
  Sort
@@ -3022,14 +3022,14 @@ explain (costs off) select v from test_jsquery where v @@ 'array = [2,3]' order 
                Index Cond: (v @@ '"array" = [2, 3]'::jsquery)
 (6 rows)
 
-select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
+select v from test_jsquery where v @@ 'array <@ [2,3]'::jsquery order by v;
          v         
 -------------------
  {"array": [2]}
  {"array": [2, 3]}
 (2 rows)
 
-select v from test_jsquery where v @@ 'array && [2,3]' order by v;
+select v from test_jsquery where v @@ 'array && [2,3]'::jsquery order by v;
           v           
 ----------------------
  {"array": [2]}
@@ -3039,7 +3039,7 @@ select v from test_jsquery where v @@ 'array && [2,3]' order by v;
  {"array": [3, 4, 5]}
 (5 rows)
 
-select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
+select v from test_jsquery where v @@ 'array @> [2,3]'::jsquery order by v;
           v           
 ----------------------
  {"array": [2, 3]}
@@ -3047,7 +3047,7 @@ select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
  {"array": [2, 3, 4]}
 (3 rows)
 
-select v from test_jsquery where v @@ 'array = [2,3]' order by v;
+select v from test_jsquery where v @@ 'array = [2,3]'::jsquery order by v;
          v         
 -------------------
  {"array": [2, 3]}
@@ -3056,7 +3056,7 @@ select v from test_jsquery where v @@ 'array = [2,3]' order by v;
 drop index t_idx;
 create index t_idx on test_jsquery using gin (v jsonb_path_value_ops);
 set enable_seqscan = off;
-explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0'::jsquery;
                                QUERY PLAN                               
 ------------------------------------------------------------------------
  Aggregate
@@ -3066,242 +3066,242 @@ explain (costs off) select count(*) from test_jsquery where v @@ 'review_helpful
                Index Cond: (v @@ '"review_helpful_votes" > 0'::jsquery)
 (5 rows)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 0'::jsquery;
  count 
 -------
    654
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 19'::jsquery;
  count 
 -------
     13
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes < 19'::jsquery;
  count 
 -------
    985
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes >= 19'::jsquery;
  count 
 -------
     16
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes <= 19'::jsquery;
  count 
 -------
    988
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes = 19'::jsquery;
  count 
 -------
      3
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16' AND
-										v @@ 'review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16'::jsquery AND
+										v @@ 'review_helpful_votes < 20'::jsquery;
  count 
 -------
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 and review_helpful_votes < 20';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes > 16 and review_helpful_votes < 20'::jsquery;
  count 
 -------
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 and $ < 20)';
+select count(*) from test_jsquery where v @@ 'review_helpful_votes ($ > 16 and $ < 20)'::jsquery;
  count 
 -------
      8
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"]'::jsquery;
  count 
 -------
      7
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") ';
+select count(*) from test_jsquery where v @@ 'similar_product_ids(# = "0440180295") '::jsquery;
  count 
 -------
      7
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") ';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#($ = "0440180295") '::jsquery;
  count 
 -------
      7
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] and product_sales_rank > 300000';
+select count(*) from test_jsquery where v @@ 'similar_product_ids && ["0440180295"] and product_sales_rank > 300000'::jsquery;
  count 
 -------
      4
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids <@ ["B00000DG0U", "B00004SQXU", "B0001XAM18", "B00000FDBU", "B00000FDBV", "B000002H2H", "B000002H6C", "B000002H5E", "B000002H97", "B000002HMH"]'::jsquery;
  count 
 -------
     54
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids @> ["B000002H2H", "B000002H6C"]';
+select count(*) from test_jsquery where v @@ 'similar_product_ids @> ["B000002H2H", "B000002H6C"]'::jsquery;
  count 
 -------
      3
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'customer_id = null';
+select count(*) from test_jsquery where v @@ 'customer_id = null'::jsquery;
  count 
 -------
      1
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'review_votes = true';
+select count(*) from test_jsquery where v @@ 'review_votes = true'::jsquery;
  count 
 -------
      1
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'product_group = false';
+select count(*) from test_jsquery where v @@ 'product_group = false'::jsquery;
  count 
 -------
      1
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't = *';
+select count(*) from test_jsquery where v @@ 't = *'::jsquery;
  count 
 -------
     10
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is boolean';
+select count(*) from test_jsquery where v @@ 't is boolean'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is string';
+select count(*) from test_jsquery where v @@ 't is string'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is numeric';
+select count(*) from test_jsquery where v @@ 't is numeric'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is array';
+select count(*) from test_jsquery where v @@ 't is array'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't is object';
+select count(*) from test_jsquery where v @@ 't is object'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is boolean';
+select count(*) from test_jsquery where v @@ '$ is boolean'::jsquery;
  count 
 -------
      3
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is string';
+select count(*) from test_jsquery where v @@ '$ is string'::jsquery;
  count 
 -------
      4
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is numeric';
+select count(*) from test_jsquery where v @@ '$ is numeric'::jsquery;
  count 
 -------
      5
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is array';
+select count(*) from test_jsquery where v @@ '$ is array'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ is object';
+select count(*) from test_jsquery where v @@ '$ is object'::jsquery;
  count 
 -------
   1017
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is numeric'::jsquery;
  count 
 -------
     51
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#: is string'::jsquery;
  count 
 -------
   1001
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")';
+select count(*) from test_jsquery where v @@ 'NOT similar_product_ids.#: (NOT $ = "0440180295")'::jsquery;
  count 
 -------
      7
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ > 2';
+select count(*) from test_jsquery where v @@ '$ > 2'::jsquery;
  count 
 -------
      3
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ = false';
+select count(*) from test_jsquery where v @@ '$ = false'::jsquery;
  count 
 -------
      2
 (1 row)
 
-select count(*) from test_jsquery where v @@ 't';
+select count(*) from test_jsquery where v @@ 't'::jsquery;
  count 
 -------
     10
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$';
+select count(*) from test_jsquery where v @@ '$'::jsquery;
  count 
 -------
   1034
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids.#';
+select count(*) from test_jsquery where v @@ 'similar_product_ids.#'::jsquery;
  count 
 -------
    950
 (1 row)
 
-select count(*) from test_jsquery where v @@ '$ . ? (review_votes > 10) . review_rating < 7';
+select count(*) from test_jsquery where v @@ '$ . ? (review_votes > 10) . review_rating < 7'::jsquery;
  count 
 -------
     79
 (1 row)
 
-select count(*) from test_jsquery where v @@ 'similar_product_ids . ? (# = "B0002W4TL2") . $';
+select count(*) from test_jsquery where v @@ 'similar_product_ids . ? (# = "B0002W4TL2") . $'::jsquery;
  count 
 -------
      3
 (1 row)
 
-explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
+explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]'::jsquery order by v;
                           QUERY PLAN                           
 ---------------------------------------------------------------
  Sort
@@ -3312,7 +3312,7 @@ explain (costs off) select v from test_jsquery where v @@ 'array <@ [2,3]' order
                Index Cond: (v @@ '"array" <@ [2, 3]'::jsquery)
 (6 rows)
 
-explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]' order by v;
+explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]'::jsquery order by v;
                           QUERY PLAN                           
 ---------------------------------------------------------------
  Sort
@@ -3323,7 +3323,7 @@ explain (costs off) select v from test_jsquery where v @@ 'array && [2,3]' order
                Index Cond: (v @@ '"array" && [2, 3]'::jsquery)
 (6 rows)
 
-explain (costs off) select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
+explain (costs off) select v from test_jsquery where v @@ 'array @> [2,3]'::jsquery order by v;
                           QUERY PLAN                           
 ---------------------------------------------------------------
  Sort
@@ -3334,7 +3334,7 @@ explain (costs off) select v from test_jsquery where v @@ 'array @> [2,3]' order
                Index Cond: (v @@ '"array" @> [2, 3]'::jsquery)
 (6 rows)
 
-explain (costs off) select v from test_jsquery where v @@ 'array = [2,3]' order by v;
+explain (costs off) select v from test_jsquery where v @@ 'array = [2,3]'::jsquery order by v;
                           QUERY PLAN                          
 --------------------------------------------------------------
  Sort
@@ -3345,14 +3345,14 @@ explain (costs off) select v from test_jsquery where v @@ 'array = [2,3]' order 
                Index Cond: (v @@ '"array" = [2, 3]'::jsquery)
 (6 rows)
 
-select v from test_jsquery where v @@ 'array <@ [2,3]' order by v;
+select v from test_jsquery where v @@ 'array <@ [2,3]'::jsquery order by v;
          v         
 -------------------
  {"array": [2]}
  {"array": [2, 3]}
 (2 rows)
 
-select v from test_jsquery where v @@ 'array && [2,3]' order by v;
+select v from test_jsquery where v @@ 'array && [2,3]'::jsquery order by v;
           v           
 ----------------------
  {"array": [2]}
@@ -3362,7 +3362,7 @@ select v from test_jsquery where v @@ 'array && [2,3]' order by v;
  {"array": [3, 4, 5]}
 (5 rows)
 
-select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
+select v from test_jsquery where v @@ 'array @> [2,3]'::jsquery order by v;
           v           
 ----------------------
  {"array": [2, 3]}
@@ -3370,7 +3370,7 @@ select v from test_jsquery where v @@ 'array @> [2,3]' order by v;
  {"array": [2, 3, 4]}
 (3 rows)
 
-select v from test_jsquery where v @@ 'array = [2,3]' order by v;
+select v from test_jsquery where v @@ 'array = [2,3]'::jsquery order by v;
          v         
 -------------------
  {"array": [2, 3]}
