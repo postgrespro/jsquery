@@ -117,6 +117,7 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item, bool onlyCurrent
 		case jqiIndexArray:
 			appendBinaryStringInfo(buf, (char*)&item->arrayIndex,
 								   sizeof(item->arrayIndex));
+			/* FALLTHROUGH */ /* keep svace quiet */
 		case jqiAny:
 		case jqiAnyArray:
 		case jqiAnyKey:
