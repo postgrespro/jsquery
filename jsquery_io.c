@@ -44,6 +44,7 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item, bool onlyCurrent
 		case jqiKey:
 			if (onlyCurrentInPath)
 				elog(ERROR,"Array length should be last in path");
+			/* fall through */
 		case jqiString:
 			appendBinaryStringInfo(buf, (char*)&item->string.len, sizeof(item->string.len));
 			appendBinaryStringInfo(buf, item->string.val, item->string.len);
@@ -239,6 +240,7 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 		case jqiKey:
 			if (inKey)
 				appendStringInfoChar(buf, '.');
+			/* fall through */
 			/* follow next */
 		case jqiString:
 			escape_json(buf, jsqGetString(v, NULL));
