@@ -47,7 +47,7 @@ typedef struct string {
 	int		len;
 	int		total;
 } string;
-#include <jsquery_gram.h>
+#include "jsquery_gram.h"
 
 /* flex 2.5.4 doesn't bother with a decl for this */
 int jsquery_yylex(YYSTYPE * yylval_param);
