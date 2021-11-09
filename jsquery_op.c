@@ -542,7 +542,7 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 			else if (JsonbType(jb) == jbvScalar)
 			{
 				JsonbIterator	*it;
-				int32			r;
+				int32			r PG_USED_FOR_ASSERTS_ONLY;
 				JsonbValue		v;
 
 				it = JsonbIteratorInit(jb->val.binary.data);
@@ -729,7 +729,7 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 			if (JsonbType(jb) == jbvScalar)
 			{
 				JsonbIterator	*it;
-				int32			r;
+				int32			r PG_USED_FOR_ASSERTS_ONLY;
 				JsonbValue		v;
 
 				it = JsonbIteratorInit(jb->val.binary.data);
