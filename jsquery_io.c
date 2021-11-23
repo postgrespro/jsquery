@@ -4,6 +4,7 @@
  *	I/O functions for jsquery datatype
  *
  * Copyright (c) 2014, PostgreSQL Global Development Group
+ * Portions Copyright (c) 2016-2021, Postgres Professional
  * Author: Teodor Sigaev <teodor@sigaev.ru>
  *
  * IDENTIFICATION
