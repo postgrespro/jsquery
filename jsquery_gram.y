@@ -71,7 +71,11 @@ makeIndexArray(string *s)
 {
 	JsQueryParseItem* v = makeItemType(jqiIndexArray);
 
+#if PG_VERSION_NUM >= 120000
+	v->arrayIndex = pg_strtoint32(s->val);
+#else
 	v->arrayIndex = pg_atoi(s->val, 4, 0);
+#endif
 
 	return v;
 }
