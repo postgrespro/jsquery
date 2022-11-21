@@ -26,7 +26,7 @@ typedef struct
 	int32	vl_len_;	/* varlena header (do not touch directly!) */
 } JsQuery;
 
-#define DatumGetJsQueryP(d)	((JsQuery*)DatumGetPointer(PG_DETOAST_DATUM(d)))
+#define DatumGetJsQueryP(d)	((JsQuery*) PG_DETOAST_DATUM(d))
 #define PG_GETARG_JSQUERY(x)	DatumGetJsQueryP(PG_GETARG_DATUM(x))
 #define PG_RETURN_JSQUERY(p)	PG_RETURN_POINTER(p)
 
