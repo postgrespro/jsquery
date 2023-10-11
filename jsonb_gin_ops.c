@@ -173,7 +173,6 @@ get_bloom_value(uint32 hash)
 static uint32
 get_path_bloom(PathHashStack *stack)
 {
-	int	i = 0;
 	uint32 res = 0, val;
 
 	while (stack)
@@ -183,7 +182,6 @@ get_path_bloom(PathHashStack *stack)
 		val = get_bloom_value(hash);
 
 		res |= val;
-		i++;
 		stack = stack->parent;
 	}
 	return res;

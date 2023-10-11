@@ -254,7 +254,10 @@ makeItemList(List *list) {
 %%
 
 result:
-	expr							{ *result = $1; }
+	expr							{
+										*result = $1;
+										(void) yynerrs;		/* suppress compiler warning */
+									}
 	| /* EMPTY */					{ *result = NULL; }
 	;
 
