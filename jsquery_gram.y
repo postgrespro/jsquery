@@ -258,7 +258,9 @@ result:
 										*result = $1;
 										(void) yynerrs;		/* suppress compiler warning */
 									}
-	| /* EMPTY */					{ *result = NULL; }
+	| /* EMPTY */					{
+										*result = NULL;
+										yyerror(NULL, "No symbols read"); }
 	;
 
 array:

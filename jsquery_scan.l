@@ -206,7 +206,7 @@ yyerror(JsQueryParseItem **result, const char *message)
 				(errcode(ERRCODE_SYNTAX_ERROR),
 				 errmsg("bad jsquery representation"),
 				 /* translator: %s is typically "syntax error" */
-				 errdetail("%s at end of input", message)));
+				 errdetail("%s at the end of input", message)));
 	}
 	else
 	{
