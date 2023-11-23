@@ -7,6 +7,7 @@ CREATE TABLE test_jsquery (v jsonb);
 
 \copy test_jsquery from 'data/test_jsquery.data'
 
+select ''::jsquery;
 select 'asd.zzz = 13'::jsquery;
 select 'asd.zzz < 13'::jsquery;
 select 'asd(zzz < 13)'::jsquery;

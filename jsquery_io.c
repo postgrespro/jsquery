@@ -162,17 +162,12 @@ jsquery_in(PG_FUNCTION_ARGS)
 
 	appendStringInfoSpaces(&buf, VARHDRSZ);
 
-	if (jsquery != NULL)
-	{
-		flattenJsQueryParseItem(&buf, jsquery, false);
+	flattenJsQueryParseItem(&buf, jsquery, false);
 
-		res = (JsQuery*)buf.data;
-		SET_VARSIZE(res, buf.len);
+	res = (JsQuery*)buf.data;
+	SET_VARSIZE(res, buf.len);
 
-		PG_RETURN_JSQUERY(res);
-	}
-
-	PG_RETURN_NULL();
+	PG_RETURN_JSQUERY(res);
 }
 
 static void
