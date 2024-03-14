@@ -873,8 +873,6 @@ execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check)
 				v = execRecursiveTristate(node->args.items[i], check);
 				if (v == GIN_FALSE)
 					return GIN_FALSE;
-				else if (v == GIN_MAYBE)
-					res = GIN_MAYBE;
 			}
 			return res;
 		case eOr:
@@ -884,8 +882,6 @@ execRecursiveTristate(ExtractedNode *node, GinTernaryValue *check)
 				v = execRecursiveTristate(node->args.items[i], check);
 				if (v == GIN_TRUE)
 					return GIN_TRUE;
-				else if (v == GIN_MAYBE)
-					res = GIN_MAYBE;
 			}
 			return res;
 		default:
