@@ -28,7 +28,7 @@ jobs:
         with:
           postgres-version: ${{ matrix.postgres }}
           dev-files: true
-      - run: make
+      - run: make USE_PGXS=1
       #        env:
       #          PG_CFLAGS: -Wall -Wextra -Werror -Wno-unused-parameter -Wno-sign-compare
       - run: |
