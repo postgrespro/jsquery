@@ -34,6 +34,6 @@ jobs:
       - run: |
           export PG_CONFIG=`which pg_config`
           sudo --preserve-env=PG_CONFIG make USE_PGXS=1 install
-      - run: make installcheck
+      - run: make USE_PGXS=1 installcheck
       - if: ${{ failure() }}
         run: cat regression.diffs
