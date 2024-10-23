@@ -4,7 +4,7 @@
  *	Functions and operations to support jsquery
  *
  * Copyright (c) 2014, PostgreSQL Global Development Group
- * Portions Copyright (c) 2017-2021, Postgres Professional
+ * Portions Copyright (c) 2017-2024, Postgres Professional
  * Author: Teodor Sigaev <teodor@sigaev.ru>
  *
  * IDENTIFICATION
