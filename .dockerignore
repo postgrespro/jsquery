@@ -1,0 +1,10 @@
+# Don't send some content to the Docker host when building
+travis
+.git
+.travis.yml
+
+*.gcno
+*.gcda
+*.gcov
+*.so
+*.o

@@ -1,8 +1,14 @@
+os: linux
+
 dist: jammy
 
 language: c
 
+services:
+- docker
+
 env:
+- PG_VER=17
 - PG_VER=16
 - PG_VER=15
 - PG_VER=14
@@ -10,24 +16,20 @@ env:
 - PG_VER=12
 - PG_VER=11
 - PG_VER=10
-- PG_VER=9.6
-- PG_VER=9.5
-- PG_VER=9.4
+#- PG_VER=9.6
+#- PG_VER=9.5
+#- PG_VER=9.4
 
 jobs:
   allow_failures:
     - env: PG_VER=12
     - env: PG_VER=11
     - env: PG_VER=10
-    - env: PG_VER=9.6
-    - env: PG_VER=9.5
-    - env: PG_VER=9.4
 
-before_script:
-  - sudo apt-get -y install -qq wget ca-certificates
-  - travis/dep-ubuntu-postgres.sh
-  - sudo apt-get update
-  - sudo apt-get install -y --no-install-recommends postgresql-client-${PG_VER} postgresql-${PG_VER} postgresql-server-dev-${PG_VER}
-  - sudo systemctl stop postgresql
+before_install: cp travis/* .
 
-script: travis/pg-travis-test.sh
+install:
+  - ./mk_dockerfile.sh
+  - docker-compose build
+
+script: docker-compose run $(bash <(curl -s https://codecov.io/env)) tests
