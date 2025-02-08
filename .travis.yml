@@ -1,35 +1,35 @@
-os:
-  - linux
+os: linux
 
-sudo: required
-dist: trusty
+dist: jammy
 
 language: c
 
-compiler:
-  - clang
-  - gcc
-
-before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -y install -qq wget ca-certificates; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source ./travis/dep-ubuntu-postgres.sh; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source ./travis/dep-ubuntu-llvm.sh; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq; fi
+services:
+- docker
 
 env:
-  global:
-    - LLVM_VER=4.0
-  matrix:
-    - PG_VER=11  CHECK_TYPE=normal
-    - PG_VER=11  CHECK_TYPE=static
-    - PG_VER=10  CHECK_TYPE=normal
-    - PG_VER=10  CHECK_TYPE=static
-    - PG_VER=10.5  CHECK_TYPE=valgrind
-    - PG_VER=9.6 CHECK_TYPE=normal
-    - PG_VER=9.6 CHECK_TYPE=static
-    - PG_VER=9.5 CHECK_TYPE=normal
-    - PG_VER=9.5 CHECK_TYPE=static
-    - PG_VER=9.4 CHECK_TYPE=normal
-    - PG_VER=9.4 CHECK_TYPE=static
+- PG_VER=17
+- PG_VER=16
+- PG_VER=15
+- PG_VER=14
+- PG_VER=13
+- PG_VER=12
+- PG_VER=11
+- PG_VER=10
+#- PG_VER=9.6
+#- PG_VER=9.5
+#- PG_VER=9.4
 
-script: bash ./travis/pg-travis-test.sh
+jobs:
+  allow_failures:
+    - env: PG_VER=12
+    - env: PG_VER=11
+    - env: PG_VER=10
+
+before_install: cp travis/* .
+
+install:
+  - ./mk_dockerfile.sh
+  - docker-compose build
+
+script: docker-compose run $(bash <(curl -s https://codecov.io/env)) tests
