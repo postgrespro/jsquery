@@ -46,8 +46,8 @@ typedef struct
 #define	GINKeyEmptyArray 0x80
 #define GINKeyLenString (INTALIGN(offsetof(GINKey, data)) + sizeof(uint32))
 #define GINKeyLenNumeric(len) (INTALIGN(offsetof(GINKey, data)) + len)
-#define GINKeyDataString(key) (*(uint32 *)((Pointer)key + INTALIGN(offsetof(GINKey, data))))
-#define GINKeyDataNumeric(key) ((Pointer)key + INTALIGN(offsetof(GINKey, data)))
+#define GINKeyDataString(key) (*(uint32 *)((char *)key + INTALIGN(offsetof(GINKey, data))))
+#define GINKeyDataNumeric(key) ((char *)key + INTALIGN(offsetof(GINKey, data)))
 #define GINKeyType(key) ((key)->type & 0x7F)
 #define GINKeyIsTrue(key) ((key)->type & GINKeyTrue)
 #define GINKeyIsMinusInf(key) ((key)->type & GINKeyMinusInf)
