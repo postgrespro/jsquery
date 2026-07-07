@@ -179,8 +179,7 @@ recursiveExtract(JsQueryItem *jsq, bool not, bool indirect, PathItem *path)
 				*result->exactValue = e;
 				return result;
 			}
-			/* fall through */
-			/* jqiEqual with jqiArray follows */
+			pg_fallthrough;	/* jqiEqual with jqiArray follows */
 		case jqiIn:
 		case jqiOverlap:
 		case jqiContains:

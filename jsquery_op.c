@@ -30,10 +30,38 @@
 
 #include "jsquery.h"
 
+#if PG_VERSION_NUM >= 190000
+/*
+ * PostgreSQL 19 changed the pushJsonbValue() API: it now takes a pointer
+ * to a caller-provided, zero-initialized JsonbInState instead of a
+ * JsonbParseState pointer, and returns void; the completed JsonbValue is
+ * available in JsonbInState.result once the outermost container is closed.
+ * Wrap the differences so the rest of the code stays version independent.
+ */
+typedef JsonbInState *JsQueryJsonbState;
+
+static JsonbValue *
+jsqPushJsonbValue(JsQueryJsonbState *state, JsonbIteratorToken seq,
+				  JsonbValue *jbval)
+{
+	if (*state == NULL)
+		*state = (JsonbInState *) palloc0(sizeof(JsonbInState));
+
+	pushJsonbValue(*state, seq, jbval);
+
+	return (*state)->result;
+}
+#else
+typedef JsonbParseState *JsQueryJsonbState;
+
+#define jsqPushJsonbValue(state, seq, jbval) \
+	pushJsonbValue((state), (seq), (jbval))
+#endif
+
 typedef struct ResultAccum {
 	StringInfo	buf;
 	bool		missAppend;
-	JsonbParseState	*jbArrayState;
+	JsQueryJsonbState	jbArrayState;
 } ResultAccum;
 
 
@@ -47,13 +75,13 @@ appendResult(ResultAccum *ra, JsonbValue *jb)
 		return;
 
 	if (ra->jbArrayState == NULL)
-		pushJsonbValue(&ra->jbArrayState, WJB_BEGIN_ARRAY, NULL);
+		jsqPushJsonbValue(&ra->jbArrayState, WJB_BEGIN_ARRAY, NULL);
 
-	pushJsonbValue(&ra->jbArrayState, WJB_ELEM, jb);
+	jsqPushJsonbValue(&ra->jbArrayState, WJB_ELEM, jb);
 }
 
 static void
-concatResult(ResultAccum *ra, JsonbParseState *a, JsonbParseState *b)
+concatResult(ResultAccum *ra, JsQueryJsonbState a, JsQueryJsonbState b)
 {
 	Jsonb			*value;
 	JsonbIterator	*it;
@@ -65,12 +93,12 @@ concatResult(ResultAccum *ra, JsonbParseState *a, JsonbParseState *b)
 
 	ra->jbArrayState = a;
 
-	value = JsonbValueToJsonb(pushJsonbValue(&b, WJB_END_ARRAY, NULL));
+	value = JsonbValueToJsonb(jsqPushJsonbValue(&b, WJB_END_ARRAY, NULL));
 	it = JsonbIteratorInit(&value->root);
 
 	while((r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 		if (r == WJB_ELEM)
-			pushJsonbValue(&ra->jbArrayState, WJB_ELEM, &v);
+			jsqPushJsonbValue(&ra->jbArrayState, WJB_ELEM, &v);
 }
 
 static int
@@ -460,7 +488,7 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 	switch(jsq->type) {
 		case jqiAnd:
 			{
-				JsonbParseState *saveJbArrayState = NULL;
+				JsQueryJsonbState saveJbArrayState = NULL;
 
 				jsqGetLeftArg(jsq, &elem);
 				if (ra && ra->missAppend == false)
@@ -849,7 +877,7 @@ json_jsquery_filter(PG_FUNCTION_ARGS)
 	if (ra.jbArrayState)
 	{
 		res = JsonbValueToJsonb(
-				pushJsonbValue(&ra.jbArrayState, WJB_END_ARRAY, NULL)
+				jsqPushJsonbValue(&ra.jbArrayState, WJB_END_ARRAY, NULL)
 		);
 	}
 
