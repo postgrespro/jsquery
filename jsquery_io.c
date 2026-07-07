@@ -45,7 +45,7 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item, bool onlyCurrent
 		case jqiKey:
 			if (onlyCurrentInPath)
 				elog(ERROR,"Array length should be last in path");
-			/* fall through */
+			pg_fallthrough;
 		case jqiString:
 			appendBinaryStringInfo(buf, (char*)&item->string.len, sizeof(item->string.len));
 			appendBinaryStringInfo(buf, item->string.val, item->string.len);
@@ -119,7 +119,7 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item, bool onlyCurrent
 		case jqiIndexArray:
 			appendBinaryStringInfo(buf, (char*)&item->arrayIndex,
 								   sizeof(item->arrayIndex));
-			/* FALLTHROUGH */ /* keep svace quiet */
+			pg_fallthrough;
 		case jqiAny:
 		case jqiAnyArray:
 		case jqiAnyKey:
@@ -128,6 +128,7 @@ flattenJsQueryParseItem(StringInfo buf, JsQueryParseItem *item, bool onlyCurrent
 		case jqiAllKey:
 			if (onlyCurrentInPath)
 				elog(ERROR,"Array length should be last in path");
+			pg_fallthrough;
 		case jqiCurrent:
 		case jqiNull:
 			break;
@@ -236,8 +237,7 @@ printJsQueryItem(StringInfo buf, JsQueryItem *v, bool inKey, bool printBracketes
 		case jqiKey:
 			if (inKey)
 				appendStringInfoChar(buf, '.');
-			/* fall through */
-			/* follow next */
+			pg_fallthrough;
 		case jqiString:
 			escape_json(buf, jsqGetString(v, NULL));
 			break;

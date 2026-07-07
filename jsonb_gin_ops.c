@@ -1153,7 +1153,7 @@ gin_extract_jsonb_path_value_internal(Jsonb *jb, int32 *nentries)
 			case WJB_END_ARRAY:
 				if (!stack->parent)
 					break; /* raw scalar array */
-				/* fall through */
+				pg_fallthrough;
 			case WJB_END_OBJECT:
 				/* Pop the stack */
 				tmp = stack->parent;

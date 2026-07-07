@@ -21,6 +21,23 @@
 #include "utils/numeric.h"
 #include "utils/jsonb.h"
 
+/*
+ * PostgreSQL 19 builds with -Wimplicit-fallthrough=5, where "fall through"
+ * comments are ignored and only the fallthrough attribute (provided by c.h
+ * as pg_fallthrough) suppresses the warning.  Provide a fallback definition
+ * for older server versions that lack pg_fallthrough.
+ */
+#ifndef pg_fallthrough
+#if defined(__has_attribute)
+#if __has_attribute(fallthrough)
+#define pg_fallthrough __attribute__((fallthrough))
+#endif
+#endif
+#ifndef pg_fallthrough
+#define pg_fallthrough ((void) 0)
+#endif
+#endif
+
 typedef struct
 {
 	int32	vl_len_;	/* varlena header (do not touch directly!) */
