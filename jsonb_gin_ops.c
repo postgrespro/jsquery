@@ -199,7 +199,7 @@ get_query_path_bloom(PathItem *pathItem, bool *lossy)
 
 		if (pathItem->type == iKey)
 		{
-			hash = hash_any((unsigned char *)pathItem->s, pathItem->len);
+			hash = DatumGetUInt32(hash_any((unsigned char *)pathItem->s, pathItem->len));
 			val = get_bloom_value(hash);
 			res |= val;
 		}
@@ -296,8 +296,8 @@ make_gin_key(JsonbValue *v, uint32 hash)
 		{
 			key = (GINKey *) palloc0(GINKeyLenString);
 			key->type = v->type;
-			GINKeyDataString(key) = hash_any((unsigned char *)v->val.string.val,
-															  v->val.string.len);
+			GINKeyDataString(key) = DatumGetUInt32(hash_any((unsigned char *)v->val.string.val,
+															v->val.string.len));
 			SET_VARSIZE(key, GINKeyLenString);
 			break;
 		}
@@ -341,7 +341,7 @@ make_gin_query_value_key(JsQueryItem *value, uint32 hash)
 			key = (GINKey *)palloc(GINKeyLenString);
 			key->type = jbvString;
 			s = jsqGetString(value, &len);
-			GINKeyDataString(key) = hash_any((unsigned char *)s, len);
+			GINKeyDataString(key) = DatumGetUInt32(hash_any((unsigned char *)s, len));
 			SET_VARSIZE(key, GINKeyLenString);
 			break;
 		case jqiBool:
@@ -952,7 +952,7 @@ get_query_path_hash(PathItem *pathItem, uint32 *hash)
 			if (pathItem->type == iKey)
 			{
 				*hash = (*hash << 1) | (*hash >> 31);
-				*hash ^= hash_any((unsigned char *)pathItem->s, pathItem->len);
+				*hash ^= DatumGetUInt32(hash_any((unsigned char *)pathItem->s, pathItem->len));
 			}
 			else if (pathItem->type == iAnyArray || pathItem->type == iIndexArray)
 			{

@@ -116,7 +116,10 @@ makeItemNumeric(string *s)
 	JsQueryParseItem		*v;
 
 	v = makeItemType(jqiNumeric);
-	v->numeric = DatumGetNumeric(DirectFunctionCall3(numeric_in, CStringGetDatum(s->val), 0, -1));
+	v->numeric = DatumGetNumeric(DirectFunctionCall3(numeric_in,
+													 CStringGetDatum(s->val),
+													 ObjectIdGetDatum(InvalidOid),
+													 Int32GetDatum(-1)));
 
 	return v;
 }
