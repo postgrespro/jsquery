@@ -1,0 +1,39 @@
+name: build
+on: [ push, pull_request ]
+jobs:
+  ubuntu:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          #          - postgres: 18
+          #            os: ubuntu-24.04
+          #          - postgres: 17
+          #            os: ubuntu-24.04
+          - postgres: 16
+            os: ubuntu-24.04
+          - postgres: 15
+            os: ubuntu-22.04
+          - postgres: 14
+            os: ubuntu-22.04
+          - postgres: 13
+            os: ubuntu-20.04
+    #          - postgres: 12
+    #            os: ubuntu-20.04 # jsonfuncs.h not available
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ankane/setup-postgres@v1
+        with:
+          postgres-version: ${{ matrix.postgres }}
+          dev-files: true
+      - run: make USE_PGXS=1
+      #        env:
+      #          PG_CFLAGS: -Wall -Wextra -Werror -Wno-unused-parameter -Wno-sign-compare
+      - run: |
+          export PG_CONFIG=`which pg_config`
+          sudo --preserve-env=PG_CONFIG make USE_PGXS=1 install
+      - run: make USE_PGXS=1 installcheck
+      - if: ${{ failure() }}
+        run: cat regression.diffs
