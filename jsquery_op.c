@@ -31,7 +31,6 @@
 #include "jsquery.h"
 
 typedef struct ResultAccum {
-	StringInfo	buf;
 	bool		missAppend;
 	JsonbParseState	*jbArrayState;
 } ResultAccum;
