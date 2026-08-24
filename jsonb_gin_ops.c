@@ -1153,6 +1153,9 @@ gin_extract_jsonb_path_value_internal(Jsonb *jb, int32 *nentries)
 			case WJB_END_ARRAY:
 				if (!stack->parent)
 					break; /* raw scalar array */
+#if PG_VERSION_NUM >= 190000
+				pg_fallthrough;
+#endif
 				/* fall through */
 			case WJB_END_OBJECT:
 				/* Pop the stack */
