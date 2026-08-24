@@ -34,7 +34,11 @@
 typedef struct ResultAccum
 {
 	bool		missAppend;
-	JsonbParseState	*jbArrayState;
+#if PG_VERSION_NUM >= 190000
+	JsonbInState jbArrayState; /* initialize by zeroing this structure */
+#else
+	JsonbParseState	*jbArrayState; /* initialize with NULL */
+#endif
 } ResultAccum;
 
 
@@ -49,6 +53,7 @@ raInitialize(ResultAccum *ra)
 {
 	Assert(ra);
 
+	/* This initialization works for both PG19+ and earlier */
 	memset(ra, 0, sizeof(*ra));
 	pushJsonbValue(&ra->jbArrayState, WJB_BEGIN_ARRAY, NULL);
 }
@@ -61,9 +66,14 @@ static Jsonb *
 raFinalize(ResultAccum *ra)
 {
 	Assert(ra);
-	Assert(ra->jbArrayState);
 
+#if PG_VERSION_NUM >= 190000
+	pushJsonbValue(&ra->jbArrayState, WJB_END_ARRAY, NULL);
+	return JsonbValueToJsonb(ra->jbArrayState.result);
+#else
+	Assert(ra->jbArrayState); /* it's a pointer only before PG19 */
 	return JsonbValueToJsonb(pushJsonbValue(&ra->jbArrayState, WJB_END_ARRAY, NULL));
+#endif
 }
 
 /*
@@ -76,7 +86,9 @@ raAppendElement(ResultAccum *ra, JsonbValue *jb)
 	if (ra == NULL || ra->missAppend == true)
 		return;
 
-	Assert(ra->jbArrayState);
+#if PG_VERSION_NUM < 190000
+	Assert(ra->jbArrayState);  /* it's a pointer only before PG19 */
+#endif
 
 	pushJsonbValue(&ra->jbArrayState, WJB_ELEM, jb);
 }
@@ -93,7 +105,9 @@ raAppendArray(ResultAccum *ra, Jsonb *array)
 	JsonbValue		v;
 
 	Assert(ra && ra->missAppend == false);
-	Assert(ra->jbArrayState);
+#if PG_VERSION_NUM < 190000
+	Assert(ra->jbArrayState);  /* it's a pointer only before PG19 */
+#endif
 
 	it = JsonbIteratorInit(&array->root);
 
