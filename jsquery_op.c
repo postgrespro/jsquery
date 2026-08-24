@@ -30,7 +30,9 @@
 
 #include "jsquery.h"
 
-typedef struct ResultAccum {
+/* ResultAccum is used to accumulate values in a Jsonb array. */
+typedef struct ResultAccum
+{
 	bool		missAppend;
 	JsonbParseState	*jbArrayState;
 } ResultAccum;
@@ -39,35 +41,63 @@ typedef struct ResultAccum {
 static bool recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 							 ResultAccum *ra);
 
+/*
+ * Initialize ResultAccum with the opening WJB_BEGIN_ARRAY token.
+ */
 static void
-appendResult(ResultAccum *ra, JsonbValue *jb)
+raInitialize(ResultAccum *ra)
+{
+	Assert(ra);
+
+	memset(ra, 0, sizeof(*ra));
+	pushJsonbValue(&ra->jbArrayState, WJB_BEGIN_ARRAY, NULL);
+}
+
+/*
+ * Finalize ResultAccum with the closing WJB_END_ARRAY token, and return the
+ * resulting Jsonb.
+ */
+static Jsonb *
+raFinalize(ResultAccum *ra)
+{
+	Assert(ra);
+	Assert(ra->jbArrayState);
+
+	return JsonbValueToJsonb(pushJsonbValue(&ra->jbArrayState, WJB_END_ARRAY, NULL));
+}
+
+/*
+ * Append one element.
+ * Note: append only if "ra" is vaild and appendable; otherwise, do nothing.
+ */
+static void
+raAppendElement(ResultAccum *ra, JsonbValue *jb)
 {
 	if (ra == NULL || ra->missAppend == true)
 		return;
 
-	if (ra->jbArrayState == NULL)
-		pushJsonbValue(&ra->jbArrayState, WJB_BEGIN_ARRAY, NULL);
+	Assert(ra->jbArrayState);
 
 	pushJsonbValue(&ra->jbArrayState, WJB_ELEM, jb);
 }
 
+/*
+ * Iterate over the Jsonb array and append its elements to "ra".
+ * Note: "ra" must be valid and appendable.
+ */
 static void
-concatResult(ResultAccum *ra, JsonbParseState *a, JsonbParseState *b)
+raAppendArray(ResultAccum *ra, Jsonb *array)
 {
-	Jsonb			*value;
 	JsonbIterator	*it;
 	int32			r;
 	JsonbValue		v;
 
-	Assert(a);
-	Assert(b);
+	Assert(ra && ra->missAppend == false);
+	Assert(ra->jbArrayState);
 
-	ra->jbArrayState = a;
+	it = JsonbIteratorInit(&array->root);
 
-	value = JsonbValueToJsonb(pushJsonbValue(&b, WJB_END_ARRAY, NULL));
-	it = JsonbIteratorInit(&value->root);
-
-	while((r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
+	while ((r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 		if (r == WJB_ELEM)
 			pushJsonbValue(&ra->jbArrayState, WJB_ELEM, &v);
 }
@@ -459,32 +489,35 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 	switch(jsq->type) {
 		case jqiAnd:
 			{
-				JsonbParseState *saveJbArrayState = NULL;
+				/*
+				 * Accumulate the array in "raTmp" if needed. Don't mess with
+				 * "ra" in case the result turns out to be false.
+				 */
+				ResultAccum	raTmpData;
+				ResultAccum *raTmp = NULL;
 
-				jsqGetLeftArg(jsq, &elem);
 				if (ra && ra->missAppend == false)
 				{
-					saveJbArrayState = ra->jbArrayState;
-					ra->jbArrayState = NULL;
+					/* need to accumulate */
+					raTmp = &raTmpData;
+					raInitialize(raTmp);
 				}
 
-				res = recursiveExecute(&elem, jb, jsqLeftArg, ra);
+				jsqGetLeftArg(jsq, &elem);
+				res = recursiveExecute(&elem, jb, jsqLeftArg, raTmp);
 				if (res == true)
 				{
 					jsqGetRightArg(jsq, &elem);
-					res = recursiveExecute(&elem, jb, jsqLeftArg, ra);
+					res = recursiveExecute(&elem, jb, jsqLeftArg, raTmp);
 				}
 
+				/* Append the array accumulated in "raTmp" to "ra" if needed. */
 				if (ra && ra->missAppend == false)
 				{
+					Jsonb *array = raFinalize(raTmp);
+
 					if (res == true)
-					{
-						if (saveJbArrayState != NULL)
-							/* append args lists to current */
-							concatResult(ra, saveJbArrayState, ra->jbArrayState);
-					}
-					else
-						ra->jbArrayState = saveJbArrayState;
+						raAppendArray(ra, array);
 				}
 
 				break;
@@ -524,7 +557,7 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 				{
 					if (jsqGetNext(jsq, &elem) == false)
 					{
-						appendResult(ra, v);
+						raAppendElement(ra, v);
 						res = true;
 					}
 					else
@@ -536,7 +569,7 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 		case jqiCurrent:
 			if (jsqGetNext(jsq, &elem) == false)
 			{
-				appendResult(ra, jb);
+				raAppendElement(ra, jb);
 				res = true;
 			}
 			else if (JsonbType(jb) == jbvScalar)
@@ -566,7 +599,7 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 			if (jsqGetNext(jsq, &elem) == false)
 			{
 				res = true;
-				appendResult(ra, jb);
+				raAppendElement(ra, jb);
 			}
 			else if (recursiveExecute(&elem, jb, NULL, ra))
 				res = true;
@@ -577,7 +610,7 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 			if (jsqGetNext(jsq, &elem) == false)
 			{
 				res = true;
-				appendResult(ra, jb);
+				raAppendElement(ra, jb);
 			}
 			if ((res = recursiveExecute(&elem, jb, NULL, ra)) == true)
 			{
@@ -604,7 +637,7 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 
 					while(ra && (r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 						if (r == WJB_ELEM)
-							appendResult(ra, &v);
+							raAppendElement(ra, &v);
 
 					break;
 				}
@@ -650,7 +683,7 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 					if (jsqGetNext(jsq, &elem) == false)
 					{
 						res = true;
-						appendResult(ra, v);
+						raAppendElement(ra, v);
 					}
 					else
 						res = recursiveExecute(&elem, v, NULL, ra);
@@ -676,7 +709,7 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 
 					while(ra && (r = JsonbIteratorNext(&it, &v, true)) != WJB_DONE)
 						if (r == WJB_VALUE)
-							appendResult(ra, &v);
+							raAppendElement(ra, &v);
 
 					break;
 				}
@@ -762,7 +795,7 @@ recursiveExecute(JsQueryItem *jsq, JsonbValue *jb, JsQueryItem *jsqLeftArg,
 				if (res) {
 					if (jsqGetNext(jsq, &elem) == false)
 					{
-						appendResult(ra, jb);
+						raAppendElement(ra, jb);
 						res = true;
 					}
 					else
@@ -841,21 +874,17 @@ json_jsquery_filter(PG_FUNCTION_ARGS)
 	jbv.val.binary.len = VARSIZE_ANY_EXHDR(jb);
 
 	jsqInit(&jsq, jq);
-	memset(&ra, 0, sizeof(ra));
+	raInitialize(&ra);
 
 	recursiveExecute(&jsq, &jbv, NULL, &ra);
 
-	if (ra.jbArrayState)
-	{
-		res = JsonbValueToJsonb(
-				pushJsonbValue(&ra.jbArrayState, WJB_END_ARRAY, NULL)
-		);
-	}
+	res = raFinalize(&ra);
 
 	PG_FREE_IF_COPY(jb, 0);
 	PG_FREE_IF_COPY(jq, 1);
 
-	if (res)
+	/* If array is empty, we must return NULL. */
+	if (res && JsonContainerSize(&res->root) > 0)
 		PG_RETURN_JSONB_P(res);
 
 	PG_RETURN_NULL();
