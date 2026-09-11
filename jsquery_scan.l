@@ -168,7 +168,7 @@ unicode     \\u[0-9A-Fa-f]{4}
 
 <xNONQUOTED,xQUOTED>\\. 		{ yyerror(NULL, "Escape sequence is invalid"); }
 
-<xNONQUOTED,xQUOTED>\\ 			{ yyerror(NULL, "Unexpected end after backslesh"); }
+<xNONQUOTED,xQUOTED>\\ 			{ yyerror(NULL, "Unexpected end after backslash"); }
 
 <xQUOTED><<EOF>>				{ yyerror(NULL, "Unexpected end of quoted string"); }
 
