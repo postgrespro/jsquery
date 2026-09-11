@@ -77,7 +77,7 @@ select '* < 13 AND #.zxc"x" = "true"'::jsquery;
 ERROR:  bad jsquery representation
 LINE 1: select '* < 13 AND #.zxc"x" = "true"'::jsquery;
                ^
-DETAIL:  syntax error, unexpected STRING_P, expecting $end at or near """
+DETAIL:  syntax error at or near """
 select 'a < 1'::jsquery;
  jsquery 
 ---------
@@ -1193,7 +1193,7 @@ select 'a\r = x"\\abcd"'::jsquery AS err;
 ERROR:  bad jsquery representation
 LINE 1: select 'a\r = x"\\abcd"'::jsquery AS err;
                ^
-DETAIL:  syntax error, unexpected STRING_P, expecting $end at or near """
+DETAIL:  syntax error at or near """
 --IS
 select  'as IS boolean OR as is ARRAY OR as is ObJect OR as is Numeric OR as is string'::jsquery;
                                              jsquery                                             
@@ -1302,7 +1302,7 @@ select 'a = /*-- noindex */ 5'::jsquery;
 ERROR:  bad jsquery representation
 LINE 1: select 'a = /*-- noindex */ 5'::jsquery;
                ^
-DETAIL:  syntax error, unexpected HINT_P at or near "*/"
+DETAIL:  syntax error at or near "*/"
 select 'a = /* noindex */ 5'::jsquery;
  jsquery 
 ---------
