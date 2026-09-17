@@ -1,7 +1,13 @@
 CREATE EXTENSION jsquery;
 
+SHOW server_version \gset
+SELECT substring(:'server_version', '\d+')::int < 19 AS server_version_lt_19
+\gset
+
+\if :server_version_lt_19
 set escape_string_warning=off;
 set standard_conforming_strings=on;
+\endif
 
 CREATE TABLE test_jsquery (v jsonb);
 

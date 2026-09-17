@@ -168,7 +168,7 @@ unicode     \\u[0-9A-Fa-f]{4}
 
 <xNONQUOTED,xQUOTED>\\. 		{ yyerror(NULL, "Escape sequence is invalid"); }
 
-<xNONQUOTED,xQUOTED>\\ 			{ yyerror(NULL, "Unexpected end after backslesh"); }
+<xNONQUOTED,xQUOTED>\\ 			{ yyerror(NULL, "Unexpected end after backslash"); }
 
 <xQUOTED><<EOF>>				{ yyerror(NULL, "Unexpected end of quoted string"); }
 
@@ -248,9 +248,9 @@ static keyword keywords[] = {
 };
 
 static int
-checkSpecialVal()
+checkSpecialVal(void)
 {
-	int 		res = STRING_P;
+	int		res = STRING_P;
 	int			diff;
 	keyword		*StopLow = keywords,
 				*StopHigh = keywords + lengthof(keywords),
@@ -288,7 +288,7 @@ checkSpecialVal()
 }
 
 static JsQueryHint
-checkHint()
+checkHint(void)
 {
 	if (scanstring.len <= 2 || strncmp(scanstring.val, "--", 2) != 0)
 		return jsqIndexDefault;

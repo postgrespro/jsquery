@@ -34,12 +34,21 @@ alignStringInfoInt(StringInfo buf)
 	{
 		case 3:
 			appendStringInfoCharMacro(buf, 0);
+#if PG_VERSION_NUM >= 190000
+			pg_fallthrough;
+#endif
 			/* fall through */
 		case 2:
 			appendStringInfoCharMacro(buf, 0);
+#if PG_VERSION_NUM >= 190000
+			pg_fallthrough;
+#endif
 			/* fall through */
 		case 1:
 			appendStringInfoCharMacro(buf, 0);
+#if PG_VERSION_NUM >= 190000
+			pg_fallthrough;
+#endif
 			/* fall through */
 		default:
 			break;
@@ -64,9 +73,24 @@ jsqInitByBuffer(JsQueryItem *v, char *base, int32 pos)
 
 	switch(INTALIGN(pos) - pos)
 	{
-		case 3: pos++; /* fall through */
-		case 2: pos++; /* fall through */
-		case 1: pos++; /* fall through */
+		case 3:
+			pos++;
+#if PG_VERSION_NUM >= 190000
+			pg_fallthrough;
+#endif
+			/* fall through */
+		case 2:
+			pos++;
+#if PG_VERSION_NUM >= 190000
+			pg_fallthrough;
+#endif
+			/* fall through */
+		case 1:
+			pos++;
+#if PG_VERSION_NUM >= 190000
+			pg_fallthrough;
+#endif
+			/* fall through */
 		default: break;
 	}
 
@@ -90,8 +114,11 @@ jsqInitByBuffer(JsQueryItem *v, char *base, int32 pos)
 		case jqiKey:
 		case jqiString:
 			read_int32(v->value.datalen, base, pos);
-			/* fall through */
 			/* follow next */
+#if PG_VERSION_NUM >= 190000
+			pg_fallthrough;
+#endif
+			/* fall through */
 		case jqiNumeric:
 		case jqiBool:
 		case jqiIs:

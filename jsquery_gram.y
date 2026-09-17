@@ -219,7 +219,6 @@ makeItemList(List *list) {
 %pure-parser
 %expect 0
 %name-prefix="jsquery_yy"
-%error-verbose
 %parse-param {JsQueryParseItem **result}
 
 %union {
