@@ -487,6 +487,9 @@ make_value_path_entry_handler(ExtractedNode *node, Pointer extra)
 static int32
 compare_gin_key_value(GINKey *arg1, GINKey *arg2)
 {
+	if (VARSIZE_ANY(arg1) < GINKEYLEN || VARSIZE_ANY(arg2) < GINKEYLEN)
+		elog(ERROR, "GINKey must be at least %zu bytes", (size_t) GINKEYLEN);
+
 	if (GINKeyType(arg1) != GINKeyType(arg2))
 	{
 		return (GINKeyType(arg1) > GINKeyType(arg2)) ? 1 : -1;
@@ -549,6 +552,11 @@ gin_compare_jsonb_value_path(PG_FUNCTION_ARGS)
 	GINKey	   *arg2 = (GINKey *)PG_GETARG_VARLENA_P(1);
 	int32		result = 0;
 
+	if (VARSIZE_ANY(arg1) < GINKEYLEN || VARSIZE_ANY(arg2) < GINKEYLEN)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("invalid GINKey: argument is too small to be a GINKey")));
+
 	result = compare_gin_key_value(arg1, arg2);
 	if (result == 0 && arg1->hash != arg2->hash)
 	{
@@ -566,6 +574,11 @@ gin_compare_partial_jsonb_value_path(PG_FUNCTION_ARGS)
 	GINKey	   *key = (GINKey *)PG_GETARG_VARLENA_P(1);
 	StrategyNumber strategy = PG_GETARG_UINT16(2);
 	int32		result;
+
+	if (VARSIZE_ANY(partial_key) < GINKEYLEN || VARSIZE_ANY(key) < GINKEYLEN)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("invalid GINKey: argument is too small to be a GINKey")));
 
 	if (strategy == JsQueryMatchStrategyNumber)
 	{
